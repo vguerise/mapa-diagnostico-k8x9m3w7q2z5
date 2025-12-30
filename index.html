@@ -988,6 +988,153 @@
                 setTimeout(() => overlay.remove(), 300);
             }
         }
+        // ============================
+        // Integração com O Perfumista (iframe)
+        // ============================
+        function mostrarLoadingPerfumista() {
+            if (document.getElementById('perfumista-loading-overlay')) return;
+
+            const overlay = document.createElement('div');
+            overlay.id = 'perfumista-loading-overlay';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.88);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                animation: fadeIn 0.3s ease;
+            `;
+
+            overlay.innerHTML = `
+                <div style="
+                    background: linear-gradient(135deg, #2d2d2d 0%, #1e1e1e 100%);
+                    border: 2px solid rgba(212, 175, 55, 0.9);
+                    border-radius: 20px;
+                    padding: 32px 28px;
+                    max-width: 560px;
+                    width: calc(100% - 40px);
+                    box-shadow: 0 20px 60px rgba(212, 175, 55, 0.25);
+                    text-align: center;
+                ">
+                    <div style="color:#d4af37; font-size:2.2em; margin-bottom:10px;">🤖</div>
+                    <div style="color:#fff; font-size:1.35em; font-weight:900; margin-bottom:8px;">
+                        Consultando o Perfumista...
+                    </div>
+                    <div style="color:#bbb; font-size:1em; line-height:1.5;">
+                        Isso pode levar alguns segundos. Não feche a página.
+                    </div>
+                    <div style="margin-top:16px; height:10px; border-radius:999px; overflow:hidden; background: rgba(212,175,55,0.15);">
+                        <div style="height:100%; width:40%; background: linear-gradient(90deg,#d4af37,#f4e5b1); animation: perfBar 1.1s infinite ease-in-out;"></div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+
+            // injeta animação uma vez
+            if (!document.getElementById('perfumista-loading-style')) {
+                const style = document.createElement('style');
+                style.id = 'perfumista-loading-style';
+                style.innerHTML = `
+                    @keyframes perfBar {
+                        0% { transform: translateX(-60%); }
+                        100% { transform: translateX(260%); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+
+        function fecharLoadingPerfumista() {
+            const overlay = document.getElementById('perfumista-loading-overlay');
+            if (!overlay) return;
+            overlay.style.animation = 'fadeOut 0.25s ease';
+            setTimeout(() => overlay.remove(), 250);
+        }
+
+        let perfumistaTimeout = null;
+
+        function abrirPerfumistaNoMapa() {
+            const panel = document.getElementById('perfumista-panel');
+            const iframe = document.getElementById('perfumista-iframe');
+
+            if (!panel || !iframe) {
+                alert('Não encontrei o painel do Perfumista. Recarregue a página e gere o diagnóstico novamente.');
+                return;
+            }
+
+            const diagnostico = (localStorage.getItem('diagnostico_completo') || '').trim();
+            if (!diagnostico) {
+                alert('Não achei o diagnóstico completo. Faça a análise primeiro.');
+                return;
+            }
+
+            panel.style.display = 'block';
+            panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            mostrarLoadingPerfumista();
+
+            // safety timeout (se o iframe não avisar, fecha o popup depois)
+            if (perfumistaTimeout) clearTimeout(perfumistaTimeout);
+            perfumistaTimeout = setTimeout(() => {
+                fecharLoadingPerfumista();
+            }, 45000);
+
+            const sendToIframe = () => {
+                try {
+                    iframe.contentWindow.postMessage(
+                        { source: 'mapa', type: 'set_and_run', text: diagnostico },
+                        'https://vguerise.github.io'
+                    );
+                } catch (e) {
+                    // se falhar, pelo menos tira o loading para o usuário não ficar preso
+                    fecharLoadingPerfumista();
+                }
+            };
+
+            // Se já carregou, manda; senão, manda no load
+            try {
+                // alguns browsers permitem postMessage mesmo antes do load, mas garantimos:
+                iframe.addEventListener('load', () => sendToIframe(), { once: true });
+                // tenta mandar já
+                sendToIframe();
+            } catch (e) {
+                fecharLoadingPerfumista();
+            }
+        }
+
+        function fecharPerfumistaNoMapa() {
+            const panel = document.getElementById('perfumista-panel');
+            if (panel) panel.style.display = 'none';
+            fecharLoadingPerfumista();
+        }
+
+        // Recebe status do iframe (Perfumista)
+        window.addEventListener('message', (event) => {
+            if (event.origin !== 'https://vguerise.github.io') return;
+
+            const data = event.data || {};
+            if (data.source !== 'operfumista') return;
+
+            if (data.type === 'loading' && data.value === true) {
+                mostrarLoadingPerfumista();
+            }
+
+            if (data.type === 'done' || data.type === 'error') {
+                fecharLoadingPerfumista();
+                if (perfumistaTimeout) clearTimeout(perfumistaTimeout);
+            }
+        });
+
+        // expõe para o onclick do HTML
+        window.abrirPerfumistaNoMapa = abrirPerfumistaNoMapa;
+        window.fecharPerfumistaNoMapa = fecharPerfumistaNoMapa;
+
+
 
         function processarAnalise(families, total) {
             // Pegar contexto pessoal
@@ -1786,21 +1933,15 @@
                     ">
                         💡 Seu diagnóstico será copiado automaticamente - cole no chat ao abrir o Agente
                     </div>
-                    <div style="
-                        display: flex;
-                        flex-wrap: wrap;
-                        gap: 12px;
-                        justify-content: center;
-                        align-items: center;
-                        margin-top: 8px;
-                    ">
+                    
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
                         <button onclick="abrirPerfumistaNoMapa()" style="
                             background: linear-gradient(135deg, #d4af37 0%, #f4e5b1 100%);
                             color: #1e1e1e;
                             border: none;
-                            padding: 18px 40px;
+                            padding: 18px 28px;
                             border-radius: 12px;
-                            font-size: 1.1em;
+                            font-size: 1.05em;
                             font-weight: 800;
                             cursor: pointer;
                             box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
@@ -1808,19 +1949,19 @@
                             display: inline-flex;
                             align-items: center;
                             gap: 10px;
-                        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 12px 30px rgba(212, 175, 55, 0.5)';"
-                           onmouseout="this.style.transform='translateY(0px)'; this.style.boxShadow='0 8px 25px rgba(212, 175, 55, 0.4)';">
+                        " onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 30px rgba(212, 175, 55, 0.6)';"
+                          onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 25px rgba(212, 175, 55, 0.4)';">
                             <span style="font-size: 1.3em;">🤖</span>
                             <span>Gerar opções com I.A. aqui no Mapa</span>
                         </button>
 
                         <button onclick="copiarDiagnostico('${gptLink}')" style="
-                            background: rgba(212, 175, 55, 0.18);
+                            background: rgba(255,255,255,0.06);
                             color: #f4e5b1;
-                            border: 2px solid rgba(212, 175, 55, 0.35);
-                            padding: 14px 22px;
+                            border: 2px solid rgba(212,175,55,0.35);
+                            padding: 18px 22px;
                             border-radius: 12px;
-                            font-size: 0.95em;
+                            font-size: 0.98em;
                             font-weight: 800;
                             cursor: pointer;
                             transition: all 0.3s ease;
@@ -1828,38 +1969,47 @@
                             align-items: center;
                             gap: 10px;
                         " onmouseover="this.style.transform='translateY(-2px)'; this.style.borderColor='#d4af37';"
-                           onmouseout="this.style.transform='translateY(0px)'; this.style.borderColor='rgba(212, 175, 55, 0.35)';">
-                            <span style="font-size: 1.15em;">↗️</span>
+                          onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='rgba(212,175,55,0.35)';">
+                            <span style="font-size: 1.2em;">↗️</span>
                             <span>Abrir no ChatGPT (fallback)</span>
                         </button>
                     </div>
 
-                    <div style="color: #888; font-size: 0.82em; margin-top: 12px; line-height: 1.5; text-align: center;">
-                        <b>Dica:</b> se você clicar no fallback, você precisa estar logado no ChatGPT.
+                    <div style="color: #888; font-size: 0.85em; margin-top: 12px; line-height: 1.4;">
+                        Dica: a opção “I.A. aqui no Mapa” abre o Perfumista dentro desta página (iframe).<br/>
+                        O fallback abre o ChatGPT em outra aba (você precisa estar logado).
                     </div>
 
-                    <!-- Painel embutido do Perfumista -->
                     <div id="perfumista-panel" style="
-                        margin-top: 18px;
-                        background: rgba(255,255,255,0.05);
-                        border: 2px solid rgba(212,175,55,0.25);
-                        border-radius: 16px;
-                        padding: 16px;
                         display: none;
+                        margin-top: 18px;
+                        background: rgba(0,0,0,0.18);
+                        border: 2px solid rgba(212, 175, 55, 0.28);
+                        border-radius: 16px;
+                        padding: 14px;
+                        text-align: left;
                     ">
-                        <div style="color:#fff; font-weight:900; font-size:1.05em; margin-bottom:10px; display:flex; align-items:center; gap:10px;">
-                            <span style="font-size:1.2em;">✨</span>
-                            <span>O Perfumista (I.A.)</span>
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;">
+                            <div style="color:#fff; font-weight:900; font-size: 1.05em;">
+                                O Perfumista — resposta dentro do Mapa
+                            </div>
+                            <button onclick="fecharPerfumistaNoMapa()" style="
+                                background: rgba(255,255,255,0.06);
+                                color: #f4e5b1;
+                                border: 2px solid rgba(212,175,55,0.28);
+                                padding: 8px 12px;
+                                border-radius: 10px;
+                                font-weight: 800;
+                                cursor: pointer;
+                            ">Fechar</button>
                         </div>
+
                         <iframe
                             id="perfumista-iframe"
                             src="https://vguerise.github.io/operfumista/"
-                            style="width:100%; height:720px; border:0; border-radius:12px; background:#111;"
+                            style="width:100%; height: 760px; border:0; border-radius: 12px; background:#111;"
                             loading="lazy"
                         ></iframe>
-                    </div>
-#888; font-size: 0.8em; margin-top: 10px;">
-                        Você precisa estar logado na sua conta do ChatGPT
                     </div>
                 </div>
             `;
@@ -1870,124 +2020,7 @@
             resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
-        
-        // =========================
-        //  IFRAME DO PERFUMISTA (EMBUTIDO) + POPUP DE CARREGAMENTO
-        // =========================
-
-        function mostrarLoadingPerfumista() {
-            if (document.getElementById('perfumista-loading-overlay')) return;
-
-            const overlay = document.createElement('div');
-            overlay.id = 'perfumista-loading-overlay';
-            overlay.style.cssText = `
-                position: fixed;
-                top: 0; left: 0;
-                width: 100%; height: 100%;
-                background: rgba(0,0,0,0.85);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 10000;
-            `;
-
-            overlay.innerHTML = `
-                <div style="
-                    background: linear-gradient(135deg, #2d2d2d 0%, #1e1e1e 100%);
-                    border: 2px solid rgba(212,175,55,0.75);
-                    border-radius: 20px;
-                    padding: 34px;
-                    max-width: 520px;
-                    width: calc(100% - 40px);
-                    box-shadow: 0 20px 60px rgba(212, 175, 55, 0.25);
-                    text-align: center;
-                ">
-                    <div style="color:#d4af37; font-size:2.2em; margin-bottom:12px;">🤖</div>
-                    <div style="color:#fff; font-size:1.35em; font-weight:900; margin-bottom:10px;">
-                        Consultando o Perfumista...
-                    </div>
-                    <div style="color:#bbb; font-size:1em; line-height:1.5;">
-                        Isso pode levar alguns segundos. Não feche a página.
-                    </div>
-                    <div style="margin-top:18px; height:10px; border-radius:999px; overflow:hidden; background: rgba(212,175,55,0.15);">
-                        <div style="height:100%; width:40%; background: linear-gradient(90deg,#d4af37,#f4e5b1); animation: perfBar 1.1s infinite ease-in-out;"></div>
-                    </div>
-                </div>
-            `;
-
-            document.body.appendChild(overlay);
-
-            if (!document.getElementById('perfumista-loading-style')) {
-                const style = document.createElement('style');
-                style.id = 'perfumista-loading-style';
-                style.innerHTML = `
-                    @keyframes perfBar {
-                        0% { transform: translateX(-60%); }
-                        100% { transform: translateX(260%); }
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-        }
-
-        function fecharLoadingPerfumista() {
-            const overlay = document.getElementById('perfumista-loading-overlay');
-            if (!overlay) return;
-            overlay.remove();
-        }
-
-        function abrirPerfumistaNoMapa() {
-            const panel = document.getElementById('perfumista-panel');
-            const iframe = document.getElementById('perfumista-iframe');
-
-            if (!panel || !iframe) {
-                alert('Não encontrei o painel do Perfumista. Verifique se o bloco do iframe foi inserido.');
-                return;
-            }
-
-            const diagnostico = (localStorage.getItem('diagnostico_completo') || '').trim();
-            if (!diagnostico) {
-                alert('Não encontrei o diagnóstico completo. Faça a análise primeiro.');
-                return;
-            }
-
-            // Mostra o painel e rola até ele
-            panel.style.display = 'block';
-            panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-            // Mostra popup de carregamento
-            mostrarLoadingPerfumista();
-
-            // Envia o diagnóstico para o iframe preencher e rodar
-            // (O Perfumista precisa ter o listener postMessage do lado dele)
-            iframe.contentWindow.postMessage(
-                { source: 'mapa', type: 'set_and_run', text: diagnostico },
-                'https://vguerise.github.io'
-            );
-        }
-
-        // Recebe eventos do iframe para fechar o popup na hora certa
-        window.addEventListener('message', (event) => {
-            if (event.origin !== 'https://vguerise.github.io') return;
-
-            const data = event.data || {};
-            if (data.source !== 'operfumista') return;
-
-            if (data.type === 'loading' && data.value === true) {
-                mostrarLoadingPerfumista();
-            }
-
-            if (data.type === 'done') {
-                fecharLoadingPerfumista();
-            }
-
-            if (data.type === 'error') {
-                fecharLoadingPerfumista();
-                console.log('Perfumista error:', data.message);
-            }
-        });
-
-// Função para copiar diagnóstico
+        // Função para copiar diagnóstico
         function copiarDiagnostico(gptLink) {
             const diagnostico = localStorage.getItem('diagnostico_completo');
             if (diagnostico) {
