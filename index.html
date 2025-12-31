@@ -1518,7 +1518,16 @@
                         icon = '🧼';
                         description = 'Clean profissional · Pós-barba · Clássico';
                         examples = 'Talco, barbeiro, fougère tradicional';
+                    } else if (family.key === 'frutas') {
+                        icon = '🍓';
+                        description = 'Casual · Jovem · Climas quentes · Uso diurno';
+                        examples = 'Maçã, pera, frutas vermelhas, manga';
+                    } else if (family.key === 'floral') {
+                        icon = '🌸';
+                        description = 'Elegante · Romântico · Ambientes fechados · Dia a dia';
+                        examples = 'Rosa, jasmim, flor de laranjeira, íris';
                     }
+
                     
                     nextPurchase += `
                         <div style="
@@ -1925,22 +1934,7 @@
             const gptLink = `https://chatgpt.com/g/g-68f7ee5b09248191b9b56f84210bf9ab-o-perfumista`;
 
             nextPurchase += `
-                <div style="margin-top: 30px; text-align: center;">
-                    <div style="
-                        background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1));
-                        border: 3px solid #d4af37;
-                        border-radius: 12px;
-                        padding: 20px 25px;
-                        margin-bottom: 20px;
-                        color: #f4e5b1;
-                        font-size: 1.05em;
-                        font-weight: 700;
-                        line-height: 1.6;
-                        box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
-                    ">
-                        💡 Seu diagnóstico será copiado automaticamente - cole no chat ao abrir o Agente
-                    </div>
-                    
+                                    
                     <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
                         <button onclick="abrirPerfumistaNoMapa()" style="
                             background: linear-gradient(135deg, #d4af37 0%, #f4e5b1 100%);
@@ -1978,13 +1972,13 @@
                         " onmouseover="this.style.transform='translateY(-2px)'; this.style.borderColor='#d4af37';"
                           onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='rgba(212,175,55,0.35)';">
                             <span style="font-size: 1.2em;">↗️</span>
-                            <span>Abrir no ChatGPT (fallback)</span>
+                            <span>Abrir no ChatGPT</span>
                         </button>
                     </div>
 
                     <div style="color: #888; font-size: 0.85em; margin-top: 12px; line-height: 1.4;">
                         Dica: a opção “I.A. aqui no Mapa” abre o Perfumista dentro desta página (iframe).<br/>
-                        O fallback abre o ChatGPT em outra aba (você precisa estar logado).
+                        Isso abre o ChatGPT em outra aba (você precisa estar logado).
                     </div>
 
                     <div id="perfumista-panel" style="
