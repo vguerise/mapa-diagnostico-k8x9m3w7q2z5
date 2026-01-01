@@ -2823,19 +2823,6 @@ const gptLink = `https://chatgpt.com/g/g-68f7ee5b09248191b9b56f84210bf9ab-o-perf
             return base + lacunaTxt + `\n\n🧴 COLEÇÃO INFORMADA:\n${lista}\n`;
         }
 
-                        },
-                        plugins: { legend: { display: false } }
-                    }
-                });
-                return;
-            }
-
-            // update leve (sem destruir)
-            const ch = window.__radarChart;
-            ch.data.labels = labels;
-            ch.data.datasets[0].data = dataArr;
-            try { ch.update('none'); } catch(e) { ch.update(); }
-        }
 
 
         // Boot
