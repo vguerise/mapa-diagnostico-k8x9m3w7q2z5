@@ -821,7 +821,6 @@
 
             <!-- Ações para gerar recomendações com I.A. -->
             <div style="margin-top: 14px; display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
-                <button type="button" onclick="abrirPerfumistaNoMapa()" style="
                     background: linear-gradient(135deg, #d4af37 0%, #f4e5b1 100%);
                     color: #1e1e1e;
                     border: none;
@@ -1301,79 +1300,169 @@
             }
 
 
-function ensurePerfumistaPanel() {
-            // tenta achar pelo id atual; se não achar, tenta por padrões; se ainda assim não achar, cria um painel novo
-            let panel = document.getElementById('perfumista-panel') || document.querySelector('[id*="perfumista"][id*="panel"]');
-            let iframe = document.getElementById('perfumista-iframe') || document.querySelector('iframe[src*="operfumista"]') || document.querySelector('iframe[src*="o-perfumista"]');
 
-            if (panel && !iframe) iframe = panel.querySelector('iframe');
+function ensurePerfumistaPanel() {
+            // painel do resultado + recomendações + caixa de texto (iframe motor)
+            let panel = document.getElementById('perfumistaPanel');
+            let iframe = document.getElementById('perfumistaIframe');
 
             if (!panel) {
                 panel = document.createElement('div');
-                panel.id = 'perfumista-panel';
+                panel.id = 'perfumistaPanel';
                 panel.style.cssText = `
-                    display:none;
-                    margin-top:18px;
-                    background: rgba(0,0,0,0.18);
-                    border: 2px solid rgba(212, 175, 55, 0.28);
-                    border-radius: 16px;
-                    padding: 14px;
-                    text-align: left;
+                    width: 100%;
+                    max-width: 980px;
+                    margin: 18px auto 0 auto;
+                    padding: 16px;
+                    border-radius: 18px;
+                    border: 2px solid rgba(212,175,55,0.30);
+                    background: rgba(0,0,0,0.22);
                 `;
 
-                const header = document.createElement('div');
-                header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;';
-                header.innerHTML = '<div style="font-weight:800;color:#f4e5b1;">O Perfumista — resposta dentro do Mapa</div>';
-                const btn = document.createElement('button');
-                btn.textContent = 'Fechar';
-                btn.style.cssText = 'background: rgba(212,175,55,0.18); border: 2px solid rgba(212,175,55,0.35); color:#f4e5b1; padding:8px 12px; border-radius: 10px; font-weight:800; cursor:pointer;';
-                btn.onclick = () => { panel.style.display='none'; };
-                header.appendChild(btn);
-                panel.appendChild(header);
-            // Área do diagnóstico + recomendações (acima do chat/iframe)
-            const diagHolder = document.createElement('div');
-            diagHolder.id = 'perfumistaDiagnosticoBox';
-            diagHolder.style.display = 'none';
-            panel.appendChild(diagHolder);
+                const resultadoBox = document.createElement('div');
+                resultadoBox.id = 'perfumistaResultadoBox';
+                resultadoBox.style.cssText = `
+                    display:block;
+                    margin: 0 0 12px 0;
+                    padding: 16px;
+                    border-radius: 16px;
+                    border: 1px solid rgba(212,175,55,0.28);
+                    background: rgba(255,255,255,0.04);
+                `;
+                resultadoBox.innerHTML = `
+                    <div style="font-weight:900; color:#d4af37; margin-bottom:10px;">📊 RESULTADO DA ANÁLISE</div>
+                    <div style="color:#cfcfcf;">Aguardando análise…</div>
+                `;
 
-            const recsHolder = document.createElement('div');
-            recsHolder.id = 'perfumistaRecsHolder';
-            panel.appendChild(recsHolder);
+                const recsBox = document.createElement('div');
+                recsBox.id = 'perfumistaRecsBox';
+                recsBox.style.cssText = `
+                    display:block;
+                    margin: 0 0 12px 0;
+                    padding: 16px;
+                    border-radius: 16px;
+                    border: 1px solid rgba(212,175,55,0.28);
+                    background: rgba(255,255,255,0.04);
+                `;
+                recsBox.innerHTML = `
+                    <div style="font-weight:900; color:#d4af37; margin-bottom:10px;">🎁 TOP 3 RECOMENDAÇÕES DA I.A.</div>
+                    <div style="color:#cfcfcf;">Envie sua coleção para gerar as sugestões.</div>
+                `;
 
-            // Move o box de recomendações (se existir) para dentro do painel
-            const aiBox = document.getElementById('aiRecsBox');
-            if (aiBox) {
-                aiBox.style.display = 'none'; // só mostra quando chegar recomendação
-                recsHolder.appendChild(aiBox);
-            }
-
+                const iframeBox = document.createElement('div');
+                iframeBox.id = 'perfumistaIframeBox';
+                iframeBox.style.cssText = `
+                    display:block;
+                    margin: 0;
+                    padding: 10px;
+                    border-radius: 16px;
+                    border: 1px solid rgba(212,175,55,0.22);
+                    background: rgba(255,255,255,0.03);
+                `;
 
                 iframe = document.createElement('iframe');
-                iframe.id = 'perfumista-iframe';
-                iframe.src = 'https://vguerise.github.io/operfumista/';
+                iframe.id = 'perfumistaIframe';
+                iframe.src = 'https://vguerise.github.io/operfumista/IFRAME_motor.json.html';
                 iframe.scrolling = 'no';
-                iframe.style.cssText = 'width:100%; border:0; border-radius:14px; background: transparent; min-height: 720px;';
-                panel.appendChild(iframe);
+                iframe.style.cssText = 'width:100%; border:0; border-radius:12px; background: transparent; height: 140px;';
 
-                // tenta anexar abaixo do bloco de botões; se não achar, joga no fim da página
-                const anchor = document.getElementById('perfumista-anchor') || document.querySelector('[data-perfumista-anchor="1"]') || document.querySelector('button[onclick*="abrirPerfumistaNoMapa"]')?.parentElement;
-                (anchor ? anchor.parentElement : document.body).appendChild(panel);
+                iframeBox.appendChild(iframe);
+
+                panel.appendChild(resultadoBox);
+                panel.appendChild(recsBox);
+                panel.appendChild(iframeBox);
+
+                // adiciona no fim da página
+                document.body.appendChild(panel);
             }
 
             if (!iframe) {
-                // se por algum motivo o panel existe mas o iframe não, cria um
                 iframe = document.createElement('iframe');
-                iframe.id = 'perfumista-iframe';
-                iframe.src = 'https://vguerise.github.io/operfumista/';
+                iframe.id = 'perfumistaIframe';
+                iframe.src = 'https://vguerise.github.io/operfumista/IFRAME_motor.json.html';
                 iframe.scrolling = 'no';
-                iframe.style.cssText = 'width:100%; border:0; border-radius:14px; background: transparent; min-height: 720px;';
+                iframe.style.cssText = 'width:100%; border:0; border-radius:12px; background: transparent; height: 140px;';
                 panel.appendChild(iframe);
             }
 
             return { panel, iframe };
         }
 
-function abrirPerfumistaNoMapa() {
+        function _escape(s){
+            return String(s ?? '').replace(/[&<>"']/g, (c)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+        }
+
+        function renderResultadoNoPainel(diag){
+            const box = document.getElementById('perfumistaResultadoBox');
+            if (!box) return;
+
+            const nivel = _escape(diag?.nivel || '');
+            const texto = _escape(diag?.texto || '');
+            const equilibrada = (typeof diag?.equilibrada === 'boolean') ? diag.equilibrada : null;
+
+            const status = (equilibrada === true) ? '✅ COLEÇÃO EQUILIBRADA' : (equilibrada === false ? '⚠️ COLEÇÃO DESBALANCEADA' : '');
+            const statusColor = (equilibrada === true) ? '#9be6a8' : '#f0b5a8';
+
+            // Remove "Família dominante" como pedido
+            const top = Array.isArray(diag?.top_faltantes) ? diag.top_faltantes : [];
+
+            box.innerHTML = `
+                <div style="font-weight:900; color:#d4af37; margin-bottom:10px;">📊 RESULTADO DA ANÁLISE</div>
+                ${nivel ? `<div style="font-size:1.1em; font-weight:900; color:#f4e5b1; margin-bottom:6px;">${nivel}</div>` : ''}
+                ${status ? `<div style="font-weight:900; color:${statusColor}; margin-bottom:8px;">${status}</div>` : ''}
+                ${texto ? `<div style="color:#d6d6d6; line-height:1.45;">${texto}</div>` : `<div style="color:#cfcfcf;">Aguardando análise…</div>`}
+                ${top && top.length ? `
+                  <div style="margin-top:12px; color:#9fd0ff; font-weight:900;">🧭 Prioridades (lacunas)</div>
+                  <div style="color:#cfcfcf; margin-top:6px;">${top.slice(0,3).map(_escape).join(' · ')}</div>
+                ` : ''}
+            `;
+        }
+
+        function renderTop3NoPainel(recs){
+            const box = document.getElementById('perfumistaRecsBox');
+            if (!box) return;
+
+            const arr = Array.isArray(recs) ? recs.slice(0,3) : [];
+            if (!arr.length) {
+                box.innerHTML = `
+                    <div style="font-weight:900; color:#d4af37; margin-bottom:10px;">🎁 TOP 3 RECOMENDAÇÕES DA I.A.</div>
+                    <div style="color:#cfcfcf;">Nenhuma recomendação recebida. Verifique se a API está devolvendo "recomendacoes".</div>
+                `;
+                return;
+            }
+
+            const cards = arr.map((r, i) => {
+                const nome = _escape(r?.nome || r?.name || '');
+                const familia = _escape(r?.familia || r?.family || '');
+                const preco = _escape(r?.faixa_preco || r?.preco || r?.price || '');
+                const pq = _escape(r?.por_que || r?.porque || r?.why || '');
+                const quando = _escape(r?.quando_usar || r?.quando || r?.when || '');
+
+                return `
+                    <div style="background: rgba(255,255,255,0.03); border:1px solid rgba(212,175,55,0.22); border-radius:14px; padding:14px; margin-bottom:12px;">
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <div style="width:34px; height:34px; border-radius:999px; border:1px solid rgba(212,175,55,0.35); display:flex; align-items:center; justify-content:center; font-weight:900; color:#f4e5b1;">${i+1}</div>
+                            <div style="flex:1;">
+                                <div style="font-weight:900; color:#f4e5b1;">${nome}</div>
+                                <div style="color:#bfbfbf; margin-top:2px;">${familia}${preco ? ` · ${preco}` : ''}</div>
+                            </div>
+                        </div>
+                        ${(pq || quando) ? `<div style="margin-top:10px; color:#d6d6d6; line-height:1.45;">
+                            ${pq ? `<div><b>Por quê:</b> ${pq}</div>` : ''}
+                            ${quando ? `<div><b>Quando usar:</b> ${quando}</div>` : ''}
+                        </div>` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            box.innerHTML = `
+                <div style="font-weight:900; color:#d4af37; margin-bottom:10px;">🎁 TOP 3 RECOMENDAÇÕES DA I.A.</div>
+                <div style="color:#bfbfbf; margin-bottom:12px;">Cruzando o que você tem x o que falta na coleção.</div>
+                ${cards}
+            `;
+        }
+
+
             // Gera/atualiza a análise escrita no Mapa (sem botão separado)
             try { analyzeCollection(); } catch(e) {}
 
@@ -1532,51 +1621,6 @@ const diagnostico = (getDiagnosticoForIA() || '').trim();
             box.style.display = 'block';
         }
 
-        function renderTop3RecsInPanel(recs){
-            const box = document.getElementById('perfumistaRecsBox');
-            if (!box) return;
-
-            const arr = Array.isArray(recs) ? recs.slice(0,3) : [];
-            if (!arr.length) {
-                box.innerHTML = '';
-                return;
-            }
-
-            const cards = arr.map((r, i) => {
-                const nome = (r?.nome || r?.name || '').trim();
-                const familia = (r?.familia || r?.family || '').trim();
-                const preco = (r?.faixa_preco || r?.preco || r?.price || '').trim();
-                const porque = (r?.por_que || r?.porque || r?.why || '').trim();
-                const quando = (r?.quando_usar || r?.quando || r?.when || '').trim();
-
-                return `
-                    <div style="background: rgba(255,255,255,0.04); border:1px solid rgba(212,175,55,0.25); padding:14px; border-radius:14px; margin-bottom:12px;">
-                        <div style="display:flex; gap:10px; align-items:center;">
-                            <div style="width:36px; height:36px; border-radius:999px; border:1px solid rgba(212,175,55,0.35); display:flex; align-items:center; justify-content:center; font-weight:900; color:#f4e5b1;">${i+1}</div>
-                            <div style="flex:1;">
-                                <div style="font-weight:900; font-size:1.05em; color:#f4e5b1;">${escapeHtml(nome || '—')}</div>
-                                <div style="color:#bfbfbf; margin-top:2px;">${escapeHtml(familia || '—')}${preco ? ` · ${escapeHtml(preco)}` : ''}</div>
-                            </div>
-                        </div>
-                        ${(porque || quando) ? `<div style="margin-top:10px; color:#d6d6d6; line-height:1.45;">
-                            ${porque ? `<div><b>Por quê:</b> ${escapeHtml(porque)}</div>` : ''}
-                            ${quando ? `<div><b>Quando usar:</b> ${escapeHtml(quando)}</div>` : ''}
-                        </div>` : ''}
-                    </div>
-                `;
-            }).join('');
-
-            box.innerHTML = `
-                <div style="margin:16px 0; padding:16px; border-radius:16px;
-                    border:2px solid rgba(212,175,55,0.35); background: rgba(0,0,0,0.22);">
-                    <div style="font-weight:900; color:#d4af37; margin-bottom:10px;">🎁 TOP 3 RECOMENDAÇÕES DA I.A.</div>
-                    <div style="color:#bfbfbf; margin-bottom:14px;">Cruzando o que você tem x o que falta na coleção.</div>
-                    ${cards}
-                </div>
-            `;
-        }
-
-
         // ============================================
         // Diagnóstico vindo da IA (renderizado no mapa pai)
         // ============================================
@@ -1640,87 +1684,35 @@ const diagnostico = (getDiagnosticoForIA() || '').trim();
 
 
         window.addEventListener('message', (event) => {
-            if (event.origin !== 'https://vguerise.github.io') return;
-
             const data = event.data || {};
 
-            // Resize do iframe (compactar espaço)
+            // Ajuste de altura do iframe (compacto)
             if (data && data.source === 'operfumista' && data.type === 'resize' && data.height) {
                 try {
                     const ifr = document.getElementById('perfumistaIframe');
-                    if (ifr) ifr.style.height = Math.max(200, Number(data.height) || 200) + 'px';
+                    if (ifr) ifr.style.height = Math.max(120, Number(data.height) || 120) + 'px';
                 } catch(e) {}
                 return;
             }
 
-            // ✅ payload premium (diagnóstico + radar + recomendações)
+            // Resposta principal (opção B): JSON para o mapa renderizar
             if (data && data.source === 'operfumista' && data.type === 'analysis' && data.payload) {
+                try { ensurePerfumistaPanel(); } catch(e) {}
+
                 const p = data.payload || {};
+                const diag = p.diagnostico || p.analise || p.diagnostico_colecao || null;
+                const recs = Array.isArray(p.recomendacoes) ? p.recomendacoes : [];
 
-                // guarda famílias (sem gráfico)
-                if (p.familias) {
-                    try { window.__lastFamiliasRadar = p.familias; } catch(e) {}
+                if (diag) {
+                    try { renderResultadoNoPainel(diag); } catch(e) {}
+                } else {
+                    try { renderResultadoNoPainel({ nivel:'', texto:'A API não retornou "diagnostico".', equilibrada:null, top_faltantes:[] }); } catch(e) {}
                 }
 
-                // ✅ 1) RESULTADO DA ANÁLISE primeiro (estilo index(13))
-                try {
-                    const totalPerf = (window.perfumesColecao || []).length || (document.getElementById('listaPerfumes')?.value || '').split(',').filter(Boolean).length || 0;
-                    processarAnaliseIA(p.familias || {}, totalPerf, p.diagnostico || null);
-                } catch(e) {}
-
-                // ✅ 2) Diagnóstico IA (texto)
-                if (p.diagnostico) {
-                    try {
-                        window.__lastAIDiagnostico = p.diagnostico;
-                        renderDiagnosticoIA(p.diagnostico);
-                    } catch(e) {}
-                }
-
-                // ✅ 3) Recomendações (cards)
-                if (p.recomendacoes) {
-                    try { renderAIRecommendations(p.recomendacoes); } catch(e) {}
-                    try { renderTop3RecsInPanel(p.recomendacoes); } catch(e) {}
-                }
-
+                try { renderTop3NoPainel(recs); } catch(e) {}
                 return;
             }
-
-                // Famílias: guarda distribuição (sem gráfico, para performance)
-                if (data && (data.type === 'familias_radar' || data.type === 'familias')) {
-                    try {
-                        const _vals = data.values || data.familias || data.distribuicao || {};
-                        window.__lastFamiliasRadar = _vals;
-                    } catch(e) {}
-                }
-
-
-            if (data.source !== 'operfumista') return;
-
-            // auto-ajuste de altura do iframe (evita scroll duplo)
-            if (data.type === 'height' && data.height) {
-                const iframe = document.getElementById('perfumista-iframe');
-                if (iframe) iframe.style.height = (Number(data.height) + 20) + 'px';
-                return;
-            }
-
-            // 📦 Recomendações: o iframe manda e o Mapa Pai desenha
-            if (data.type === 'recs') {
-                try { renderAIRecommendations(data.recomendacoes || data.recs || data.items || []); } catch(e) {}
-                return;
-            }
-
-            if (data.type === 'loading') {
-                mostrarLoadingPerfumista();
-            }
-
-            if (data.type === 'done' || data.type === 'error') {
-                fecharLoadingPerfumista();
-                if (perfumistaTimeout) clearTimeout(perfumistaTimeout);
-            }
-        });
-
-        // expõe para o onclick do HTML
-        window.abrirPerfumistaNoMapa = abrirPerfumistaNoMapa;
+        });// expõe para o onclick do HTML
         window.fecharPerfumistaNoMapa = fecharPerfumistaNoMapa;
 
 
@@ -2252,7 +2244,6 @@ const gptLink = `https://chatgpt.com/g/g-68f7ee5b09248191b9b56f84210bf9ab-o-perf
             nextPurchase += `
                                     
                    <div style="display:flex; gap:12px; flex-wrap:nowrap; justify-content:center; align-items:center; margin-top: 30px;">
-                        <button onclick="abrirPerfumistaNoMapa()" style="
                             background: linear-gradient(135deg, #d4af37 0%, #f4e5b1 100%);
                             color: #1e1e1e;
                             border: none;
@@ -2321,7 +2312,7 @@ const gptLink = `https://chatgpt.com/g/g-68f7ee5b09248191b9b56f84210bf9ab-o-perf
                         </div>
 
                         <iframe
-                            id="perfumista-iframe"
+                            id="perfumistaIframe"
                             src="https://vguerise.github.io/operfumista/"
                             scrolling="no"
                             style="width:100%; border:0; border-radius: 12px; background:#111; overflow:hidden; min-height:420px;"
@@ -2443,7 +2434,13 @@ const gptLink = `https://chatgpt.com/g/g-68f7ee5b09248191b9b56f84210bf9ab-o-perf
                         <div style="font-weight: 800; color:#d4af37; margin-bottom:6px;">🎯 FAMÍLIAS</div>
                         <div style="color:#fff; font-size:1.35em; font-weight:900;">${familiesRepresented}/9</div>
                     </div>
-                </div>`;
+                </div>
+                <div style="background: rgba(212,175,55,0.12); border: 2px solid rgba(212,175,55,0.35); padding: 14px; border-radius: 14px; margin-bottom: 16px;">
+                    <div style="font-weight:900; color:#d4af37; margin-bottom:8px;">👑 FAMÍLIA DOMINANTE</div>
+                    <div style="color:#fff; font-size:1.3em; font-weight:900;">${dominant.icon} ${dominant.label}</div>
+                    <div style="color:#cfcfcf; margin-top:6px;">${dominantCount} perfumes · ${dominantPercent}% da coleção</div>
+                </div>
+            `;
 
             // Resultado topo (nível + cards)
             const dominantHTML = `
