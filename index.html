@@ -240,6 +240,13 @@
       line-height:1.5;
     }
     .modal-footer{padding:12px 16px;border-top:1px solid rgba(255,255,255,.10);display:flex;justify-content:flex-end;gap:10px}
+
+/* Animações do popup de loading (mantidas do original) */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes slideUp { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
 </style>
 </head>
 
@@ -467,7 +474,7 @@
 
         </div>
 
-        <button class="analyze-btn" onclick="analyzeCollection()">ANALISAR COLEÇÃO</button>
+        <button class="analyze-btn" onclick="analyzeCollection()">MAPEAR COLEÇÃO!</button>
 
         <div id="result" class="result-box" style="display:none;">
           <div class="result-title">📊 RESULTADO DA ANÁLISE</div>
@@ -645,7 +652,6 @@
       }
     })();
 
-);
       const savedColecao = safeGet(LS_KEYS.colecao);
       if(savedColecao){ colecaoEl.value = savedColecao; }
     }
@@ -667,66 +673,119 @@
     // ==============================
     // Painel Perfumista (iframe)
     // ==============================
-    function mostrarLoadingPerfumista(){
-      const existing = document.getElementById("perfumista-loading-overlay");
-      if(existing) return;
+    
+    // ==============================
+    // Popup "Analisando sua coleção..." (mantido do original)
+    // ==============================
+    let perfumistaTimeout = null;
+    let perfumistaProgressTimer = null;
 
-      const overlay = document.createElement("div");
-      overlay.id = "perfumista-loading-overlay";
+    function mostrarLoadingPerfumista(){
+      // evita duplicar
+      if(document.getElementById('loading-overlay')) return;
+
+      const overlay = document.createElement('div');
+      overlay.id = 'loading-overlay';
       overlay.style.cssText = `
         position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.85);
-        display:flex;
-        align-items:center;
-        justify-content:center;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
         z-index: 9999;
-        animation: fadeIn 0.25s ease;
+        animation: fadeIn 0.3s ease;
       `;
 
       overlay.innerHTML = `
         <div style="
-          width:min(520px,92vw);
           background: linear-gradient(135deg, #2d2d2d 0%, #1e1e1e 100%);
           border: 2px solid #d4af37;
-          border-radius: 18px;
-          padding: 26px;
-          box-shadow: 0 20px 60px rgba(212,175,55,0.25);
+          border-radius: 20px;
+          padding: 50px 60px;
+          text-align: center;
+          box-shadow: 0 20px 60px rgba(212, 175, 55, 0.5);
+          animation: slideUp 0.4s ease;
+          width: min(560px, 92vw);
         ">
-          <div style="color:#d4af37;font-weight:900;font-size:1.1em;letter-spacing:1px;text-align:center;">
-            CONSULTANDO O PERFUMISTA
+          <div style="font-size: 4em; margin-bottom: 20px; animation: spin 1.5s linear infinite;">🔄</div>
+
+          <div style="color: #d4af37; font-size: 1.8em; font-weight: 700; margin-bottom: 15px;">
+            Analisando sua coleção...
           </div>
-          <div style="color:#ccc;text-align:center;margin-top:10px;line-height:1.6;">
-            A resposta vai aparecer dentro do iframe.<br/>
-            Não feche a página.
+
+          <div style="color: #ccc; font-size: 1em; margin-bottom: 25px;">
+            Processando dados e identificando padrões
           </div>
-          <div style="margin-top:16px;height:10px;border-radius:999px;overflow:hidden;background: rgba(212,175,55,0.15);">
-            <div style="height:100%;width:40%;background: linear-gradient(90deg,#d4af37,#f4e5b1);animation: perfBar 1.1s infinite ease-in-out;"></div>
+
+          <div style="
+            width: 300px;
+            height: 8px;
+            background: rgba(212, 175, 55, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 0 auto;
+          ">
+            <div id="progress-bar" style="
+              width: 0%;
+              height: 100%;
+              background: linear-gradient(90deg, #d4af37, #f4e5b1);
+              border-radius: 10px;
+              transition: width 0.3s ease;
+            "></div>
+          </div>
+
+          <div style="color:#aaa; font-size:0.95em; margin-top:18px; line-height:1.5;">
+            A resposta (Top 3) vai aparecer dentro do iframe.
           </div>
         </div>
       `;
+
       document.body.appendChild(overlay);
 
-      if(!document.getElementById("perfumista-loading-style")){
-        const style = document.createElement("style");
-        style.id = "perfumista-loading-style";
-        style.innerHTML = `
-          @keyframes perfBar { 0%{transform:translateX(-60%)} 100%{transform:translateX(260%)} }
-          @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-          @keyframes fadeOut { from{opacity:1} to{opacity:0} }
-        `;
-        document.head.appendChild(style);
-      }
+      // anima barra até 90% e espera o iframe finalizar
+      const bar = document.getElementById('progress-bar');
+      let p = 0;
+      if(perfumistaProgressTimer) clearInterval(perfumistaProgressTimer);
+      perfumistaProgressTimer = setInterval(()=>{
+        p = Math.min(90, p + (p < 60 ? 6 : 2));
+        if(bar) bar.style.width = p + '%';
+        if(p >= 90){
+          clearInterval(perfumistaProgressTimer);
+          perfumistaProgressTimer = null;
+        }
+      }, 220);
     }
 
     function fecharLoadingPerfumista(){
-      const overlay = document.getElementById("perfumista-loading-overlay");
+      if(perfumistaTimeout){ clearTimeout(perfumistaTimeout); perfumistaTimeout = null; }
+      if(perfumistaProgressTimer){ clearInterval(perfumistaProgressTimer); perfumistaProgressTimer = null; }
+
+      const overlay = document.getElementById('loading-overlay');
       if(!overlay) return;
-      overlay.style.animation = "fadeOut 0.25s ease";
-      setTimeout(()=>{ try{ overlay.remove(); }catch(e){} }, 250);
+
+      const bar = document.getElementById('progress-bar');
+      if(bar) bar.style.width = '100%';
+
+      overlay.style.animation = 'fadeOut 0.3s ease';
+      setTimeout(()=>{ try{ overlay.remove(); }catch(e){} }, 300);
     }
 
-    let perfumistaTimeout = null;
+    // Fecha o popup quando o iframe avisar que terminou
+    window.addEventListener('message', (ev)=>{
+      const d = ev && ev.data;
+      if(!d || typeof d !== 'object') return;
+      if(d.type === 'IA_DONE' && d.source === 'perfumista_iframe'){
+        fecharLoadingPerfumista();
+      }
+      if(d.type === 'IA_ERROR' && d.source === 'perfumista_iframe'){
+        fecharLoadingPerfumista();
+      }
+    });
+
 
     function abrirPerfumistaNoMapa(){
       const panel = document.getElementById("perfumista-panel");
