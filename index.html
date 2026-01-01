@@ -1351,6 +1351,12 @@ function ensurePerfumistaPanel() {
 
                 panel.appendChild(resultadoBox);
                 panel.appendChild(recsBox);
+
+                const dbg = document.createElement('div');
+                dbg.id='perfumistaDebugBox';
+                dbg.style.cssText='display:none; margin:0 0 12px 0; padding:12px; border-radius:14px; border:1px dashed rgba(212,175,55,0.25); background: rgba(0,0,0,0.18); color:#cfcfcf; font-size:12px; white-space:pre-wrap; overflow:auto; max-height:220px;';
+                panel.appendChild(dbg);
+
                 panel.appendChild(iframeBox);
 
                 // adiciona no fim da página
@@ -1368,6 +1374,28 @@ function ensurePerfumistaPanel() {
 
             return { panel, iframe };
         }
+        function construirPromptParaIA(){
+            try {
+                const perfumes = (window.perfumesSelecionados || []).map(p => String(p||'').trim()).filter(Boolean);
+                const clima = window.climaSelecionado || '';
+                const ambiente = window.ambienteSelecionado || '';
+                const orcamento = window.orcamentoSelecionado || '';
+                const lista = perfumes.join(', ');
+                return [
+                  "Você é o Analista da Coleção Perfeita. Analise a coleção como portfólio e retorne JSON com diagnostico, familias_percentuais e recomendacoes (3).",
+                  "Dados do usuário:",
+                  `Clima: ${clima || 'não informado'}`,
+                  `Ambiente: ${ambiente || 'não informado'}`,
+                  `Orçamento: ${orcamento || 'não informado'}`,
+                  `Coleção: ${lista || '(vazia)'}`,
+                  "Regras: top_faltantes deve refletir as famílias mais fracas. As recomendações devem atacar lacunas e evitar repetir a dominante salvo necessidade.",
+                  "Formato: { diagnostico:{nivel,equilibrada,top_faltantes, texto}, familias_percentuais:{... soma 100}, recomendacoes:[{nome,familia,faixa_preco,por_que,quando_usar}] }"
+                ].join("\n");
+            } catch(e){
+                return "Analise a coleção e retorne JSON com diagnostico, familias_percentuais e recomendacoes.";
+            }
+        }
+
 
         function _escape(s){
             return String(s ?? '').replace(/[&<>"']/g, (c)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
@@ -1381,21 +1409,44 @@ function ensurePerfumistaPanel() {
             const texto = _escape(diag?.texto || '');
             const equilibrada = (typeof diag?.equilibrada === 'boolean') ? diag.equilibrada : null;
 
-            const status = (equilibrada === true) ? '✅ COLEÇÃO EQUILIBRADA' : (equilibrada === false ? '⚠️ COLEÇÃO DESBALANCEADA' : '');
-            const statusColor = (equilibrada === true) ? '#9be6a8' : '#f0b5a8';
+            const titulo = nivel ? `SEU NÍVEL: ${nivel}` : 'RESULTADO DA ANÁLISE';
+            const statusTxt = (equilibrada === true) ? 'COLEÇÃO EQUILIBRADA' : (equilibrada === false ? 'COLEÇÃO BEM DESBALANCEADA' : '');
+            const statusIcon = (equilibrada === true) ? '✅' : (equilibrada === false ? '⚠️' : '📌');
 
-            // Remove "Família dominante" como pedido
-            const top = Array.isArray(diag?.top_faltantes) ? diag.top_faltantes : [];
+            const top = Array.isArray(diag?.top_faltantes) ? diag.top_faltantes.slice(0,3) : [];
 
             box.innerHTML = `
-                <div style="font-weight:900; color:#d4af37; margin-bottom:10px;">📊 RESULTADO DA ANÁLISE</div>
-                ${nivel ? `<div style="font-size:1.1em; font-weight:900; color:#f4e5b1; margin-bottom:6px;">${nivel}</div>` : ''}
-                ${status ? `<div style="font-weight:900; color:${statusColor}; margin-bottom:8px;">${status}</div>` : ''}
-                ${texto ? `<div style="color:#d6d6d6; line-height:1.45;">${texto}</div>` : `<div style="color:#cfcfcf;">Aguardando análise…</div>`}
-                ${top && top.length ? `
-                  <div style="margin-top:12px; color:#9fd0ff; font-weight:900;">🧭 Prioridades (lacunas)</div>
-                  <div style="color:#cfcfcf; margin-top:6px;">${top.slice(0,3).map(_escape).join(' · ')}</div>
-                ` : ''}
+              <div style="font-weight:900; color:#d4af37; margin-bottom:12px;">📊 RESULTADO DA ANÁLISE</div>
+
+              <div style="background: rgba(212,175,55,0.10); border:1px solid rgba(212,175,55,0.25); border-left:6px solid rgba(212,175,55,0.55);
+                          padding:14px; border-radius:14px; margin-bottom:14px;">
+                <div style="font-weight:900; font-size:1.1em; color:#f4e5b1;">${_escape(titulo)}</div>
+                ${texto ? `<div style="margin-top:6px; color:#d8d8d8; line-height:1.45;">${texto}</div>` : `<div style="margin-top:6px; color:#cfcfcf;">Aguardando análise…</div>`}
+              </div>
+
+              ${statusTxt ? `
+                <div style="background: rgba(255,255,255,0.03); border:1px solid rgba(212,175,55,0.20);
+                            padding:14px; border-radius:14px; margin-bottom:12px;">
+                  <div style="font-weight:900; color:#f1d77a;">${statusIcon} ${_escape(statusTxt)}</div>
+                  <div style="margin-top:6px; color:#cfcfcf;">${equilibrada ? 'Boa distribuição entre famílias.' : 'Existem lacunas claras. Priorize as famílias mais fracas.'}</div>
+                </div>
+              ` : ''}
+
+              <div style="background: rgba(255,255,255,0.03); border:1px solid rgba(212,175,55,0.20);
+                          padding:14px; border-radius:14px;">
+                <div style="font-weight:900; color:#9fd0ff; margin-bottom:10px;">🧭 PRIORIDADE PARA PRÓXIMAS COMPRAS</div>
+                ${top.length ? top.map((f,i)=>`
+                  <div style="display:flex; gap:10px; align-items:center; padding:10px; border-radius:12px;
+                              border:1px solid rgba(212,175,55,0.16); background: rgba(0,0,0,0.18); margin-bottom:10px;">
+                    <div style="width:34px; height:34px; border-radius:999px; border:1px solid rgba(212,175,55,0.35);
+                                display:flex; align-items:center; justify-content:center; font-weight:900; color:#f4e5b1;">${i+1}</div>
+                    <div>
+                      <div style="font-weight:900; color:#f4e5b1;">${_escape(f)}</div>
+                      <div style="color:#bfbfbf; margin-top:2px;">Prioridade alta para próximas compras</div>
+                    </div>
+                  </div>
+                `).join('') : `<div style="color:#cfcfcf;">Sem prioridades ainda. Gere a análise com I.A.</div>`}
+              </div>
             `;
         }
 
@@ -1407,7 +1458,7 @@ function ensurePerfumistaPanel() {
             if (!arr.length) {
                 box.innerHTML = `
                     <div style="font-weight:900; color:#d4af37; margin-bottom:10px;">🎁 TOP 3 RECOMENDAÇÕES DA I.A.</div>
-                    <div style="color:#cfcfcf;">Nenhuma recomendação recebida. Verifique se a API está devolvendo "recomendacoes".</div>
+                    <div style="color:#cfcfcf;">Nenhuma recomendação recebida. (A API precisa devolver "recomendacoes": [ ... ])</div>
                 `;
                 return;
             }
@@ -1420,12 +1471,14 @@ function ensurePerfumistaPanel() {
                 const quando = _escape(r?.quando_usar || r?.quando || r?.when || '');
 
                 return `
-                    <div style="background: rgba(255,255,255,0.03); border:1px solid rgba(212,175,55,0.22); border-radius:14px; padding:14px; margin-bottom:12px;">
+                    <div style="background: rgba(255,255,255,0.03); border:1px solid rgba(212,175,55,0.22);
+                                border-radius:14px; padding:14px; margin-bottom:12px;">
                         <div style="display:flex; gap:10px; align-items:center;">
-                            <div style="width:34px; height:34px; border-radius:999px; border:1px solid rgba(212,175,55,0.35); display:flex; align-items:center; justify-content:center; font-weight:900; color:#f4e5b1;">${i+1}</div>
+                            <div style="width:34px; height:34px; border-radius:999px; border:1px solid rgba(212,175,55,0.35);
+                                        display:flex; align-items:center; justify-content:center; font-weight:900; color:#f4e5b1;">${i+1}</div>
                             <div style="flex:1;">
-                                <div style="font-weight:900; color:#f4e5b1;">${nome}</div>
-                                <div style="color:#bfbfbf; margin-top:2px;">${familia}${preco ? ` · ${preco}` : ''}</div>
+                                <div style="font-weight:900; color:#f4e5b1;">${nome || '—'}</div>
+                                <div style="color:#bfbfbf; margin-top:2px;">${familia || '—'}${preco ? ` · ${preco}` : ''}</div>
                             </div>
                         </div>
                         ${(pq || quando) ? `<div style="margin-top:10px; color:#d6d6d6; line-height:1.45;">
@@ -1449,6 +1502,11 @@ function ensurePerfumistaPanel() {
             try { analyzeCollection(); } catch(e) {}
 
             const { panel, iframe } = ensurePerfumistaPanel();
+            // dispara a execução no iframe (motor) com o prompt estruturado
+            try {
+                const prompt = construirPromptParaIA();
+                iframe.contentWindow.postMessage({ source:'mapa', type:'run', prompt }, '*');
+            } catch(e) {}
 
             // Monta um prompt estruturado (baseado no que o usuário selecionou + perfumes)
             const diagnostico = (getDiagnosticoForIA ? (getDiagnosticoForIA() || '') : '').trim();
@@ -1691,6 +1749,19 @@ function fecharPerfumistaNoMapa() {
                 }
 
                 try { renderTop3NoPainel(recs); } catch(e) {}
+
+                try {
+                    const dbg = document.getElementById('perfumistaDebugBox');
+                    if (dbg) {
+                        const missing = (!diag ? 'diagnostico ' : '') + (!recs.length ? 'recomendacoes ' : '');
+                        if (p.raw && missing.trim()) {
+                            dbg.style.display='block';
+                            dbg.textContent = 'DEBUG (payload.raw):\n' + JSON.stringify(p.raw, null, 2);
+                        } else {
+                            dbg.style.display='none';
+                        }
+                    }
+                } catch(e) {}
                 return;
             }
         });// expõe para o onclick do HTML
