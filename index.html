@@ -821,6 +821,7 @@
 
             <!-- Ações para gerar recomendações com I.A. -->
             <div style="margin-top: 14px; display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
+                <button id="btnGerarIA" type="button" onclick="gerarOpcoesComIA()" style="
                     background: linear-gradient(135deg, #d4af37 0%, #f4e5b1 100%);
                     color: #1e1e1e;
                     border: none;
@@ -834,32 +835,12 @@
                     display: inline-flex;
                     align-items: center;
                     gap: 10px;
-                " onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 30px rgba(212, 175, 55, 0.55)';"
+                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 30px rgba(212, 175, 55, 0.50)';"
                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 25px rgba(212, 175, 55, 0.35)';">
                     <span style="font-size: 1.2em;">🤖</span>
                     <span>Gerar opções com I.A.</span>
                 </button>
-
-                <button type="button" onclick="abrirNoChatGPT()" style="
-                    background: rgba(0,0,0,0.25);
-                    color: #f4e5b1;
-                    border: 2px solid rgba(212,175,55,0.35);
-                    padding: 16px 22px;
-                    border-radius: 12px;
-                    font-size: 1.05em;
-                    font-weight: 900;
-                    cursor: pointer;
-                    transition: all 0.25s ease;
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 10px;
-                " onmouseover="this.style.transform='translateY(-2px)'; this.style.borderColor='#d4af37';"
-                   onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='rgba(212,175,55,0.35)';">
-                    <span style="font-size: 1.2em;">↗️</span>
-                    <span>Abrir no ChatGPT</span>
-                </button>
             </div>
-
 
             <div id="perfumeChips" style="margin-top: 12px; display:flex; gap:10px; flex-wrap:wrap;"></div>
 
@@ -1461,55 +1442,55 @@ function ensurePerfumistaPanel() {
                 ${cards}
             `;
         }
-
-
-            // Gera/atualiza a análise escrita no Mapa (sem botão separado)
+        // ✅ AÇÃO PRINCIPAL (Opção B): Mapa prepara o prompt estruturado e manda para o IFRAME (motor),
+        // que consulta a API e devolve JSON para o mapa renderizar.
+        function gerarOpcoesComIA() {
+            // garante que a UI esteja atualizada
             try { analyzeCollection(); } catch(e) {}
 
             const { panel, iframe } = ensurePerfumistaPanel();
 
-const diagnostico = (getDiagnosticoForIA() || '').trim();
+            // Monta um prompt estruturado (baseado no que o usuário selecionou + perfumes)
+            const diagnostico = (getDiagnosticoForIA ? (getDiagnosticoForIA() || '') : '').trim();
+
             if (!diagnostico) {
                 alert('Não achei o diagnóstico completo. Faça a análise primeiro.');
                 return;
             }
 
-            panel.style.display = 'block';
-            panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-            mostrarLoadingPerfumista();
-
-            // safety timeout (se o iframe não avisar, fecha o popup depois)
-            if (perfumistaTimeout) clearTimeout(perfumistaTimeout);
-            perfumistaTimeout = setTimeout(() => {
-                fecharLoadingPerfumista();
-            }, 45000);
-
-            const sendToIframe = () => {
-                try {
-                    iframe.contentWindow.postMessage(
-                        { source: 'mapa', type: 'set_and_run', text: diagnostico },
-                        'https://vguerise.github.io'
-                    );
-                } catch (e) {
-                    // se falhar, pelo menos tira o loading para o usuário não ficar preso
-                    fecharLoadingPerfumista();
-                }
-            };
-
-            // Se já carregou, manda; senão, manda no load
+            // mostra painel e leva a viewport até ele
             try {
-                // alguns browsers permitem postMessage mesmo antes do load, mas garantimos:
-                iframe.addEventListener('load', () => sendToIframe(), { once: true });
-                // tenta mandar já
-                sendToIframe();
-            } catch (e) {
-                fecharLoadingPerfumista();
+                panel.style.display = 'block';
+                panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch(e) {}
+
+            // feedback visual imediato
+            try {
+                const resBox = document.getElementById('perfumistaResultadoBox');
+                if (resBox) resBox.innerHTML = `
+                    <div style="font-weight:900; color:#d4af37; margin-bottom:10px;">📊 RESULTADO DA ANÁLISE</div>
+                    <div style="color:#cfcfcf;">Consultando a I.A…</div>
+                `;
+                const recBox = document.getElementById('perfumistaRecsBox');
+                if (recBox) recBox.innerHTML = `
+                    <div style="font-weight:900; color:#d4af37; margin-bottom:10px;">🎁 TOP 3 RECOMENDAÇÕES DA I.A.</div>
+                    <div style="color:#cfcfcf;">Gerando recomendações…</div>
+                `;
+            } catch(e) {}
+
+            // manda o prompt para o iframe (motor) rodar
+            try {
+                iframe.contentWindow.postMessage(
+                    { source:'mapa', type:'run', prompt: diagnostico, auto: true },
+                    '*'
+                );
+            } catch(e) {
+                alert('Falha ao comunicar com o IFRAME.');
             }
         }
 
-        function fecharPerfumistaNoMapa() {
-            const panel = document.getElementById('perfumista-panel');
+function fecharPerfumistaNoMapa() {
+            const panel = document.getElementById('perfumistaPanel');
             if (panel) panel.style.display = 'none';
             fecharLoadingPerfumista();
         }
