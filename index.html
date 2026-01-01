@@ -451,7 +451,20 @@
             cursor: pointer;
         }
 
-    </style>
+    
+/* 🔦 Flash nas recomendações novas (1s) */
+@keyframes aiFlashGlow {
+  0%   { box-shadow: 0 0 0 rgba(212,175,55,0.0); transform: translateY(0); }
+  25%  { box-shadow: 0 0 26px rgba(212,175,55,0.35); transform: translateY(-2px); }
+  60%  { box-shadow: 0 0 18px rgba(212,175,55,0.22); transform: translateY(-1px); }
+  100% { box-shadow: 0 0 0 rgba(212,175,55,0.0); transform: translateY(0); }
+}
+.ai-reco-flash {
+  animation: aiFlashGlow 1s ease-in-out 1;
+}
+
+</style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -762,49 +775,179 @@
                         }
                     </style>
                 </div>
-                
-                <div class="family-counter">
-                    <div class="counter-item">
-                        <label>🍋 Fresco/Cítrico</label>
-                        <input type="number" id="fresco" min="0" max="20" value="0">
-                    </div>
-                    <div class="counter-item">
-                        <label>🌿 Aromático/Verde</label>
-                        <input type="number" id="aromatico" min="0" max="20" value="0">
-                    </div>
-                    <div class="counter-item">
-                        <label>🍯 Doce/Gourmand</label>
-                        <input type="number" id="doce" min="0" max="20" value="0">
-                    </div>
-                    <div class="counter-item">
-                        <label>🪵 Amadeirado</label>
-                        <input type="number" id="amadeirado" min="0" max="20" value="0">
-                    </div>
-                    <div class="counter-item">
-                        <label>🔥 Especiado/Oriental</label>
-                        <input type="number" id="especiado" min="0" max="20" value="0">
-                    </div>
-                    <div class="counter-item">
-                        <label>🌊 Aquático</label>
-                        <input type="number" id="aquatico" min="0" max="20" value="0">
-                    </div>
-                    <div class="counter-item">
-                        <label>🧼 Talco/Fougère</label>
-                        <input type="number" id="talco" min="0" max="20" value="0">
-                    </div>
-                    <div class="counter-item">
-                        <label>🌸 Floral</label>
-                        <input type="number" id="floral" min="0" max="20" value="0">
-                    </div>
-                    <div class="counter-item">
-                        <label>🍓 Frutas</label>
-                        <input type="number" id="frutas" min="0" max="20" value="0">
-                    </div>
+
+                <!-- Coleção do usuário (lista com adicionar/remover) -->
+        <div id="colecao-box" style="margin-top: 26px;">
+            <div style="font-weight: 800; color: #d4af37; font-size: 1.15em; margin-bottom: 10px;">
+                🧴 Sua coleção (adicione seus perfumes)
+            </div>
+
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                <input id="perfumeInput" type="text" placeholder="Digite um perfume e clique em Adicionar" style="
+                    flex: 1 1 320px;
+                    padding: 14px 14px;
+                    border-radius: 10px;
+                    border: 1px solid rgba(212,175,55,0.35);
+                    background: rgba(0,0,0,0.45);
+                    color: #fff;
+                    outline: none;
+                    font-size: 1.02em;
+                ">
+                <button id="btnAddPerfume" type="button" onclick="addPerfume()" style="
+                    padding: 14px 18px;
+                    border-radius: 10px;
+                    border: 2px solid rgba(212,175,55,0.5);
+                    background: rgba(212,175,55,0.18);
+                    color: #f4e5b1;
+                    font-weight: 800;
+                    cursor: pointer;
+                ">Adicionar</button>
+
+                <button id="btnVerLista" type="button" onclick="openListaPopup()" style="
+                    padding: 14px 18px;
+                    border-radius: 10px;
+                    border: 2px solid rgba(212,175,55,0.35);
+                    background: rgba(0,0,0,0.25);
+                    color: #f4e5b1;
+                    font-weight: 800;
+                    cursor: pointer;
+                ">Ver lista completa</button>
+            </div>
+
+            <!-- Ações para gerar recomendações com I.A. -->
+            <div style="margin-top: 14px; display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
+                <button type="button" onclick="abrirPerfumistaNoMapa()" style="
+                    background: linear-gradient(135deg, #d4af37 0%, #f4e5b1 100%);
+                    color: #1e1e1e;
+                    border: none;
+                    padding: 16px 22px;
+                    border-radius: 12px;
+                    font-size: 1.05em;
+                    font-weight: 900;
+                    cursor: pointer;
+                    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.35);
+                    transition: all 0.25s ease;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 10px;
+                " onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 30px rgba(212, 175, 55, 0.55)';"
+                   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 25px rgba(212, 175, 55, 0.35)';">
+                    <span style="font-size: 1.2em;">🤖</span>
+                    <span>Gerar opções com I.A.</span>
+                </button>
+
+                <button type="button" onclick="abrirNoChatGPT()" style="
+                    background: rgba(0,0,0,0.25);
+                    color: #f4e5b1;
+                    border: 2px solid rgba(212,175,55,0.35);
+                    padding: 16px 22px;
+                    border-radius: 12px;
+                    font-size: 1.05em;
+                    font-weight: 900;
+                    cursor: pointer;
+                    transition: all 0.25s ease;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 10px;
+                " onmouseover="this.style.transform='translateY(-2px)'; this.style.borderColor='#d4af37';"
+                   onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='rgba(212,175,55,0.35)';">
+                    <span style="font-size: 1.2em;">↗️</span>
+                    <span>Abrir no ChatGPT</span>
+                </button>
+            </div>
+
+
+            <div id="perfumeChips" style="margin-top: 12px; display:flex; gap:10px; flex-wrap:wrap;"></div>
+
+            <div style="margin-top: 10px; color: #aaa; font-size: 0.95em; line-height: 1.4;">
+                Dica: escreva o nome do perfume (ex.: “Bleu de Chanel EDT”). Você pode remover depois.
+            </div>
+        </div>
+
+        <!-- Popup da lista completa -->
+        <div id="listaPopup" style="
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.65);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 18px;
+        ">
+            <div style="
+                width: min(720px, 96vw);
+                background: rgba(20,20,20,0.92);
+                border: 2px solid rgba(212,175,55,0.45);
+                border-radius: 16px;
+                box-shadow: 0 0 40px rgba(0,0,0,0.6);
+                padding: 18px 18px 12px 18px;
+            ">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                    <div style="color:#d4af37; font-weight:900; font-size:1.15em;">Sua lista completa (A–Z)</div>
+                    <button type="button" onclick="closeListaPopup()" style="
+                        padding: 10px 14px;
+                        border-radius: 10px;
+                        border: 2px solid rgba(212,175,55,0.35);
+                        background: rgba(0,0,0,0.25);
+                        color: #f4e5b1;
+                        font-weight: 800;
+                        cursor: pointer;
+                    ">Fechar</button>
                 </div>
 
-                <button class="analyze-btn" onclick="analyzeCollection()">ANALISAR COLEÇÃO</button>
+                <div id="listaPopupBody" style="
+                    margin-top: 12px;
+                    max-height: 55vh;
+                    overflow: auto;
+                    padding-right: 6px;
+                "></div>
+            </div>
+        </div>
 
-                <div id="result" class="result-box" style="display: none;">
+        <!-- Radar (spider) das famílias -->
+        <div id="radarBox" style="margin-top: 26px; display:none;">
+            <div style="font-weight: 800; color: #d4af37; font-size: 1.15em; margin-bottom: 10px;">
+                📈 Distribuição por famílias (radar)
+            </div>
+            <div style="
+                background: rgba(0,0,0,0.35);
+                border: 1px solid rgba(212,175,55,0.25);
+                border-radius: 14px;
+                padding: 14px;
+            ">
+                <canvas id="radarFamilias" height="260"></canvas>
+                <div style="margin-top:10px; color:#999; font-size:0.92em; line-height:1.35;">
+                    *Este gráfico aparece quando a IA (iframe) devolver a análise de famílias.
+                </div>
+            </div>
+        </div>
+
+        <!-- 📦 Recomendações da IA (renderizadas no Mapa Pai) -->
+        <div id="aiRecsBox" style="margin-top: 22px; display:none;">
+            <div style="
+                background: rgba(0,0,0,0.32);
+                border: 1px solid rgba(212,175,55,0.30);
+                border-radius: 16px;
+                padding: 18px 16px;
+                box-shadow: 0 0 22px rgba(212,175,55,0.10);
+            ">
+                <div style="font-weight: 900; color: #d4af37; font-size: 1.25em; letter-spacing: 0.5px; text-align:center;">
+                    🎁 <span id="aiRecsTitle">3 RECOMENDAÇÕES PARA EQUILIBRAR SUA COLEÇÃO</span>
+                </div>
+                <div style="margin-top: 6px; color:#bfbfbf; text-align:center; font-size: 0.98em; line-height: 1.35;">
+                    Baseado na sua coleção, clima e lacunas identificadas
+                </div>
+
+                <div id="aiRecsCards" style="margin-top: 16px; display:flex; flex-direction:column; gap: 14px;"></div>
+
+                <div style="margin-top: 14px; color:#8f8f8f; font-size:0.92em; line-height:1.35; text-align:center;">
+                    💡 Estas sugestões vieram da I.A. (O Perfumista) e mudam conforme sua coleção.
+                </div>
+            </div>
+        </div>
+
+        <div id="result" class="result-box" style="display: none;">
                     <div class="result-title">📊 RESULTADO DA ANÁLISE</div>
                     <div id="dominant-family" class="result-content"></div>
                     <div id="balance-advice" class="result-advice"></div>
@@ -863,25 +1006,45 @@
         });
 
         // Analisar coleção com loading
+
         function analyzeCollection() {
-            const families = {
-                'fresco': { name: '🍋 Fresco/Cítrico', value: parseInt(document.getElementById('fresco').value) || 0 },
-                'aromatico': { name: '🌿 Aromático/Verde', value: parseInt(document.getElementById('aromatico').value) || 0 },
-                'doce': { name: '🍯 Doce/Gourmand', value: parseInt(document.getElementById('doce').value) || 0 },
-                'amadeirado': { name: '🪵 Amadeirado', value: parseInt(document.getElementById('amadeirado').value) || 0 },
-                'especiado': { name: '🔥 Especiado/Oriental', value: parseInt(document.getElementById('especiado').value) || 0 },
-                'aquatico': { name: '🌊 Aquático', value: parseInt(document.getElementById('aquatico').value) || 0 },
-                'talco': { name: '🧼 Talco/Fougère', value: parseInt(document.getElementById('talco').value) || 0 },
-                'floral': { name: '🌸 Floral', value: parseInt(document.getElementById('floral').value) || 0 },
-                'frutas': { name: '🍓 Frutas', value: parseInt(document.getElementById('frutas').value) || 0 }
-            };
+            // A análise detalhada de famílias agora é feita pela I.A. (no iframe).
+            // Aqui só validamos e montamos o "diagnóstico base" (clima/orçamento/ambiente + lista de perfumes).
+            const lista = (perfumesColecao || []).map(p => String(p || '').trim()).filter(Boolean);
 
-            const total = Object.values(families).reduce((sum, f) => sum + f.value, 0);
-
-            if (total === 0) {
-                alert('Adicione pelo menos 1 perfume para analisar');
-                return;
+            if (lista.length === 0) {
+                alert('Adicione pelo menos 1 perfume na sua coleção para continuar.');
+                return false;
             }
+
+            const climaRegiao = document.getElementById('clima')?.value || '';
+            const orcamento = document.getElementById('orcamento')?.value || '';
+            const ambiente = document.getElementById('ambiente')?.value || '';
+
+            const linhas = [];
+            linhas.push('📌 CONTEXTO DO USUÁRIO');
+            if (climaRegiao) linhas.push(`• Clima/Região: ${climaRegiao}`);
+            if (orcamento) linhas.push(`• Orçamento: ${orcamento}`);
+            if (ambiente) linhas.push(`• Ambiente de trabalho: ${ambiente}`);
+            linhas.push('');
+            linhas.push('🧴 COLEÇÃO INFORMADA:');
+            linhas.push(lista.join(', '));
+            linhas.push('');
+            linhas.push('Observação: a distribuição por famílias e as recomendações serão calculadas pela I.A.');
+
+            const texto = linhas.join('
+');
+
+            // guarda para o iframe e para refresh
+            localStorage.setItem('diagnostico_completo', texto);
+
+            // Atualiza uma área de texto (se existir)
+            const out = document.getElementById('analiseTexto');
+            if (out) out.textContent = texto;
+
+            return true;
+        }
+
 
             // MOSTRAR POPUP DE LOADING
             mostrarLoading();
@@ -1059,6 +1222,9 @@
         let perfumistaTimeout = null;
 
         function abrirPerfumistaNoMapa() {
+            // Gera/atualiza a análise escrita no Mapa (sem botão separado)
+            try { analyzeCollection(); } catch(e) {}
+
             const panel = document.getElementById('perfumista-panel');
             const iframe = document.getElementById('perfumista-iframe');
 
@@ -1067,7 +1233,7 @@
                 return;
             }
 
-            const diagnostico = (localStorage.getItem('diagnostico_completo') || '').trim();
+            const diagnostico = (getDiagnosticoForIA() || '').trim();
             if (!diagnostico) {
                 alert('Não achei o diagnóstico completo. Faça a análise primeiro.');
                 return;
@@ -1114,16 +1280,134 @@
         }
 
         // Recebe status do iframe (Perfumista)
+        
+        // 🧠 Renderiza as recomendações da IA no layout premium (Mapa Pai)
+        function renderAIRecommendations(recomendacoes) {
+            const box = document.getElementById('aiRecsBox');
+            const cards = document.getElementById('aiRecsCards');
+            if (!box || !cards) return;
+
+            const list = Array.isArray(recomendacoes) ? recomendacoes : [];
+
+            if (!list.length) {
+                box.style.display = 'none';
+                cards.innerHTML = '';
+                return;
+            }
+
+            // helper: pega campo por nomes comuns
+            const pick = (obj, keys, fallback = '') => {
+                for (const k of keys) {
+                    if (obj && typeof obj === 'object' && obj[k] != null && String(obj[k]).trim() !== '') return String(obj[k]).trim();
+                }
+                return fallback;
+            };
+
+            // helper: emoji/família
+            const emojiForFamily = (fam) => {
+                const f = (fam || '').toLowerCase();
+                if (f.includes('citr') || f.includes('fresc')) return '🍋';
+                if (f.includes('arom') || f.includes('verde') || f.includes('herb')) return '🌿';
+                if (f.includes('doce') || f.includes('gour') || f.includes('sweet')) return '🍯';
+                if (f.includes('amad') || f.includes('wood')) return '🪵';
+                if (f.includes('espec') || f.includes('orient') || f.includes('spice')) return '🔥';
+                if (f.includes('aqua') || f.includes('mar') || f.includes('ocean')) return '🌊';
+                if (f.includes('tal') || f.includes('pó') || f.includes('powd') || f.includes('foug')) return '🧼';
+                if (f.includes('flor')) return '🌸';
+                if (f.includes('frut') || f.includes('fruit')) return '🍓';
+                return '✨';
+            };
+
+            const safe = (s) => (s || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+            cards.innerHTML = list.slice(0, 3).map((item, idx) => {
+                // aceita string ou objeto
+                const obj = (item && typeof item === 'object') ? item : { titulo: String(item ?? '').trim() };
+
+                const nome = pick(obj, ['nome','title','titulo','name'], `Sugestão ${idx+1}`);
+                const familia = pick(obj, ['familia','family','categoria','tipo'], '');
+                const preco = pick(obj, ['preco','faixa_preco','faixa','price','price_range'], '');
+                const resumo = pick(obj, ['resumo','descricao','descrição','tagline','explicacao','explicação','porque','porque_escolhi','porque_escolheu'], '');
+
+                const icon = pick(obj, ['icon','emoji'], '') || emojiForFamily(familia);
+
+                const linhaMeta = [familia, preco].filter(Boolean).join(' • ');
+
+                return `
+                    <div class="ai-reco-card ai-reco-flash" style="
+                        background: rgba(0,0,0,0.28);
+                        border: 1px solid rgba(212,175,55,0.22);
+                        border-radius: 14px;
+                        padding: 14px 14px;
+                        position: relative;
+                        overflow: hidden;
+                    ">
+                        <div style="display:flex; align-items:flex-start; gap: 12px;">
+                            <div style="
+                                width: 42px; height: 42px; min-width:42px;
+                                border-radius: 999px;
+                                background: rgba(212,175,55,0.18);
+                                border: 2px solid rgba(212,175,55,0.75);
+                                display:flex; align-items:center; justify-content:center;
+                                color:#d4af37; font-weight: 900;
+                                font-size: 1.05em;
+                            ">${idx+1}</div>
+
+                            <div style="flex:1;">
+                                <div style="color:#d4af37; font-weight: 900; font-size: 1.18em; line-height: 1.25;">
+                                    ${safe(nome)}
+                                </div>
+
+                                ${linhaMeta ? `
+                                <div style="margin-top: 8px; color:#9fd0ff; font-weight: 700;">
+                                    ${safe(icon)} <span style="color:#9fd0ff;">${safe(linhaMeta)}</span>
+                                </div>` : ''}
+
+                                ${resumo ? `
+                                <div style="margin-top: 8px; color:#d6d6d6; font-size: 1.02em; line-height: 1.35;">
+                                    ${safe(resumo)}
+                                </div>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // re-dispara a animação sempre que chegar coisa nova
+            requestAnimationFrame(() => {
+                document.querySelectorAll('.ai-reco-card').forEach((el) => {
+                    el.classList.remove('ai-reco-flash');
+                    void el.offsetWidth; // force reflow
+                    el.classList.add('ai-reco-flash');
+                });
+            });
+
+            box.style.display = 'block';
+        }
+
+
         window.addEventListener('message', (event) => {
             if (event.origin !== 'https://vguerise.github.io') return;
 
             const data = event.data || {};
+
+                // Radar: se o iframe mandar distribuição de famílias
+                if (data && (data.type === 'familias_radar' || data.type === 'familias')) {
+                    try { renderRadar(data.values || data.familias || data.distribuicao || {}); } catch(e) {}
+                }
+
             if (data.source !== 'operfumista') return;
 
             // auto-ajuste de altura do iframe (evita scroll duplo)
             if (data.type === 'height' && data.height) {
                 const iframe = document.getElementById('perfumista-iframe');
                 if (iframe) iframe.style.height = (Number(data.height) + 20) + 'px';
+                return;
+            }
+
+            // 📦 Recomendações: o iframe manda e o Mapa Pai desenha
+            if (data.type === 'recs') {
+                try { renderAIRecommendations(data.recomendacoes || data.recs || data.items || []); } catch(e) {}
                 return;
             }
 
@@ -1258,26 +1542,7 @@
                             </div>
                         </div>
                     ` : ''}
-                    
-                    <div style="
-                        background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
-                        border: 2px solid rgba(212, 175, 55, 0.4);
-                        border-radius: 8px;
-                        padding: 12px;
-                    ">
-                        <div style="font-size: 0.85em; color: #d4af37; margin-bottom: 6px; font-weight: 600;">📊 TOTAL</div>
-                        <div style="color: #fff; font-size: 1.3em; font-weight: 700;">${total} perfumes</div>
-                    </div>
-                    
-                    <div style="
-                        background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
-                        border: 2px solid rgba(212, 175, 55, 0.4);
-                        border-radius: 8px;
-                        padding: 12px;
-                    ">
-                        <div style="font-size: 0.85em; color: #d4af37; margin-bottom: 6px; font-weight: 600;">🎯 FAMÍLIAS</div>
-                        <div style="color: #fff; font-size: 1.3em; font-weight: 700;">${familiesRepresented}/9</div>
-                    </div>
+
                     
                     <div style="
                         background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1));
@@ -1682,256 +1947,9 @@
             // SISTEMA DE RECOMENDAÇÃO DE 3 PERFUMES ESPECÍFICOS
             if (missing.length > 0 || weak.length > 0) {
                 nextPurchase += `<br><br><div style="background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.05)); padding: 20px; border-radius: 10px; border: 2px solid #d4af37;">`;
-                nextPurchase += `<div style="font-size: 1.2em; color: #d4af37; font-weight: 600; margin-bottom: 15px; text-align: center;">🎁 3 RECOMENDAÇÕES PARA EQUILIBRAR SUA COLEÇÃO</div>`;
-                nextPurchase += `<div style="color: #aaa; text-align: center; margin-bottom: 20px; font-size: 0.9em;">Baseado no seu clima, orçamento e lacunas identificadas</div>`;
-                
-                // Base de dados de perfumes por família e faixa de preço
-                const perfumeDatabase = {
-                    fresco: {
-                        economico: [
-                            { nome: "Água de Cheiro Acqua Fresca", preco: "80-120", desc: "Nacional fresco cítrico para calor intenso" },
-                            { nome: "Eudora Soul Fresh", preco: "100-150", desc: "Nacional aquático clean, dia a dia" },
-                            { nome: "Lattitude Inspire (inspirado Invictus)", preco: "150-250", desc: "Inspirado fresco marinho, ótima performance" },
-                            { nome: "Cheiro de Banho Brisas do Atlântico", preco: "120-180", desc: "Nacional aquático fresco, alta fixação" }
-                        ],
-                        intermediario: [
-                            { nome: "Versace Pour Homme", preco: "280-380", desc: "Cítrico elegante com notas aquáticas" },
-                            { nome: "Dolce & Gabbana Light Blue", preco: "350-480", desc: "Cítrico sofisticado, muito versátil" },
-                            { nome: "Acqua di Giò Profumo", preco: "400-550", desc: "Aquático denso, funciona ano todo" },
-                            { nome: "Prada Luna Rossa Ocean", preco: "380-520", desc: "Aquático aromático moderno" }
-                        ],
-                        premium: [
-                            { nome: "Creed Aventus Cologne", preco: "1600-2200", desc: "Nicho fresco premium com performance excepcional" },
-                            { nome: "Tom Ford Neroli Portofino", preco: "1800-2400", desc: "Nicho cítrico luxuoso, assinatura de verão" },
-                            { nome: "Parfums de Marly Percival", preco: "1500-2000", desc: "Nicho fresco amadeirado de alta qualidade" },
-                            { nome: "Creed Silver Mountain Water", preco: "1600-2100", desc: "Nicho aromático verde premium" }
-                        ]
-                    },
-                    aromatico: {
-                        economico: [
-                            { nome: "Natura Homem Essence", preco: "120-180", desc: "Nacional aromático discreto para trabalho" },
-                            { nome: "O Boticário Malbec Bleu", preco: "150-220", desc: "Nacional aromático elegante, profissional" },
-                            { nome: "Lattitude Route (inspirado Sauvage)", preco: "180-280", desc: "Inspirado aromático pimenta, versátil" },
-                            { nome: "Paris Elysees La Vie Est Belle Homme", preco: "100-150", desc: "Nacional aromático limpo para dia a dia" }
-                        ],
-                        intermediario: [
-                            { nome: "Dior Sauvage EDT", preco: "380-520", desc: "Aromático pimenta, extremamente versátil" },
-                            { nome: "Bleu de Chanel EDT", preco: "420-580", desc: "Aromático cítrico sofisticado" },
-                            { nome: "Prada L'Homme", preco: "350-480", desc: "Aromático íris clean para trabalho" },
-                            { nome: "Versace Dylan Blue", preco: "300-420", desc: "Aromático aquático moderno" }
-                        ],
-                        premium: [
-                            { nome: "Tom Ford Grey Vetiver", preco: "1600-2200", desc: "Nicho aromático elegante para trabalho formal" },
-                            { nome: "Hermès Terre d'Hermès", preco: "1500-2000", desc: "Nicho aromático cítrico atemporal" },
-                            { nome: "Creed Green Irish Tweed", preco: "1700-2300", desc: "Nicho aromático verde clássico" },
-                            { nome: "Tom Ford Vert Bohème", preco: "2200-2800", desc: "Nicho aromático verde premium" }
-                        ]
-                    },
-                    doce: {
-                        economico: [
-                            { nome: "O Boticário Malbec", preco: "120-180", desc: "Nacional doce amadeirado para noite" },
-                            { nome: "Ferrari Black", preco: "150-220", desc: "Nacional doce especiado intenso" },
-                            { nome: "Mahogany Leather Red (inspirado 1 Million)", preco: "180-280", desc: "Inspirado doce especiado noturno" },
-                            { nome: "Afnan 9PM", preco: "200-320", desc: "Árabe doce para noites frias, alta projeção" }
-                        ],
-                        intermediario: [
-                            { nome: "Paco Rabanne 1 Million", preco: "350-480", desc: "Doce especiado para noite" },
-                            { nome: "Viktor & Rolf Spicebomb", preco: "400-550", desc: "Doce especiado intenso para frio" },
-                            { nome: "Yves Saint Laurent La Nuit de L'Homme", preco: "380-520", desc: "Doce cardamomo elegante" },
-                            { nome: "Jean Paul Gaultier Le Male Le Parfum", preco: "420-580", desc: "Doce oriental denso" }
-                        ],
-                        premium: [
-                            { nome: "Initio Oud for Greatness", preco: "1800-2400", desc: "Nicho doce oud poderoso, presença máxima" },
-                            { nome: "Parfums de Marly Layton", preco: "1600-2200", desc: "Nicho doce especiado de luxo" },
-                            { nome: "Xerjoff Naxos", preco: "1700-2300", desc: "Nicho doce tabaco mel premium" },
-                            { nome: "Tom Ford Tobacco Vanille", preco: "1800-2500", desc: "Nicho especiado tabaco baunilha icônico" }
-                        ]
-                    },
-                    amadeirado: {
-                        economico: [
-                            { nome: "Natura Kaiak Tradicional", preco: "80-130", desc: "Nacional amadeirado clássico versátil" },
-                            { nome: "O Boticário Coffee Man", preco: "120-180", desc: "Nacional amadeirado café elegante" },
-                            { nome: "Lattitude Legend (inspirado Montblanc Legend)", preco: "180-280", desc: "Inspirado amadeirado discreto profissional" },
-                            { nome: "Club de Nuit Intense Man", preco: "250-350", desc: "Árabe amadeirado frutal (tipo Aventus)" }
-                        ],
-                        intermediario: [
-                            { nome: "Bleu de Chanel Parfum", preco: "550-750", desc: "Amadeirado denso, assinatura premium" },
-                            { nome: "Givenchy Gentleman EDP", preco: "400-550", desc: "Amadeirado íris couro elegante" },
-                            { nome: "Dior Homme Intense", preco: "450-600", desc: "Amadeirado íris sofisticado" },
-                            { nome: "Prada L'Homme Intense", preco: "380-520", desc: "Amadeirado âmbar discreto" }
-                        ],
-                        premium: [
-                            { nome: "Creed Aventus", preco: "1800-2500", desc: "Nicho amadeirado frutal icônico" },
-                            { nome: "Tom Ford Oud Wood", preco: "1800-2400", desc: "Nicho amadeirado oud acessível e elegante" },
-                            { nome: "Parfums de Marly Herod", preco: "1600-2200", desc: "Nicho amadeirado tabaco canela premium" },
-                            { nome: "Roja Dove Elysium", preco: "2200-3000", desc: "Nicho amadeirado cítrico de luxo absoluto" }
-                        ]
-                    },
-                    especiado: {
-                        economico: [
-                            { nome: "Jequiti Make B. Boticollection", preco: "100-150", desc: "Nacional especiado doce para noite" },
-                            { nome: "Eudora Glamour Secrets Black", preco: "120-180", desc: "Nacional especiado intenso noturno" },
-                            { nome: "Rasasi La Yuqawam", preco: "200-320", desc: "Árabe especiado tabaco para frio extremo" },
-                            { nome: "Armaf Club de Nuit Intense", preco: "180-280", desc: "Árabe especiado amadeirado potente" }
-                        ],
-                        intermediario: [
-                            { nome: "Armani Code Profumo", preco: "400-550", desc: "Especiado doce para noites frias" },
-                            { nome: "Dior Homme Parfum", preco: "500-700", desc: "Especiado íris couro denso" },
-                            { nome: "Azzaro Wanted by Night", preco: "350-480", desc: "Especiado canela intenso" },
-                            { nome: "Giorgio Armani Stronger With You Intensely", preco: "380-520", desc: "Especiado doce moderno" }
-                        ],
-                        premium: [
-                            { nome: "Initio Side Effect", preco: "1800-2400", desc: "Nicho especiado tabaco rum premium" },
-                            { nome: "Parfums de Marly Oajan", preco: "1700-2300", desc: "Nicho especiado canela mel de luxo" },
-                            { nome: "Amouage Interlude Man", preco: "1600-2200", desc: "Nicho especiado incenso complexo" },
-                            { nome: "Roja Dove Enigma", preco: "2500-3500", desc: "Nicho especiado oriental absoluto" }
-                        ]
-                    },
-                    aquatico: {
-                        economico: [
-                            { nome: "Natura Homem Verano", preco: "100-150", desc: "Nacional aquático para calor intenso" },
-                            { nome: "Jequiti Oceano Atlantis", preco: "80-130", desc: "Nacional aquático fresco praia" },
-                            { nome: "Paris Elysees Vodka Man", preco: "100-150", desc: "Nacional aquático clean para verão" },
-                            { nome: "Davidoff Cool Water", preco: "180-280", desc: "Aquático clássico para calor" }
-                        ],
-                        intermediario: [
-                            { nome: "Acqua di Giò Profondo", preco: "400-550", desc: "Aquático marinho moderno" },
-                            { nome: "Chanel Allure Homme Sport Eau Extrême", preco: "480-650", desc: "Aquático fresco esportivo premium" },
-                            { nome: "Issey Miyake L'Eau d'Issey Pour Homme", preco: "350-480", desc: "Aquático yuzu elegante" },
-                            { nome: "Bvlgari Aqva Pour Homme", preco: "380-520", desc: "Aquático marinho sofisticado" }
-                        ],
-                        premium: [
-                            { nome: "Creed Virgin Island Water", preco: "1700-2300", desc: "Nicho aquático tropical premium" },
-                            { nome: "Parfums de Marly Sedley", preco: "1600-2200", desc: "Nicho aquático bergamota elegante" },
-                            { nome: "Acqua di Parma Blu Mediterraneo", preco: "1500-2000", desc: "Nicho aquático italiano luxuoso" },
-                            { nome: "Creed Millésime Impérial", preco: "1800-2400", desc: "Nicho aquático frutal icônico" }
-                        ]
-                    }
-                };
+                            // (removido) sugestões fixas da base interna
 
-                // Determinar faixa de orçamento baseado na seleção
-                let faixaOrcamento = 'intermediario'; // Padrão
-                
-                if (orcamento === 'ate-350') {
-                    faixaOrcamento = 'economico';
-                } else if (orcamento === '350-1500') {
-                    faixaOrcamento = 'intermediario';
-                } else if (orcamento === '1500-2500' || orcamento === 'sem-limite') {
-                    faixaOrcamento = 'premium';
-                }
-
-                // Priorizar famílias baseado em contexto
-                let prioridades = [...missing, ...weak];
-                
-                // Ajustar prioridades baseado em clima
-                if (climaRegiao === 'quente') {
-                    prioridades = prioridades.sort((a, b) => {
-                        const ordemCalor = ['fresco', 'aquatico', 'aromatico', 'amadeirado', 'doce', 'especiado'];
-                        return ordemCalor.indexOf(a.key) - ordemCalor.indexOf(b.key);
-                    });
-                } else if (climaRegiao === 'frio') {
-                    prioridades = prioridades.sort((a, b) => {
-                        const ordemFrio = ['especiado', 'doce', 'amadeirado', 'aromatico', 'fresco', 'aquatico'];
-                        return ordemFrio.indexOf(a.key) - ordemFrio.indexOf(b.key);
-                    });
-                }
-
-                // Ajustar prioridades baseado em ambiente de trabalho
-                if ((ambiente === 'fechado' || ambiente === 'ambos') && prioridades.some(p => p.key === 'aromatico')) {
-                    prioridades = prioridades.sort((a, b) => {
-                        if (a.key === 'aromatico') return -1;
-                        if (b.key === 'aromatico') return 1;
-                        return 0;
-                    });
-                }
-
-                // Gerar 3 recomendações
-                let recomendacoes = [];
-                let familiasUsadas = new Set();
-
-                for (let i = 0; i < Math.min(3, prioridades.length); i++) {
-                    const familia = prioridades[i];
-                    if (perfumeDatabase[familia.key] && !familiasUsadas.has(familia.key)) {
-                        const opcoes = perfumeDatabase[familia.key][faixaOrcamento];
-                        const perfume = opcoes[Math.floor(Math.random() * opcoes.length)];
-                        recomendacoes.push({
-                            familia: familia.name,
-                            ...perfume,
-                            prioridade: i + 1
-                        });
-                        familiasUsadas.add(familia.key);
-                    }
-                }
-
-                // Exibir recomendações
-                recomendacoes.forEach((rec, index) => {
-                    let numeroBG = index === 0 ? '#d4af37' : index === 1 ? '#c4a037' : '#b49037';
-                    nextPurchase += `
-                        <div style="background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid ${numeroBG};">
-                            <div style="display: flex; align-items: start; gap: 15px;">
-                                <div style="background: ${numeroBG}; color: #000; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.2em; flex-shrink: 0;">
-                                    ${rec.prioridade}
-                                </div>
-                                <div style="flex: 1;">
-                                    <div style="color: #d4af37; font-size: 1.1em; font-weight: 600; margin-bottom: 5px;">
-                                        ${rec.nome}
-                                    </div>
-                                    <div style="color: #9bc4ff; font-size: 0.9em; margin-bottom: 5px;">
-                                        ${rec.familia} • R$ ${rec.preco}
-                                    </div>
-                                    <div style="color: #ccc; font-size: 0.9em; line-height: 1.5;">
-                                        ${rec.desc}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                });
-
-                nextPurchase += `<div style="color: #888; font-size: 0.85em; margin-top: 15px; text-align: center; font-style: italic;">
-                    💡 Estas recomendações foram calculadas baseadas no seu clima, orçamento e famílias que faltam na sua coleção.
-                </div>`;
-                
-                nextPurchase += `</div>`;
-            }
-
-            // BOTÃO PARA O AGENTE GPT COM CONTEXTO
-            const missingNames = [...missing, ...weak].map(f => f.name).join(', ');
-            const ambienteTextos = {
-                'fechado': 'Fechado (escritório, loja)',
-                'aberto': 'Aberto (obra, rua, campo)',
-                'ambos': 'Ambos'
-            };
-            const ambienteTexto = ambiente ? ambienteTextos[ambiente] : null;
-
-            // Mapear orçamento para texto
-            const orcamentoTextos = {
-                'ate-350': 'Até R$ 350',
-                '350-1500': 'De R$ 350 a R$ 1.500',
-                '1500-2500': 'De R$ 1.500 a R$ 2.500',
-                'sem-limite': 'Sem limite de preço'
-            };
-            const orcamentoTexto = orcamento ? orcamentoTextos[orcamento] : null;
-
-            let diagnosticoCompleto = `Olá! Acabei de fazer meu diagnóstico de coleção de perfumes e preciso de ajuda.\n\n`;
-            diagnosticoCompleto += `📊 MEU PERFIL:\n`;
-            diagnosticoCompleto += `• Total de perfumes: ${total}\n`;
-            diagnosticoCompleto += `• Nível: ${level}\n`;
-            if (climaRegiao) diagnosticoCompleto += `• Clima: ${climaRegiao}\n`;
-            if (orcamentoTexto) diagnosticoCompleto += `• Orçamento: ${orcamentoTexto}\n`;
-            if (ambienteTexto) diagnosticoCompleto += `• Ambiente de trabalho: ${ambienteTexto}\n`;
-            diagnosticoCompleto += `\n`;
-            diagnosticoCompleto += `📉 ANÁLISE DA COLEÇÃO:\n`;
-            diagnosticoCompleto += `• Família dominante: ${dominant.name} (${percentage}%)\n`;
-            diagnosticoCompleto += `• Famílias que faltam ou estão fracas: ${missingNames || 'Nenhuma'}\n`;
-            diagnosticoCompleto += `\n`;
-            diagnosticoCompleto += `🎯 O QUE PRECISO:\n`;
-            diagnosticoCompleto += `Recomendações personalizadas de perfumes disponíveis no Brasil que equilibrem minha coleção, considerando meu clima, orçamento e estilo de vida.`;
-
-            // Guardar diagnóstico no localStorage para copiar
-            localStorage.setItem('diagnostico_completo', diagnosticoCompleto);
-
-            const gptLink = `https://chatgpt.com/g/g-68f7ee5b09248191b9b56f84210bf9ab-o-perfumista`;
+const gptLink = `https://chatgpt.com/g/g-68f7ee5b09248191b9b56f84210bf9ab-o-perfumista`;
 
             nextPurchase += `
                                     
@@ -2021,6 +2039,8 @@
             resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
+        }
+
         // Função para copiar diagnóstico
         function copiarDiagnostico(gptLink) {
             const diagnostico = localStorage.getItem('diagnostico_completo');
@@ -2032,6 +2052,14 @@
                     alert('Não foi possível copiar automaticamente. Por favor, copie manualmente o diagnóstico acima.');
                 });
             }
+
+
+        function abrirNoChatGPT() {
+            const url = 'https://chatgpt.com/g/g-68f7ee5b09248191b9b56f84210bf9ab-o-perfumista';
+            // copia o diagnóstico (se existir) e mostra o tutorial, depois o usuário abre em nova aba
+            copiarDiagnostico(url);
+        }
+
         }
 
         function mostrarTutorial(gptLink) {
@@ -2213,6 +2241,214 @@
                 card.style.transform = 'translateY(0)';
             }, index * 100);
         });
+    
+
+
+        // ===== Coleção (lista de perfumes) =====
+        let perfumesColecao = [];
+
+        function normalizeName(s) {
+            return (s || '').toString().trim().replace(/\s+/g, ' ');
+        }
+
+        function loadPerfumes() {
+            try {
+                const raw = localStorage.getItem('perfumes_colecao');
+                perfumesColecao = raw ? JSON.parse(raw) : [];
+                if (!Array.isArray(perfumesColecao)) perfumesColecao = [];
+            } catch(e) {
+                perfumesColecao = [];
+            }
+            perfumesColecao = perfumesColecao.map(normalizeName).filter(Boolean);
+            perfumesColecao = Array.from(new Set(perfumesColecao)); // unique
+            perfumesColecao.sort((a,b)=>a.localeCompare(b, 'pt-BR'));
+        }
+
+        function savePerfumes() {
+            localStorage.setItem('perfumes_colecao', JSON.stringify(perfumesColecao));
+        }
+
+        function renderPerfumeChips() {
+            const box = document.getElementById('perfumeChips');
+            if (!box) return;
+            if (!perfumesColecao.length) {
+                box.innerHTML = '<div style="color:#888; font-size:0.95em;">Nenhum perfume adicionado ainda.</div>';
+                return;
+            }
+            box.innerHTML = perfumesColecao.map((p, idx) => `
+                <div style="
+                    display:inline-flex;
+                    align-items:center;
+                    gap:10px;
+                    padding: 10px 12px;
+                    border-radius: 999px;
+                    border: 1px solid rgba(212,175,55,0.30);
+                    background: rgba(0,0,0,0.35);
+                    color: #f4e5b1;
+                    font-weight: 700;
+                    font-size: 0.98em;
+                ">
+                    <span>${p}</span>
+                    <button type="button" onclick="removePerfume(${idx})" style="
+                        border: none;
+                        background: rgba(212,175,55,0.18);
+                        color: #f4e5b1;
+                        font-weight: 900;
+                        width: 26px;
+                        height: 26px;
+                        border-radius: 999px;
+                        cursor: pointer;
+                        line-height: 1;
+                    " aria-label="Remover">×</button>
+                </div>
+            `).join('');
+        }
+
+        function addPerfume() {
+            const inp = document.getElementById('perfumeInput');
+            if (!inp) return;
+            const name = normalizeName(inp.value);
+            if (!name) return;
+            if (!perfumesColecao.includes(name)) {
+                perfumesColecao.push(name);
+                perfumesColecao.sort((a,b)=>a.localeCompare(b, 'pt-BR'));
+                savePerfumes();
+                renderPerfumeChips();
+            }
+            inp.value = '';
+            inp.focus();
+        }
+
+        function removePerfume(index) {
+            perfumesColecao.splice(index, 1);
+            savePerfumes();
+            renderPerfumeChips();
+        }
+
+        function openListaPopup() {
+            const pop = document.getElementById('listaPopup');
+            const body = document.getElementById('listaPopupBody');
+            if (!pop || !body) return;
+            if (!perfumesColecao.length) {
+                body.innerHTML = '<div style="color:#bbb; padding:12px 6px;">Nenhum perfume na lista.</div>';
+            } else {
+                body.innerHTML = perfumesColecao.map((p, idx) => `
+                    <div style="
+                        display:flex;
+                        justify-content:space-between;
+                        align-items:center;
+                        gap:12px;
+                        padding: 10px 8px;
+                        border-bottom: 1px solid rgba(212,175,55,0.18);
+                        color:#f4e5b1;
+                        font-weight:700;
+                    ">
+                        <div style="flex:1;">${p}</div>
+                        <button type="button" onclick="removePerfume(${idx}); openListaPopup();" style="
+                            padding: 8px 10px;
+                            border-radius: 10px;
+                            border: 1px solid rgba(212,175,55,0.35);
+                            background: rgba(212,175,55,0.12);
+                            color: #f4e5b1;
+                            font-weight: 900;
+                            cursor: pointer;
+                        ">Remover</button>
+                    </div>
+                `).join('');
+            }
+            pop.style.display = 'flex';
+        }
+
+        function closeListaPopup() {
+            const pop = document.getElementById('listaPopup');
+            if (pop) pop.style.display = 'none';
+        }
+
+        // Enter para adicionar
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && document.activeElement && document.activeElement.id === 'perfumeInput') {
+                e.preventDefault();
+                addPerfume();
+            }
+            if (e.key === 'Escape') {
+                closeListaPopup();
+            }
+        });
+
+        // ===== Diagnóstico para IA (iframe) =====
+        function getDiagnosticoForIA() {
+            // base: usa o que já existe no localStorage (gerado pelo Mapa), e injeta a lista de perfumes.
+            const base = (localStorage.getItem('diagnostico_completo') || '').trim();
+            const lista = (perfumesColecao || []).join(', ');
+            if (!lista) return base;
+            if (!base) return `🧴 COLEÇÃO INFORMADA:\n${lista}\n`;
+            // evita duplicar se já existir
+            if (base.includes('🧴 COLEÇÃO INFORMADA')) return base;
+            return base + `\n\n🧴 COLEÇÃO INFORMADA:\n${lista}\n`;
+        }
+
+        // ===== Radar das famílias (recebe do iframe) =====
+        let radarChart = null;
+        function renderRadar(valuesByKey) {
+            const box = document.getElementById('radarBox');
+            const canvas = document.getElementById('radarFamilias');
+            if (!box || !canvas || typeof Chart === 'undefined') return;
+
+            const order = [
+                { key:'fresco', label:'Fresco/Cítrico' },
+                { key:'aromatico', label:'Aromático/Verde' },
+                { key:'aquatico', label:'Aquático' },
+                { key:'floral', label:'Floral' },
+                { key:'frutas', label:'Frutas' },
+                { key:'doce', label:'Doce/Gourmand' },
+                { key:'especiado', label:'Especiado/Oriental' },
+                { key:'amadeirado', label:'Amadeirado' },
+                { key:'talco', label:'Talco/Fougère' }
+            ];
+
+            const labels = order.map(o => o.label);
+            const data = order.map(o => {
+                const v = valuesByKey && (valuesByKey[o.key] ?? valuesByKey[o.label] ?? 0);
+                return Math.max(0, Math.min(100, Number(v) || 0));
+            });
+
+            box.style.display = 'block';
+
+            if (radarChart) radarChart.destroy();
+            radarChart = new Chart(canvas.getContext('2d'), {
+                type: 'radar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Distribuição (%)',
+                        data
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            suggestedMax: 100,
+                            ticks: { display: false },
+                            grid: { color: 'rgba(255,255,255,0.12)' },
+                            angleLines: { color: 'rgba(255,255,255,0.12)' },
+                            pointLabels: { color: '#f4e5b1', font: { size: 12, weight: '700' } }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        // Boot
+        (function initColecaoUI(){
+            loadPerfumes();
+            renderPerfumeChips();
+        })();
     </script>
 </body>
 </html>
