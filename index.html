@@ -1518,26 +1518,7 @@
                             </div>
                         </div>
                     ` : ''}
-                    
-                    <div style="
-                        background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
-                        border: 2px solid rgba(212, 175, 55, 0.4);
-                        border-radius: 8px;
-                        padding: 12px;
-                    ">
-                        <div style="font-size: 0.85em; color: #d4af37; margin-bottom: 6px; font-weight: 600;">📊 TOTAL</div>
-                        <div style="color: #fff; font-size: 1.3em; font-weight: 700;">${total} perfumes</div>
-                    </div>
-                    
-                    <div style="
-                        background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
-                        border: 2px solid rgba(212, 175, 55, 0.4);
-                        border-radius: 8px;
-                        padding: 12px;
-                    ">
-                        <div style="font-size: 0.85em; color: #d4af37; margin-bottom: 6px; font-weight: 600;">🎯 FAMÍLIAS</div>
-                        <div style="color: #fff; font-size: 1.3em; font-weight: 700;">${familiesRepresented}/9</div>
-                    </div>
+
                     
                     <div style="
                         background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1));
@@ -2032,6 +2013,8 @@ const gptLink = `https://chatgpt.com/g/g-68f7ee5b09248191b9b56f84210bf9ab-o-perf
 
             resultDiv.style.display = 'block';
             resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
         }
 
         // Função para copiar diagnóstico
