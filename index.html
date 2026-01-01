@@ -1391,7 +1391,37 @@ function ensurePerfumistaPanel() {
                   "Regras: top_faltantes deve refletir as famílias mais fracas. As recomendações devem atacar lacunas e evitar repetir a dominante salvo necessidade.",
                   "Formato: { diagnostico:{nivel,equilibrada,top_faltantes, texto}, familias_percentuais:{... soma 100}, recomendacoes:[{nome,familia,faixa_preco,por_que,quando_usar}] }"
                 ].join("\n");
-            } catch(e){
+            }
+
+        let __perfumistaPopupTimer = null;
+
+        function showPerfumistaPopup(){
+            const el = document.getElementById('perfumistaPopup');
+            if(!el) return;
+            el.style.display = 'block';
+            // auto-hint/timeout (não fecha sozinho, só avisa)
+            if(__perfumistaPopupTimer) clearTimeout(__perfumistaPopupTimer);
+            __perfumistaPopupTimer = setTimeout(()=> {
+                const hint = document.getElementById('perfumistaPopupHint');
+                if(hint) hint.textContent = 'Ainda consultando… se estiver travado, confira Network → /api/perfumista.';
+            }, 20000);
+        }
+
+        function hidePerfumistaPopup(){
+            const el = document.getElementById('perfumistaPopup');
+            if(!el) return;
+            el.style.display = 'none';
+            if(__perfumistaPopupTimer) { clearTimeout(__perfumistaPopupTimer); __perfumistaPopupTimer = null; }
+        }
+
+        // close button
+        document.addEventListener('click', (e)=>{
+            if(e && e.target && e.target.id === 'perfumistaPopupClose'){
+                hidePerfumistaPopup();
+            }
+        });
+
+ catch(e){
                 return "Analise a coleção e retorne JSON com diagnostico, familias_percentuais e recomendacoes.";
             }
         }
@@ -1506,6 +1536,7 @@ function ensurePerfumistaPanel() {
             try {
                 const prompt = construirPromptParaIA();
                 iframe.contentWindow.postMessage({ source:'mapa', type:'run', prompt }, '*');
+                try { showPerfumistaPopup(); } catch(e) {}
             } catch(e) {}
 
             // Monta um prompt estruturado (baseado no que o usuário selecionou + perfumes)
@@ -1736,6 +1767,7 @@ function fecharPerfumistaNoMapa() {
 
             // Resposta principal (opção B): JSON para o mapa renderizar
             if (data && data.source === 'operfumista' && data.type === 'analysis' && data.payload) {
+                try { hidePerfumistaPopup(); } catch(e) {}
                 try { ensurePerfumistaPanel(); } catch(e) {}
 
                 const p = data.payload || {};
@@ -2929,5 +2961,30 @@ const gptLink = `https://chatgpt.com/g/g-68f7ee5b09248191b9b56f84210bf9ab-o-perf
             renderPerfumeChips();
         })();
     </script>
+
+<!-- Perfumista Popup -->
+<div id="perfumistaPopup" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,0.72); backdrop-filter: blur(4px);">
+  <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:min(520px, 92vw);
+              border-radius:18px; border:1px solid rgba(212,175,55,0.35); background:rgba(15,15,18,0.98);
+              box-shadow: 0 20px 60px rgba(0,0,0,0.55); padding:18px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+      <div style="font-weight:900; color:#d4af37; font-size:16px;">Consultando a I.A…</div>
+      <button id="perfumistaPopupClose" style="border:1px solid rgba(212,175,55,0.35); background:rgba(0,0,0,0.25);
+              color:#f4e5b1; font-weight:900; border-radius:12px; padding:8px 10px; cursor:pointer;">Fechar</button>
+    </div>
+    <div style="margin-top:10px; color:#cfcfcf; line-height:1.45;">
+      Aguarde. Estamos analisando sua coleção e montando o Top 3 de forma personalizada.
+    </div>
+    <div style="margin-top:14px; display:flex; align-items:center; gap:10px;">
+      <div class="perfumistaSpinner" style="width:18px; height:18px; border-radius:999px; border:2px solid rgba(212,175,55,0.25);
+           border-top-color: rgba(212,175,55,0.95); animation: perfSpin 1s linear infinite;"></div>
+      <div id="perfumistaPopupHint" style="color:#bfbfbf; font-size:12px;">Se demorar mais que 20s, sua API pode estar fria (warmup).</div>
+    </div>
+  </div>
+</div>
+<style>
+@keyframes perfSpin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
+</style>
+
 </body>
 </html>
