@@ -1391,37 +1391,7 @@ function ensurePerfumistaPanel() {
                   "Regras: top_faltantes deve refletir as famílias mais fracas. As recomendações devem atacar lacunas e evitar repetir a dominante salvo necessidade.",
                   "Formato: { diagnostico:{nivel,equilibrada,top_faltantes, texto}, familias_percentuais:{... soma 100}, recomendacoes:[{nome,familia,faixa_preco,por_que,quando_usar}] }"
                 ].join("\n");
-            }
-
-        let __perfumistaPopupTimer = null;
-
-        function showPerfumistaPopup(){
-            const el = document.getElementById('perfumistaPopup');
-            if(!el) return;
-            el.style.display = 'block';
-            // auto-hint/timeout (não fecha sozinho, só avisa)
-            if(__perfumistaPopupTimer) clearTimeout(__perfumistaPopupTimer);
-            __perfumistaPopupTimer = setTimeout(()=> {
-                const hint = document.getElementById('perfumistaPopupHint');
-                if(hint) hint.textContent = 'Ainda consultando… se estiver travado, confira Network → /api/perfumista.';
-            }, 20000);
-        }
-
-        function hidePerfumistaPopup(){
-            const el = document.getElementById('perfumistaPopup');
-            if(!el) return;
-            el.style.display = 'none';
-            if(__perfumistaPopupTimer) { clearTimeout(__perfumistaPopupTimer); __perfumistaPopupTimer = null; }
-        }
-
-        // close button
-        document.addEventListener('click', (e)=>{
-            if(e && e.target && e.target.id === 'perfumistaPopupClose'){
-                hidePerfumistaPopup();
-            }
-        });
-
- catch(e){
+            } catch(e){
                 return "Analise a coleção e retorne JSON com diagnostico, familias_percentuais e recomendacoes.";
             }
         }
@@ -1528,6 +1498,8 @@ function ensurePerfumistaPanel() {
         // ✅ AÇÃO PRINCIPAL (Opção B): Mapa prepara o prompt estruturado e manda para o IFRAME (motor),
         // que consulta a API e devolve JSON para o mapa renderizar.
         function gerarOpcoesComIA() {
+            try { window.showPerfumistaPopup && window.showPerfumistaPopup(); } catch(e) {}
+
             // garante que a UI esteja atualizada
             try { analyzeCollection(); } catch(e) {}
 
@@ -1536,7 +1508,6 @@ function ensurePerfumistaPanel() {
             try {
                 const prompt = construirPromptParaIA();
                 iframe.contentWindow.postMessage({ source:'mapa', type:'run', prompt }, '*');
-                try { showPerfumistaPopup(); } catch(e) {}
             } catch(e) {}
 
             // Monta um prompt estruturado (baseado no que o usuário selecionou + perfumes)
@@ -1767,7 +1738,8 @@ function fecharPerfumistaNoMapa() {
 
             // Resposta principal (opção B): JSON para o mapa renderizar
             if (data && data.source === 'operfumista' && data.type === 'analysis' && data.payload) {
-                try { hidePerfumistaPopup(); } catch(e) {}
+                try { window.hidePerfumistaPopup && window.hidePerfumistaPopup(); } catch(e) {}
+
                 try { ensurePerfumistaPanel(); } catch(e) {}
 
                 const p = data.payload || {};
@@ -2960,7 +2932,38 @@ const gptLink = `https://chatgpt.com/g/g-68f7ee5b09248191b9b56f84210bf9ab-o-perf
             loadPerfumes();
             renderPerfumeChips();
         })();
-    </script>
+    
+/* ===== Perfumista Popup (consultando IA) ===== */
+(function(){
+  let timer = null;
+
+  window.showPerfumistaPopup = function(){
+    const el = document.getElementById('perfumistaPopup');
+    if(!el) return;
+    el.style.display = 'block';
+    if(timer) clearTimeout(timer);
+    timer = setTimeout(()=>{
+      const hint = document.getElementById('perfumistaPopupHint');
+      if(hint) hint.textContent = 'Ainda consultando… se travar, confira Network → /api/perfumista (Vercel).';
+    }, 20000);
+  };
+
+  window.hidePerfumistaPopup = function(){
+    const el = document.getElementById('perfumistaPopup');
+    if(!el) return;
+    el.style.display = 'none';
+    if(timer){ clearTimeout(timer); timer = null; }
+  };
+
+  document.addEventListener('click', (e)=>{
+    const t = e && e.target;
+    if(t && t.id === 'perfumistaPopupClose'){
+      window.hidePerfumistaPopup();
+    }
+  });
+})();
+
+</script>
 
 <!-- Perfumista Popup -->
 <div id="perfumistaPopup" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,0.72); backdrop-filter: blur(4px);">
@@ -2976,7 +2979,7 @@ const gptLink = `https://chatgpt.com/g/g-68f7ee5b09248191b9b56f84210bf9ab-o-perf
       Aguarde. Estamos analisando sua coleção e montando o Top 3 de forma personalizada.
     </div>
     <div style="margin-top:14px; display:flex; align-items:center; gap:10px;">
-      <div class="perfumistaSpinner" style="width:18px; height:18px; border-radius:999px; border:2px solid rgba(212,175,55,0.25);
+      <div style="width:18px; height:18px; border-radius:999px; border:2px solid rgba(212,175,55,0.25);
            border-top-color: rgba(212,175,55,0.95); animation: perfSpin 1s linear infinite;"></div>
       <div id="perfumistaPopupHint" style="color:#bfbfbf; font-size:12px;">Se demorar mais que 20s, sua API pode estar fria (warmup).</div>
     </div>
