@@ -1087,11 +1087,6 @@ Analise minha coleção completa e retorne análise detalhada + recomendações.
                             <div style="color: #f4e5b1; font-size: 1em;">${analise.familia_dominante.quantidade} perfumes · <strong style="color: #d4af37; font-size: 1.15em;">${analise.familia_dominante.porcentagem}%</strong> da coleção</div>
                         </div>
                     </div>
-                    
-                    <div style="background: rgba(30, 30, 30, 0.5); border: 2px solid rgba(212, 175, 55, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-                        <div style="font-size: 1.1em; color: #d4af37; margin-bottom: 15px; font-weight: 700; text-align: center;">📊 DISTRIBUIÇÃO DAS FAMÍLIAS OLFATIVAS</div>
-                        <canvas id="grafico-familias" style="max-width: 400px; max-height: 400px; margin: 0 auto; display: block;"></canvas>
-                    </div>
                 `;
                 
                 dominantDiv.innerHTML = `
@@ -1101,9 +1096,6 @@ Analise minha coleção completa e retorne análise detalhada + recomendações.
                     </div>
                     ${infoCards}
                 `;
-                
-                // Renderizar gráfico
-                setTimeout(() => renderizarGrafico(analise.perfumes_por_familia), 100);
                 
                 const percentage = analise.familia_dominante.porcentagem;
                 let statusHtml = '';
@@ -1190,66 +1182,6 @@ Analise minha coleção completa e retorne análise detalhada + recomendações.
             }
         }
         
-        function renderizarGrafico(perfumesPorFamilia) {
-            const canvas = document.getElementById('grafico-familias');
-            if (!canvas) {
-                console.error('❌ Canvas não encontrado');
-                return;
-            }
-            
-            const familias = Object.keys(perfumesPorFamilia);
-            const valores = Object.values(perfumesPorFamilia);
-            
-            const cores = [
-                'rgba(255, 206, 86, 0.8)',
-                'rgba(75, 192, 192, 0.8)',
-                'rgba(255, 99, 132, 0.8)',
-                'rgba(139, 69, 19, 0.8)',
-                'rgba(255, 140, 0, 0.8)',
-                'rgba(54, 162, 235, 0.8)',
-                'rgba(201, 203, 207, 0.8)',
-                'rgba(255, 105, 180, 0.8)',
-                'rgba(153, 102, 255, 0.8)'
-            ];
-            
-            new Chart(canvas, {
-                type: 'pie',
-                data: {
-                    labels: familias,
-                    datasets: [{
-                        data: valores,
-                        backgroundColor: cores,
-                        borderColor: 'rgba(212, 175, 55, 0.5)',
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                color: '#fff',
-                                font: { size: 11 },
-                                padding: 10
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.parsed || 0;
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = ((value / total) * 100).toFixed(1);
-                                    return label + ': ' + value + ' perfumes (' + percentage + '%)';
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
         
         function mostrarErro(mensagem) {
             const dominantDiv = document.getElementById('dominant-family');
@@ -1545,8 +1477,5 @@ Analise minha coleção completa e retorne análise detalhada + recomendações.
         })();
 
     </script>
-    
-    <!-- Chart.js para gráficos -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </body>
 </html>
