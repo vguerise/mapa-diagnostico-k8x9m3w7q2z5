@@ -862,6 +862,40 @@
                     <div id="balance-advice" class="result-advice"></div>
                     <div id="next-purchase" class="result-next"></div>
                 </div>
+
+                <!-- PAINEL DO PERFUMISTA (I.A.) -->
+                <div id="perfumista-panel" style="
+                    display: none;
+                    margin-top: 30px;
+                    background: rgba(0,0,0,0.18);
+                    border: 2px solid rgba(212, 175, 55, 0.28);
+                    border-radius: 16px;
+                    padding: 14px;
+                    text-align: left;
+                ">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;">
+                        <div style="color:#fff; font-weight:900; font-size: 1.05em;">
+                            🤖 O Perfumista — resposta dentro do Mapa
+                        </div>
+                        <button onclick="fecharPerfumistaNoMapa()" style="
+                            background: rgba(255,255,255,0.06);
+                            color: #f4e5b1;
+                            border: 2px solid rgba(212,175,55,0.28);
+                            padding: 8px 12px;
+                            border-radius: 10px;
+                            font-weight: 800;
+                            cursor: pointer;
+                        ">Fechar</button>
+                    </div>
+
+                    <iframe
+                        id="perfumista-iframe"
+                        src="https://vguerise.github.io/operfumista/"
+                        scrolling="no"
+                        style="width:100%; border:0; border-radius: 12px; background:#111; overflow:hidden; min-height:420px;"
+                        loading="lazy"
+                    ></iframe>
+                </div>
             </div>
         </div>
 
