@@ -497,620 +497,417 @@
   </div>
 
   <script>
-    // ==============================
-    // Persistência (localStorage)
-    // ==============================
-    const LS_KEYS = {
-      clima: "clima",
-      ambiente: "ambiente",
-      orcamento: "orcamento",
-      colecao: "colecao_lista",
-      diagnostico: "diagnostico_completo",
-    };
 
-    function safeSet(key, value){
-      try{ localStorage.setItem(key, value); }catch(e){}
-    }
-    function safeGet(key){
-      try{ return localStorage.getItem(key); }catch(e){ return null; }
-    }
+/* ==============================
+   Mapa Pai – Coleção + Diagnóstico → Iframe
+   Regras:
+   - Coleção em localStorage (array)
+   - Botão "Mapear Coleção!" envia payload ao iframe
+   - Popup "Analisando..." fica visível até o iframe sinalizar IA_DONE
+============================== */
 
-    // ==============================
-    // Clima (botões)
-    // ==============================
-    function selecionarClima(clima, btn){
-      document.querySelectorAll(".clima-btn").forEach(function(b){
-        b.classList.remove("selected-quente");
-        b.classList.remove("selected-temperado");
-        b.classList.remove("selected-frio");
-      });
-      btn.classList.add("selected-" + clima);
-      document.getElementById("clima").value = clima;
-      safeSet(LS_KEYS.clima, clima);
-    }
+// ---- LocalStorage keys
+const LS_KEYS = {
+  colecao: "mcp_colecao_v1",
+  clima: "mcp_clima_v1",
+  ambiente: "mcp_ambiente_v1",
+  orcamento: "mcp_orcamento_v1",
+  funcoes: "mcp_funcoes_v1"
+};
 
-    // ==============================
-    // Checkboxes: salvar / carregar
-    // ==============================
-    document.querySelectorAll('input[type="checkbox"]').forEach(function(checkbox){
-      checkbox.addEventListener("change", function(){
-        safeSet(this.id, this.checked ? "true" : "false");
-      });
-      const saved = safeGet(checkbox.id);
-      if(saved === "true"){ checkbox.checked = true; }
+// ---- Helpers LS
+function safeGet(key){
+  try { return localStorage.getItem(key); } catch(e){ return null; }
+}
+function safeSet(key, value){
+  try { localStorage.setItem(key, value); } catch(e){}
+}
+
+// ---- Title Case (com exceções)
+function toTitleCaseSmart(str){
+  const minor = new Set(["de","da","do","das","dos","e","em","no","na","nos","nas"]);
+  const keepUpper = new Set(["EDT","EDP","EDC","EDP.","EDT.","EDC.","PARFUM","INTENSE","ELIXIR"]);
+  return String(str || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .split(" ")
+    .map((w, idx) => {
+      const raw = w.replace(/\u00AD/g,""); // remove soft hyphen
+      const up = raw.toUpperCase();
+      if(keepUpper.has(up)) return up;
+      const low = raw.toLowerCase();
+      if(idx>0 && minor.has(low)) return low;
+      return low.charAt(0).toUpperCase() + low.slice(1);
+    })
+    .join(" ");
+}
+
+// ---- Coleção: load/save
+function loadCollection(){
+  const raw = safeGet(LS_KEYS.colecao);
+  if(!raw) return [];
+  try{
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  }catch(e){
+    return [];
+  }
+}
+function saveCollection(arr){
+  safeSet(LS_KEYS.colecao, JSON.stringify(arr || []));
+}
+
+// ---- UI: contador
+function updateColecaoCount(){
+  const countEl = document.getElementById("colecaoCount");
+  const arr = loadCollection();
+  if(countEl) countEl.textContent = String(arr.length);
+}
+
+// ---- Modal (popup da coleção)
+function openColecaoModal(){
+  const modal = document.getElementById("colecaoModal");
+  const list = document.getElementById("colecaoModalList");
+  const empty = document.getElementById("colecaoModalEmpty");
+  if(!modal || !list || !empty) return;
+
+  const arr = loadCollection();
+  list.innerHTML = "";
+  if(!arr.length){
+    empty.style.display = "block";
+  }else{
+    empty.style.display = "none";
+    arr.forEach(p=>{
+      const li = document.createElement("li");
+      li.textContent = p;
+      list.appendChild(li);
     });
+  }
 
-    // ==============================
-    // Contexto: salvar / carregar
-    // ==============================
-    function attachPersistSelect(id, key){
-      const el = document.getElementById(id);
-      if(!el) return;
-      el.addEventListener("change", function(){
-        safeSet(key, this.value);
-      });
-      const saved = safeGet(key);
-      if(saved){ el.value = saved; }
+  modal.classList.add("show");
+  modal.setAttribute("aria-hidden", "false");
+}
+function closeColecaoModal(){
+  const modal = document.getElementById("colecaoModal");
+  if(!modal) return;
+  modal.classList.remove("show");
+  modal.setAttribute("aria-hidden", "true");
+}
+
+// ---- Adicionar/Remover
+function addPerfume(){
+  const input = document.getElementById("perfumeInput");
+  if(!input) return;
+
+  const raw = input.value.trim();
+  if(!raw) return;
+
+  const formatted = toTitleCaseSmart(raw);
+  const arr = loadCollection();
+
+  // evita duplicado exato
+  if(arr.some(x => x.toLowerCase() === formatted.toLowerCase())){
+    input.value = "";
+    updateColecaoCount();
+    return;
+  }
+
+  arr.push(formatted);
+  saveCollection(arr);
+  input.value = "";
+  updateColecaoCount();
+}
+function clearCollection(){
+  saveCollection([]);
+  updateColecaoCount();
+}
+
+// ---- Clima (botões)
+function selecionarClima(clima, btn){
+  const select = document.getElementById("clima");
+  if(select) select.value = clima;
+  safeSet(LS_KEYS.clima, clima);
+
+  const btns = document.querySelectorAll(".clima-btn");
+  btns.forEach(b=>{
+    b.classList.remove("active");
+    b.style.boxShadow = "none";
+  });
+
+  if(btn){
+    btn.classList.add("active");
+    btn.style.boxShadow = "0 0 0 2px rgba(212,175,55,0.45) inset";
+  }
+}
+
+// ---- Funções (checkboxes)
+function getCheckedFuncoes(){
+  const boxes = Array.from(document.querySelectorAll('input[name="function"]:checked'));
+  const all = Array.from(document.querySelectorAll('input[name="function"]'));
+  const checked = boxes.map(b=>b.value);
+  const missing = all.map(b=>b.value).filter(v=>!checked.includes(v));
+  return { checked, missing, total: all.length };
+}
+
+// ---- Labels
+function calcLevel(total){
+  if(total <= 4) return { label:"INICIANTE", emoji:"🌱", advice:"Foco em versatilidade e preencher lacunas com segurança." };
+  if(total <= 8) return { label:"INTERMEDIÁRIO", emoji:"🧭", advice:"Você já tem base; agora é hora de equilibrar funções e estilos." };
+  return { label:"AVANÇADO", emoji:"🏆", advice:"Hora de refinar: escolhas cirúrgicas para cobrir lacunas específicas." };
+}
+function labelOrcamento(v){
+  const map = {
+    "ate-300": "Até R$ 300",
+    "300-500": "R$ 300 - R$ 500",
+    "500-1000": "R$ 500 - R$ 1.000",
+    "350-1500": "R$ 350 - R$ 1.500",
+    "1500-2500": "R$ 1.500 - R$ 2.500",
+    "sem-limite": "Sem limite"
+  };
+  return map[v] || "Não informado";
+}
+function labelAmbiente(v){
+  const map = {
+    "fechado": "Fechado (escritório/loja)",
+    "aberto": "Aberto (rua/obra/campo)",
+    "ambos": "Ambos"
+  };
+  return map[v] || "Não informado";
+}
+
+// ---- Popup "Analisando..."
+let perfumistaProgressTimer = null;
+function mostrarLoadingPerfumista(){
+  const existing = document.getElementById("loading-overlay");
+  if(existing) return;
+
+  const overlay = document.createElement("div");
+  overlay.id = "loading-overlay";
+  overlay.style.cssText = `
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  `;
+
+  const box = document.createElement("div");
+  box.style.cssText = `
+    width: min(520px, 92vw);
+    background: rgba(30,30,30,0.96);
+    border: 2px solid rgba(212,175,55,0.7);
+    border-radius: 14px;
+    padding: 18px 18px 16px;
+    color: #fff;
+    text-align: center;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  `;
+
+  box.innerHTML = `
+    <div style="font-size:1.15em;font-weight:800;color:#d4af37;margin-bottom:10px;">🧠 Analisando sua coleção...</div>
+    <div id="loading-msg" style="color:#cfcfcf;font-size:0.95em;line-height:1.35;">
+      Estou cruzando seu clima, orçamento e lacunas para gerar o Top 3.
+    </div>
+    <div style="margin-top:14px;">
+      <div style="width:44px;height:44px;border-radius:50%;border:4px solid rgba(212,175,55,0.25);border-top-color:#d4af37;margin:0 auto;animation:spin 0.9s linear infinite;"></div>
+    </div>
+    <div style="margin-top:12px;color:#9e9e9e;font-size:0.85em;">Não feche esta janela.</div>
+  `;
+
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+
+  const msgs = [
+    "Estou cruzando seu clima, orçamento e lacunas para gerar o Top 3.",
+    "Ajustando recomendações para seu ambiente de trabalho…",
+    "Priorizando famílias menos representadas na sua coleção…",
+    "Finalizando as 3 melhores opções para você…"
+  ];
+  let i = 0;
+  perfumistaProgressTimer = setInterval(()=>{
+    const el = document.getElementById("loading-msg");
+    if(el){
+      i = (i+1) % msgs.length;
+      el.textContent = msgs[i];
     }
-    attachPersistSelect("ambiente", LS_KEYS.ambiente);
-    attachPersistSelect("orcamento", LS_KEYS.orcamento);
+  }, 1200);
+}
+function esconderLoadingPerfumista(){
+  const overlay = document.getElementById("loading-overlay");
+  if(perfumistaProgressTimer){
+    clearInterval(perfumistaProgressTimer);
+    perfumistaProgressTimer = null;
+  }
+  if(overlay) overlay.remove();
+}
 
-    
+// ---- Envio pro iframe
+function ensureIframeVisible(){
+  const panel = document.getElementById("perfumista-panel");
+  if(panel) panel.style.display = "block";
+  const iframe = document.getElementById("perfumista-iframe");
+  if(iframe) iframe.scrollIntoView({behavior:"smooth", block:"start"});
+}
+function sendToIframe(payload){
+  const iframe = document.getElementById("perfumista-iframe");
+  if(!iframe || !iframe.contentWindow){
+    console.warn("Iframe não encontrado.");
+    return;
+  }
+  iframe.contentWindow.postMessage({ type:"MAPA_DADOS", payload }, "*");
+}
 
-    // ==============================
-    // Coleção: adicionar / listar (localStorage)
-    // ==============================
-    function loadCollection(){
-      try{
-        const raw = safeGet(LS_KEYS.colecao);
-        if(!raw) return [];
-        const arr = JSON.parse(raw);
-        return Array.isArray(arr) ? arr.filter(Boolean) : [];
-      }catch(e){
-        return [];
-      }
-    }
-    function saveCollection(arr){
-      safeSet(LS_KEYS.colecao, JSON.stringify(arr || []));
-    }
+// ---- Mapear Coleção!
+function analyzeCollection(){
+  const clima = (document.getElementById("clima")?.value || "temperado").trim();
+  const ambiente = (document.getElementById("ambiente")?.value || "").trim();
+  const orcamento = (document.getElementById("orcamento")?.value || "").trim();
 
-    // Title Case com exceções (não destrói siglas curtas)
-    function toTitleCaseSmart(input){
-      const s = String(input || "").trim().replace(/\s+/g, " ");
-      if(!s) return "";
-      const lowerWords = new Set(["de","da","do","das","dos","e"]);
-      const words = s.split(" ");
-      return words.map(function(w, idx){
-        if(!w) return "";
-        // mantém palavras com números/símbolos como estão
-        if(/[0-9]/.test(w)) return w;
-        // mantém siglas curtas (EDT/EDP/etc em caps)
-        if(w === w.toUpperCase() && w.length <= 4) return w;
-        const wl = w.toLowerCase();
-        if(idx !== 0 && lowerWords.has(wl)) return wl;
-        return wl.charAt(0).toUpperCase() + wl.slice(1);
-      }).join(" ");
-    }
+  safeSet(LS_KEYS.clima, clima);
+  if(ambiente) safeSet(LS_KEYS.ambiente, ambiente);
+  if(orcamento) safeSet(LS_KEYS.orcamento, orcamento);
 
-    function updateColecaoCount(){
-      const arr = loadCollection();
-      const el = document.getElementById("colecaoCount");
-      if(el) el.textContent = String(arr.length);
-    }
+  const colecaoArr = loadCollection();
+  const totalPerfumes = colecaoArr.length;
 
-    function addPerfume(){
-      const input = document.getElementById("perfumeInput");
-      if(!input) return;
-      const raw = (input.value || "").trim();
-      if(!raw) return;
+  const { checked, missing, total: totalFuncoes } = getCheckedFuncoes();
+  const level = calcLevel(totalPerfumes);
+  const cobertura = totalFuncoes ? Math.round((checked.length / totalFuncoes) * 100) : 0;
 
-      const formatted = toTitleCaseSmart(raw);
-      const arr = loadCollection();
-      arr.push(formatted);
-      saveCollection(arr);
+  // Diagnóstico para o agente (iframe)
+  let diagnostico = "";
+  diagnostico += "Olá! Acabei de fazer meu diagnóstico de coleção de perfumes e preciso de ajuda.\n\n";
+  diagnostico += "📊 MEU PERFIL:\n";
+  diagnostico += "• Total de perfumes: " + totalPerfumes + "\n";
+  diagnostico += "• Nível: " + level.label + "\n";
+  diagnostico += "• Clima: " + clima + "\n";
+  diagnostico += "• Orçamento: " + labelOrcamento(orcamento) + "\n";
+  diagnostico += "• Ambiente de trabalho: " + labelAmbiente(ambiente) + "\n\n";
 
-      input.value = "";
-      updateColecaoCount();
-    }
+  diagnostico += "🧾 MINHA COLEÇÃO (um por linha):\n";
+  if(colecaoArr.length){
+    diagnostico += colecaoArr.join("\n") + "\n\n";
+  }else{
+    diagnostico += "(não informada)\n\n";
+  }
 
-    function openColecaoModal(){
-      const modal = document.getElementById("colecaoModal");
-      const pre = document.getElementById("colecaoList");
-      const totalEl = document.getElementById("colecaoTotalModal");
-      const arr = loadCollection();
+  diagnostico += "🧭 FUNÇÕES COBERTAS NO MAPA:\n";
+  diagnostico += "• Cobertas: " + (checked.length ? checked.join(", ") : "Nenhuma") + "\n";
+  diagnostico += "• Descobertas: " + (missing.length ? missing.join(", ") : "Nenhuma") + "\n\n";
 
-      if(totalEl) totalEl.textContent = String(arr.length);
-      if(pre){
-        pre.textContent = arr.length ? arr.join("\n") : "(vazio)";
-      }
-      if(modal){
-        modal.classList.add("show");
-        modal.setAttribute("aria-hidden", "false");
-      }
-    }
+  diagnostico += "🎯 O QUE PRECISO:\n";
+  diagnostico += "Me dê APENAS 3 sugestões (Top 3) disponíveis no Brasil.\n";
+  diagnostico += "Priorize famílias/estilos menos representados na minha coleção e que façam sentido para clima, orçamento e ambiente.\n";
+  diagnostico += "Evite redundâncias óbvias com o que eu já tenho.";
 
-    function closeColecaoModal(){
-      const modal = document.getElementById("colecaoModal");
-      if(modal){
-        modal.classList.remove("show");
-        modal.setAttribute("aria-hidden", "true");
-      }
-    }
+  // Atualiza análise no mapa pai (sem recomendações)
+  const resultDiv = document.getElementById("result");
+  const dominantDiv = document.getElementById("dominant-family");
+  const adviceDiv = document.getElementById("balance-advice");
+  const nextDiv = document.getElementById("next-purchase");
 
-    // Inicialização
-    (function initColecaoUI(){
-      updateColecaoCount();
-      const input = document.getElementById("perfumeInput");
-      if(input){
-        // Enter adiciona
-        input.addEventListener("keydown", function(ev){
-          if(ev.key === "Enter"){
-            ev.preventDefault();
-            addPerfume();
-          }
-        });
-      }
-    })();
+  const climaLabel = clima === "quente" ? "🌡️ Clima quente" : clima === "frio" ? "❄️ Clima frio" : "🌤️ Clima temperado";
 
-      const savedColecao = safeGet(LS_KEYS.colecao);
-      if(savedColecao){ colecaoEl.value = savedColecao; }
-    }
+  if(dominantDiv){
+    dominantDiv.innerHTML = `
+      <div style="background: rgba(212,175,55,0.15); padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #d4af37;">
+        <div style="font-size: 1.25em; margin-bottom: 8px;">${level.emoji} <strong>SEU NÍVEL: ${level.label}</strong></div>
+        <div style="color:#ccc; font-size: 0.95em;">${level.advice}</div>
+      </div>
 
-    // Carregar clima salvo (e refletir visualmente)
-    (function(){
-      const savedClima = safeGet(LS_KEYS.clima) || "temperado";
-      document.getElementById("clima").value = savedClima;
-      const btns = document.querySelectorAll(".clima-btn");
-      if(btns && btns.length){
-        const map = { quente: 0, temperado: 1, frio: 2 };
-        const idx = map[savedClima] ?? 1;
-        btns.forEach(b=>b.style.boxShadow="none");
-        // re-dispara seleção para setar class + storage
-        try{ selecionarClima(savedClima, btns[idx]); }catch(e){}
-      }
-    })();
-
-    // ==============================
-    // Painel Perfumista (iframe)
-    // ==============================
-    
-    // ==============================
-    // Popup "Analisando sua coleção..." (mantido do original)
-    // ==============================
-    let perfumistaTimeout = null;
-    let perfumistaProgressTimer = null;
-
-    function mostrarLoadingPerfumista(){
-      // evita duplicar
-      if(document.getElementById('loading-overlay')) return;
-
-      const overlay = document.createElement('div');
-      overlay.id = 'loading-overlay';
-      overlay.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.9);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        animation: fadeIn 0.3s ease;
-      `;
-
-      overlay.innerHTML = `
-        <div style="
-          background: linear-gradient(135deg, #2d2d2d 0%, #1e1e1e 100%);
-          border: 2px solid #d4af37;
-          border-radius: 20px;
-          padding: 50px 60px;
-          text-align: center;
-          box-shadow: 0 20px 60px rgba(212, 175, 55, 0.5);
-          animation: slideUp 0.4s ease;
-          width: min(560px, 92vw);
-        ">
-          <div style="font-size: 4em; margin-bottom: 20px; animation: spin 1.5s linear infinite;">🔄</div>
-
-          <div style="color: #d4af37; font-size: 1.8em; font-weight: 700; margin-bottom: 15px;">
-            Analisando sua coleção...
-          </div>
-
-          <div style="color: #ccc; font-size: 1em; margin-bottom: 25px;">
-            Processando dados e identificando padrões
-          </div>
-
-          <div style="
-            width: 300px;
-            height: 8px;
-            background: rgba(212, 175, 55, 0.2);
-            border-radius: 10px;
-            overflow: hidden;
-            margin: 0 auto;
-          ">
-            <div id="progress-bar" style="
-              width: 0%;
-              height: 100%;
-              background: linear-gradient(90deg, #d4af37, #f4e5b1);
-              border-radius: 10px;
-              transition: width 0.3s ease;
-            "></div>
-          </div>
-
-          <div style="color:#aaa; font-size:0.95em; margin-top:18px; line-height:1.5;">
-            A resposta (Top 3) vai aparecer dentro do iframe.
-          </div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px;">
+        <div style="background: linear-gradient(135deg, rgba(100, 150, 255, 0.15), rgba(100, 150, 255, 0.05)); border: 2px solid rgba(100, 150, 255, 0.4); border-radius: 8px; padding: 12px;">
+          <div style="font-size: 0.85em; color: #9bc4ff; margin-bottom: 6px; font-weight: 600;">🌡️ CLIMA</div>
+          <div style="color:#fff;font-size:0.98em;">${climaLabel}</div>
         </div>
-      `;
 
-      document.body.appendChild(overlay);
+        <div style="background: linear-gradient(135deg, rgba(255, 180, 80, 0.15), rgba(255, 180, 80, 0.05)); border: 2px solid rgba(255, 180, 80, 0.4); border-radius: 8px; padding: 12px;">
+          <div style="font-size: 0.85em; color: #ffcf8a; margin-bottom: 6px; font-weight: 600;">💼 AMBIENTE</div>
+          <div style="color:#fff;font-size:0.98em;">${labelAmbiente(ambiente)}</div>
+        </div>
+      </div>
 
-      // anima barra até 90% e espera o iframe finalizar
-      const bar = document.getElementById('progress-bar');
-      let p = 0;
-      if(perfumistaProgressTimer) clearInterval(perfumistaProgressTimer);
-      perfumistaProgressTimer = setInterval(()=>{
-        p = Math.min(90, p + (p < 60 ? 6 : 2));
-        if(bar) bar.style.width = p + '%';
-        if(p >= 90){
-          clearInterval(perfumistaProgressTimer);
-          perfumistaProgressTimer = null;
-        }
-      }, 220);
-    }
+      <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 12px;">
+        <div style="font-size: 0.85em; color: #d4af37; margin-bottom: 6px; font-weight: 700;">📦 COLEÇÃO</div>
+        <div style="color:#fff;">${totalPerfumes} perfume(s)</div>
+      </div>
+    `;
+  }
 
-    function fecharLoadingPerfumista(){
-      if(perfumistaTimeout){ clearTimeout(perfumistaTimeout); perfumistaTimeout = null; }
-      if(perfumistaProgressTimer){ clearInterval(perfumistaProgressTimer); perfumistaProgressTimer = null; }
+  if(adviceDiv){
+    adviceDiv.innerHTML = `
+      <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 12px;">
+        <div style="font-size: 0.85em; color: #d4af37; margin-bottom: 6px; font-weight: 700;">🧭 COBERTURA DE FUNÇÕES</div>
+        <div style="color:#fff; margin-bottom: 6px;"><strong>${cobertura}%</strong> do mapa coberto</div>
+        <div style="color:#cfcfcf; font-size:0.92em; line-height:1.35;">
+          <strong>Cobertas:</strong> ${checked.length ? checked.join(", ") : "Nenhuma"}<br/>
+          <strong>Descobertas:</strong> ${missing.length ? missing.join(", ") : "Nenhuma"}
+        </div>
+      </div>
+    `;
+  }
 
-      const overlay = document.getElementById('loading-overlay');
-      if(!overlay) return;
+  if(nextDiv){
+    nextDiv.innerHTML = `
+      <div style="background: rgba(212,175,55,0.12); border: 1px solid rgba(212,175,55,0.35); border-radius: 8px; padding: 12px;">
+        <div style="font-size: 0.85em; color: #d4af37; margin-bottom: 6px; font-weight: 800;">➡️ PRÓXIMO PASSO</div>
+        <div style="color:#fff; font-size:0.95em; line-height:1.35;">
+          Clique em <strong>Mapear Coleção!</strong> para receber o <strong>Top 3</strong> no painel abaixo (I.A.).
+        </div>
+      </div>
+    `;
+  }
 
-      const bar = document.getElementById('progress-bar');
-      if(bar) bar.style.width = '100%';
+  if(resultDiv) resultDiv.style.display = "block";
 
-      overlay.style.animation = 'fadeOut 0.3s ease';
-      setTimeout(()=>{ try{ overlay.remove(); }catch(e){} }, 300);
-    }
+  // Abre o painel do iframe, mostra popup e envia
+  ensureIframeVisible();
+  mostrarLoadingPerfumista();
+  sendToIframe(diagnostico);
+}
 
-    // Fecha o popup quando o iframe avisar que terminou
-    window.addEventListener('message', (ev)=>{
-      const d = ev && ev.data;
-      if(!d || typeof d !== 'object') return;
-      if(d.type === 'IA_DONE' && d.source === 'perfumista_iframe'){
-        fecharLoadingPerfumista();
-      }
-      if(d.type === 'IA_ERROR' && d.source === 'perfumista_iframe'){
-        fecharLoadingPerfumista();
+// ---- Eventos globais
+window.addEventListener("message", (e)=>{
+  if(!e.data) return;
+  if(e.data.type === "IA_DONE"){
+    esconderLoadingPerfumista();
+  }
+});
+
+// ---- Init
+(function init(){
+  // Coleção
+  updateColecaoCount();
+  const input = document.getElementById("perfumeInput");
+  if(input){
+    input.addEventListener("keydown", (ev)=>{
+      if(ev.key === "Enter"){
+        ev.preventDefault();
+        addPerfume();
       }
     });
+  }
 
+  // Clima salvo
+  const savedClima = safeGet(LS_KEYS.clima) || "temperado";
+  const select = document.getElementById("clima");
+  if(select) select.value = savedClima;
+  const btns = document.querySelectorAll(".clima-btn");
+  if(btns && btns.length){
+    const btnMap = { quente: btns[0], temperado: btns[1], frio: btns[2] };
+    selecionarClima(savedClima, btnMap[savedClima] || btns[1]);
+  }
 
-    function abrirPerfumistaNoMapa(){
-      const panel = document.getElementById("perfumista-panel");
-      const iframe = document.getElementById("perfumista-iframe");
-      if(!panel || !iframe){
-        alert("Não encontrei o painel do Perfumista. Recarregue a página e analise novamente.");
-        return;
-      }
+  // Ambiente/orçamento salvos
+  const amb = safeGet(LS_KEYS.ambiente);
+  if(amb && document.getElementById("ambiente")) document.getElementById("ambiente").value = amb;
 
-      const diagnostico = (safeGet(LS_KEYS.diagnostico) || "").trim();
-      if(!diagnostico){
-        alert("Não achei o diagnóstico completo. Clique em ANALISAR COLEÇÃO primeiro.");
-        return;
-      }
+  const orc = safeGet(LS_KEYS.orcamento);
+  if(orc && document.getElementById("orcamento")) document.getElementById("orcamento").value = orc;
+})();
 
-      panel.style.display = "block";
-      panel.scrollIntoView({ behavior:"smooth", block:"start" });
-
-      mostrarLoadingPerfumista();
-
-      if(perfumistaTimeout) clearTimeout(perfumistaTimeout);
-      perfumistaTimeout = setTimeout(()=>{ fecharLoadingPerfumista(); }, 45000);
-
-      const sendToIframe = () => {
-        try{
-          iframe.contentWindow.postMessage(
-            { source:"mapa", type:"set_and_run", text: diagnostico },
-            "https://vguerise.github.io"
-          );
-        }catch(e){
-          fecharLoadingPerfumista();
-        }
-      };
-
-      try{
-        iframe.addEventListener("load", ()=>sendToIframe(), { once:true });
-        sendToIframe();
-      }catch(e){
-        fecharLoadingPerfumista();
-      }
-    }
-
-    function fecharPerfumistaNoMapa(){
-      const panel = document.getElementById("perfumista-panel");
-      if(panel) panel.style.display = "none";
-      fecharLoadingPerfumista();
-    }
-
-    // Recebe status do iframe (Perfumista)
-    window.addEventListener("message", (event)=>{
-      if(event.origin !== "https://vguerise.github.io") return;
-      const data = event.data || {};
-      if(data.source !== "operfumista") return;
-
-      if(data.type === "height" && data.height){
-        const iframe = document.getElementById("perfumista-iframe");
-        if(iframe) iframe.style.height = (Number(data.height) + 20) + "px";
-        return;
-      }
-      if(data.type === "loading"){ mostrarLoadingPerfumista(); }
-      if(data.type === "done" || data.type === "error"){
-        fecharLoadingPerfumista();
-        if(perfumistaTimeout) clearTimeout(perfumistaTimeout);
-      }
-    });
-
-    window.abrirPerfumistaNoMapa = abrirPerfumistaNoMapa;
-    window.fecharPerfumistaNoMapa = fecharPerfumistaNoMapa;
-
-    // ==============================
-    // Análise (sem famílias no mapa)
-    // ==============================
-    function getChecked(){
-      const ids = ["calor","frio","trabalho","noite","assinatura","ocasioes"];
-      const labels = {
-        calor: "🌞 Calor",
-        frio: "❄️ Frio",
-        trabalho: "💼 Trabalho",
-        noite: "🌙 Noite",
-        assinatura: "✍️ Assinatura",
-        ocasioes: "🎊 Ocasiões especiais",
-      };
-      const checked = [];
-      const missing = [];
-      ids.forEach(id=>{
-        const el = document.getElementById(id);
-        if(el && el.checked) checked.push(labels[id]);
-        else missing.push(labels[id]);
-      });
-      return { checked, missing, total: ids.length };
-    }
-
-    function countPerfumesFromText(text){
-      const lines = (text || "")
-        .split(/\r?\n/)
-        .map(s => s.trim())
-        .filter(Boolean);
-      return { total: lines.length, lines };
-    }
-
-    function calcLevel(total){
-      if(total <= 0) return { emoji:"🧪", label:"SEM LISTA", advice:"Cole sua lista de perfumes para o diagnóstico ficar minimamente confiável." };
-      if(total >= 1 && total <= 5) return { emoji:"🎯", label:"INICIANTE", advice:"Antes de comprar mais, garanta as 6 funções. Evite redundância cedo." };
-      if(total >= 6 && total <= 10) return { emoji:"📈", label:"INTERMEDIÁRIO", advice:"Agora o jogo é: reduzir sobreposição e cobrir subfunções (trabalho fechado vs aberto, calor extremo, etc.)." };
-      if(total >= 11 && total <= 15) return { emoji:"🔥", label:"AVANÇADO", advice:"Coleção já dá pra ser cirúrgico. Cada compra precisa de função clara e lacuna real." };
-      return { emoji:"👑", label:"COLECIONADOR", advice:"Se não tem função clara, é acúmulo. Venda/troque o redundante antes de comprar." };
-    }
-
-    function labelOrcamento(v){
-      const map = {
-        "ate-350": "Até R$ 350",
-        "350-1500": "R$ 350 - R$ 1.500",
-        "1500-2500": "R$ 1.500 - R$ 2.500",
-        "sem-limite": "Sem limite",
-      };
-      return map[v] || "Não informado";
-    }
-
-    function labelAmbiente(v){
-      const map = {
-        "fechado": "Fechado (escritório/loja)",
-        "aberto": "Aberto (rua/obra/campo)",
-        "ambos": "Ambos",
-      };
-      return map[v] || "Não informado";
-    }
-
-    function analyzeCollection(){
-      const clima = (document.getElementById("clima").value || "temperado").trim();
-      const ambiente = (document.getElementById("ambiente").value || "").trim();
-      const orcamento = (document.getElementById("orcamento").value || "").trim();
-      const colecaoArr = loadCollection();
-      const colecaoTxt = (colecaoArr || []).join("
-").trim();
-safeSet(LS_KEYS.clima, clima);
-      if(ambiente) safeSet(LS_KEYS.ambiente, ambiente);
-      if(orcamento) safeSet(LS_KEYS.orcamento, orcamento);
-      const totalPerfumes = (colecaoArr || []).length;
-      const lines = (colecaoArr || []);
-const { checked, missing, total: totalFuncoes } = getChecked();
-
-      const level = calcLevel(totalPerfumes);
-      const cobertura = Math.round((checked.length / totalFuncoes) * 100);
-
-      // Montar diagnóstico pro agente (iframe)
-      let diagnostico = "";
-      diagnostico += "Olá! Acabei de fazer meu diagnóstico de coleção de perfumes e preciso de ajuda.\n\n";
-      diagnostico += "📊 MEU PERFIL:\n";
-      diagnostico += "• Total de perfumes: " + totalPerfumes + "\n";
-      diagnostico += "• Nível: " + level.label + "\n";
-      diagnostico += "• Clima: " + clima + "\n";
-      diagnostico += "• Orçamento: " + labelOrcamento(orcamento) + "\n";
-      diagnostico += "• Ambiente de trabalho: " + labelAmbiente(ambiente) + "\n\n";
-
-      diagnostico += "🧾 MINHA COLEÇÃO (lista):\n";
-      if(lines.length){
-        diagnostico += lines.map(p => "• " + p).join("\n") + "\n\n";
-      }else{
-        diagnostico += "• (não informada)\n\n";
-      }
-
-      diagnostico += "🧭 FUNÇÕES COBERTAS NO MAPA:\n";
-      diagnostico += "• Cobertas: " + (checked.length ? checked.join(", ") : "Nenhuma") + "\n";
-      diagnostico += "• Descobertas: " + (missing.length ? missing.join(", ") : "Nenhuma") + "\n\n";
-
-      diagnostico += "🎯 O QUE PRECISO:\n";
-      diagnostico += "Me dê APENAS 3 sugestões (Top 3) disponíveis no Brasil.\n";
-      diagnostico += "Priorize famílias olfativas menos representadas na minha coleção e que façam sentido para clima, orçamento e ambiente.\n";
-      diagnostico += "Evite redundâncias óbvias com o que eu já tenho.";
-
-      safeSet(LS_KEYS.diagnostico, diagnostico);
-
-      // Render na tela
-      const resultDiv = document.getElementById("result");
-      const dominantDiv = document.getElementById("dominant-family");
-      const adviceDiv = document.getElementById("balance-advice");
-      const nextDiv = document.getElementById("next-purchase");
-
-      const climaLabel = clima === "quente" ? "🌡️ Clima quente" : clima === "frio" ? "❄️ Clima frio" : "🌤️ Clima temperado";
-
-      dominantDiv.innerHTML = `
-        <div style="background: rgba(212,175,55,0.15); padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #d4af37;">
-          <div style="font-size: 1.25em; margin-bottom: 8px;">${level.emoji} <strong>SEU NÍVEL: ${level.label}</strong></div>
-          <div style="color:#ccc; font-size: 0.95em;">${level.advice}</div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px;">
-          <div style="background: linear-gradient(135deg, rgba(100, 150, 255, 0.15), rgba(100, 150, 255, 0.05)); border: 2px solid rgba(100, 150, 255, 0.4); border-radius: 8px; padding: 12px;">
-            <div style="font-size: 0.85em; color: #9bc4ff; margin-bottom: 6px; font-weight: 600;">🌡️ CLIMA</div>
-            <div style="color:#fff;font-size:0.98em;">${climaLabel}</div>
-          </div>
-
-          <div style="background: linear-gradient(135deg, rgba(100, 150, 255, 0.15), rgba(100, 150, 255, 0.05)); border: 2px solid rgba(100, 150, 255, 0.4); border-radius: 8px; padding: 12px;">
-            <div style="font-size: 0.85em; color: #9bc4ff; margin-bottom: 6px; font-weight: 600;">💼 AMBIENTE</div>
-            <div style="color:#fff;font-size:0.98em;">${labelAmbiente(ambiente)}</div>
-          </div>
-
-          <div style="background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05)); border: 2px solid rgba(212, 175, 55, 0.4); border-radius: 8px; padding: 12px;">
-            <div style="font-size: 0.85em; color: #d4af37; margin-bottom: 6px; font-weight: 600;">📊 TOTAL</div>
-            <div style="color:#fff;font-size:1.25em;font-weight:800;">${totalPerfumes} perfumes</div>
-          </div>
-
-          <div style="background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05)); border: 2px solid rgba(212, 175, 55, 0.4); border-radius: 8px; padding: 12px;">
-            <div style="font-size: 0.85em; color: #d4af37; margin-bottom: 6px; font-weight: 600;">🧭 FUNÇÕES</div>
-            <div style="color:#fff;font-size:1.25em;font-weight:800;">${checked.length}/6 (${cobertura}%)</div>
-          </div>
-        </div>
-
-        <style>
-          @media (max-width: 768px) {
-            #dominant-family > div:nth-child(2) { grid-template-columns: 1fr !important; }
-          }
-        </style>
-      `;
-
-      let status = "";
-      let advice = "";
-      if(checked.length <= 2){
-        status = `
-          <div style="text-align:center;margin-bottom:12px;">
-            <div style="display:inline-block;background: linear-gradient(135deg, rgba(255, 50, 50, 0.3), rgba(200, 0, 0, 0.2)); border: 3px solid #ff3333; border-radius: 12px; padding: 14px 18px; box-shadow: 0 0 26px rgba(255, 50, 50, 0.45);">
-              <div style="font-size:1.2em;font-weight:900;color:#ff6666;">🚨 FUNÇÕES CRÍTICAS DESCOBERTAS</div>
-            </div>
-          </div>
-        `;
-        advice = `
-          Você não está “montando coleção”, você está colecionando ao acaso. 
-          Antes de qualquer compra, cubra o básico (principalmente <strong style="color:#d4af37;">calor, trabalho e assinatura</strong>).
-        `;
-      }else if(checked.length <= 4){
-        status = `
-          <div style="text-align:center;margin-bottom:12px;">
-            <div style="display:inline-block;background: linear-gradient(135deg, rgba(255, 165, 0, 0.3), rgba(255, 140, 0, 0.2)); border: 3px solid #ff9933; border-radius: 12px; padding: 14px 18px; box-shadow: 0 0 22px rgba(255, 165, 0, 0.45);">
-              <div style="font-size:1.15em;font-weight:900;color:#ffaa00;">⚠️ COBERTURA PARCIAL</div>
-            </div>
-          </div>
-        `;
-        advice = `
-          Você já tem uma base, mas ainda compra com risco de redundância.
-          O próximo perfume precisa resolver <strong style="color:#d4af37;">uma função específica</strong> que está faltando.
-        `;
-      }else{
-        status = `
-          <div style="text-align:center;margin-bottom:12px;">
-            <div style="display:inline-block;background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.1)); border: 3px solid rgba(76, 175, 80, 0.55); border-radius: 12px; padding: 14px 18px;">
-              <div style="font-size:1.15em;font-weight:900;color:#81c784;">✅ FUNÇÕES BEM COBERTAS</div>
-            </div>
-          </div>
-        `;
-        advice = `
-          Boa. Agora o diferencial está na qualidade e em famílias menos representadas (sem repetir a mesma vibe).
-        `;
-      }
-
-      const missingHtml = missing.length
-        ? `<div style="margin-top:10px;">
-            <div style="color:#d4af37;font-weight:900;margin-bottom:8px;">O que está faltando</div>
-            <div style="color:#fff;line-height:1.6;">${missing.join(" · ")}</div>
-          </div>`
-        : `<div style="margin-top:10px;color:#81c784;font-weight:800;">Nada faltando nas 6 funções.</div>`;
-
-      adviceDiv.innerHTML = status + `<div style="font-size:1.05em;line-height:1.75;">${advice}</div>` + missingHtml;
-
-      nextDiv.innerHTML = `
-        <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;align-items:center;margin-top:12px;">
-          <button onclick="abrirPerfumistaNoMapa()" style="
-            background: linear-gradient(135deg, #d4af37 0%, #f4e5b1 100%);
-            color:#1e1e1e;
-            border:none;
-            padding: 16px 22px;
-            border-radius: 12px;
-            font-size: 1.02em;
-            font-weight: 900;
-            cursor: pointer;
-            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.35);
-            transition: all 0.3s ease;
-            display:inline-flex;
-            align-items:center;
-            gap:10px;
-          " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 12px 30px rgba(212, 175, 55, 0.55)';"
-            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 25px rgba(212, 175, 55, 0.35)';">
-            <span style="font-size:1.2em;">🤖</span>
-            <span>Gerar TOP 3 com I.A. aqui no Mapa</span>
-          </button>
-        </div>
-
-        <div style="color:#888;font-size:0.85em;margin-top:12px;line-height:1.45;text-align:center;">
-          A resposta aparece dentro do iframe (não abre ChatGPT fora).
-        </div>
-
-        <div id="perfumista-panel" style="
-          display:none;
-          margin-top: 18px;
-          background: rgba(0,0,0,0.18);
-          border: 2px solid rgba(212,175,55,0.28);
-          border-radius: 16px;
-          padding: 14px;
-          text-align:left;
-        ">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;">
-            <div style="color:#fff;font-weight:900;font-size:1.05em;">O Perfumista — TOP 3 dentro do Mapa</div>
-            <button onclick="fecharPerfumistaNoMapa()" style="
-              background: rgba(255,255,255,0.06);
-              color:#f4e5b1;
-              border: 2px solid rgba(212,175,55,0.28);
-              padding: 8px 12px;
-              border-radius: 10px;
-              font-weight: 800;
-              cursor:pointer;
-            ">Fechar</button>
-          </div>
-
-          <iframe
-            id="perfumista-iframe"
-            src="https://vguerise.github.io/operfumista/"
-            scrolling="no"
-            style="width:100%;border:0;border-radius:12px;background:#111;overflow:hidden;min-height:420px;"
-            loading="lazy"
-          ></iframe>
-        </div>
-      `;
-
-      resultDiv.style.display = "block";
-      resultDiv.scrollIntoView({ behavior:"smooth", block:"nearest" });
-    }
-  </script>
+</script>
 </body>
 </html>
