@@ -750,17 +750,57 @@ function ensureIframeVisible(){
   const iframe = document.getElementById("perfumista-iframe");
   if(iframe) iframe.scrollIntoView({behavior:"smooth", block:"start"});
 }
+
+async function resolveIframeSrc(){
+  const iframe = document.getElementById("perfumista-iframe");
+  if(!iframe) return null;
+
+  // If already set and not empty, keep it
+  if(iframe.getAttribute("data-resolved") === "1" && iframe.getAttribute("src")) return iframe.getAttribute("src");
+
+  // Candidates relative to the current page (GitHub Pages friendly)
+  const candidates = [
+    "./iframe/index.html",
+    "../iframe/index.html",
+    "./motor/index.html",
+    "../motor/index.html",
+    "./perfumista/index.html",
+    "./operfumista/index.html",
+    "../perfumista/index.html",
+    "../operfumista/index.html",
+    "./index_14_iframe_atualizado_v4.html",
+    "./index_14_iframe_atualizado_v3.html"
+  ];
+
+  // Try to find a reachable URL (GET with no-cors isn't helpful; use normal fetch)
+  for(const url of candidates){
+    try{
+      const r = await fetch(url, { method:"GET", cache:"no-store" });
+      if(r.ok){
+        iframe.src = url;
+        iframe.setAttribute("data-resolved","1");
+        return url;
+      }
+    }catch(e){
+      // ignore
+    }
+  }
+
+  // Last resort: keep empty and show error
+  return null;
+}
+
 function sendToIframe(payload){
   const iframe = document.getElementById("perfumista-iframe");
   if(!iframe || !iframe.contentWindow){
-    console.warn("Iframe não encontrado.");
+    console.warn("Iframe não encontrado ou não carregado. Verifique o caminho do motor (iframe).");
     return;
   }
   iframe.contentWindow.postMessage({ type:"MAPA_DADOS", payload }, "*");
 }
 
 // ---- Mapear Coleção!
-function analyzeCollection(){
+async function analyzeCollection(){
   const clima = (document.getElementById("clima")?.value || "temperado").trim();
   const ambiente = (document.getElementById("ambiente")?.value || "").trim();
   const orcamento = (document.getElementById("orcamento")?.value || "").trim();
@@ -862,7 +902,8 @@ function analyzeCollection(){
 
   if(resultDiv) resultDiv.style.display = "block";
 
-  // Abre o painel do iframe, mostra popup e envia
+  // Abre o painel do iframe, resolve caminho, mostra popup e envia
+  await resolveIframeSrc();
   ensureIframeVisible();
   mostrarLoadingPerfumista();
   sendToIframe(diagnostico);
@@ -914,6 +955,37 @@ window.addEventListener("message", (e)=>{
       if(ev.target === m) closeColecaoModal();
     });
   }
+
+  // Se o iframe falhar (404 etc.), não deixa o popup preso
+  const ifr = document.getElementById("perfumista-iframe");
+  if(ifr){
+    ifr.addEventListener("error", ()=>{
+      console.warn("Falha ao carregar o iframe (motor). Verifique o caminho.");
+      esconderLoadingPerfumista();
+      const nextDiv = document.getElementById("next-purchase");
+      if(nextDiv){
+        nextDiv.innerHTML = `
+          <div style="background: rgba(255,80,80,0.10); border: 1px solid rgba(255,120,120,0.45); border-radius: 8px; padding: 12px;">
+            <div style="font-size: 0.85em; color: #ffb3b3; margin-bottom: 6px; font-weight: 900;">⚠️ MOTOR (IFRAME) NÃO CARREGOU</div>
+            <div style="color:#fff; font-size:0.95em; line-height:1.35;">
+              O caminho do iframe está retornando <strong>404</strong>. Crie a pasta <strong>iframe/</strong> com um <strong>index.html</strong>
+              (o motor), ou ajuste o caminho no código.
+            </div>
+          </div>
+        `;
+      }
+    });
+  }
+
+  // Garante que os botões funcionem mesmo se o HTML original não tiver onclick
+  const btnAdd = document.getElementById("btnAddPerfume");
+  if(btnAdd) btnAdd.addEventListener("click", addPerfume);
+
+  const btnView = document.getElementById("btnViewColecao");
+  if(btnView) btnView.addEventListener("click", openColecaoModal);
+
+  const btnMapear = document.getElementById("btnMapearColecao");
+  if(btnMapear) btnMapear.addEventListener("click", analyzeCollection);
 })();
 
 </script>
@@ -930,7 +1002,7 @@ window.addEventListener("message", (e)=>{
     <iframe
       id="perfumista-iframe"
       title="Perfumista (Motor do Mapa)"
-      src="iframe/index.html"
+      src="operfumista/index.html"
       style="width:100%; height: 560px; border:0; display:block; background:#2f2f2f;"
       loading="lazy"
       referrerpolicy="no-referrer"
