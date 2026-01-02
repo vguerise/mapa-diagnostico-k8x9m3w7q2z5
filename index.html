@@ -763,6 +763,96 @@
                     </style>
                 </div>
                 
+                
+                <!-- NOVO: Sistema de adicionar perfumes à coleção -->
+                <div style="
+                    background: rgba(212, 175, 55, 0.08);
+                    border: 2px solid rgba(212, 175, 55, 0.3);
+                    border-radius: 15px;
+                    padding: 25px;
+                    margin-bottom: 30px;
+                ">
+                    <h3 style="
+                        color: #d4af37;
+                        text-align: center;
+                        margin-bottom: 20px;
+                        font-size: 1.4em;
+                    ">
+                        📝 Adicionar Perfumes à Minha Coleção
+                    </h3>
+                    
+                    <div style="
+                        display: flex;
+                        gap: 10px;
+                        margin-bottom: 15px;
+                    ">
+                        <input 
+                            type="text" 
+                            id="perfume-input" 
+                            placeholder="Ex: Dior Sauvage EDT"
+                            style="
+                                flex: 1;
+                                padding: 12px 15px;
+                                background: rgba(0, 0, 0, 0.4);
+                                border: 2px solid rgba(212, 175, 55, 0.3);
+                                border-radius: 10px;
+                                color: white;
+                                font-size: 1em;
+                            "
+                        >
+                        <button 
+                            onclick="adicionarPerfume()" 
+                            style="
+                                padding: 12px 25px;
+                                background: linear-gradient(135deg, #d4af37 0%, #f4e5b1 100%);
+                                border: none;
+                                border-radius: 10px;
+                                color: #000;
+                                font-weight: 700;
+                                cursor: pointer;
+                                font-size: 1em;
+                                transition: all 0.3s ease;
+                            "
+                            onmouseover="this.style.transform='scale(1.05)'"
+                            onmouseout="this.style.transform='scale(1)'"
+                        >
+                            + ADICIONAR
+                        </button>
+                    </div>
+                    
+                    <div style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 12px;
+                        background: rgba(0, 0, 0, 0.3);
+                        border-radius: 8px;
+                    ">
+                        <div style="color: #ccc;">
+                            <span style="color: #d4af37; font-weight: 700; font-size: 1.1em;" id="perfume-count">0</span>
+                            <span style="margin-left: 5px;">perfumes adicionados</span>
+                        </div>
+                        <button 
+                            onclick="abrirPopupColecao()" 
+                            id="btn-ver-colecao"
+                            style="
+                                padding: 8px 18px;
+                                background: rgba(212, 175, 55, 0.15);
+                                border: 2px solid rgba(212, 175, 55, 0.4);
+                                border-radius: 8px;
+                                color: #d4af37;
+                                font-weight: 600;
+                                cursor: pointer;
+                                transition: all 0.3s ease;
+                            "
+                            onmouseover="this.style.background='rgba(212, 175, 55, 0.25)'; this.style.borderColor='#d4af37'"
+                            onmouseout="this.style.background='rgba(212, 175, 55, 0.15)'; this.style.borderColor='rgba(212, 175, 55, 0.4)'"
+                        >
+                            👁️ VER COLEÇÃO
+                        </button>
+                    </div>
+                </div>
+                
                 <div class="family-counter">
                     <div class="counter-item">
                         <label>🍋 Fresco/Cítrico</label>
@@ -863,35 +953,84 @@
         });
 
         // Analisar coleção com loading
+        // Analisar coleção - VERSÃO HÍBRIDA (lista de perfumes OU contadores)
         function analyzeCollection() {
-            const families = {
-                'fresco': { name: '🍋 Fresco/Cítrico', value: parseInt(document.getElementById('fresco').value) || 0 },
-                'aromatico': { name: '🌿 Aromático/Verde', value: parseInt(document.getElementById('aromatico').value) || 0 },
-                'doce': { name: '🍯 Doce/Gourmand', value: parseInt(document.getElementById('doce').value) || 0 },
-                'amadeirado': { name: '🪵 Amadeirado', value: parseInt(document.getElementById('amadeirado').value) || 0 },
-                'especiado': { name: '🔥 Especiado/Oriental', value: parseInt(document.getElementById('especiado').value) || 0 },
-                'aquatico': { name: '🌊 Aquático', value: parseInt(document.getElementById('aquatico').value) || 0 },
-                'talco': { name: '🧼 Talco/Fougère', value: parseInt(document.getElementById('talco').value) || 0 },
-                'floral': { name: '🌸 Floral', value: parseInt(document.getElementById('floral').value) || 0 },
-                'frutas': { name: '🍓 Frutas', value: parseInt(document.getElementById('frutas').value) || 0 }
-            };
+            // Pegar perfumes do localStorage
+            const perfumes = JSON.parse(localStorage.getItem('minhaColecao') || '[]');
+            
+            // Pegar dados do contexto
+            const clima = document.getElementById('clima').value || 'temperado';
+            const ambiente = document.getElementById('ambiente').value;
+            const orcamento = document.getElementById('orcamento').value;
+            
+            // Se não tem perfumes na lista, usa sistema antigo (contadores)
+            if (perfumes.length === 0) {
+                const families = {
+                    'fresco': { name: '🍋 Fresco/Cítrico', value: parseInt(document.getElementById('fresco').value) || 0 },
+                    'aromatico': { name: '🌿 Aromático/Verde', value: parseInt(document.getElementById('aromatico').value) || 0 },
+                    'doce': { name: '🍯 Doce/Gourmand', value: parseInt(document.getElementById('doce').value) || 0 },
+                    'amadeirado': { name: '🪵 Amadeirado', value: parseInt(document.getElementById('amadeirado').value) || 0 },
+                    'especiado': { name: '🔥 Especiado/Oriental', value: parseInt(document.getElementById('especiado').value) || 0 },
+                    'aquatico': { name: '🌊 Aquático', value: parseInt(document.getElementById('aquatico').value) || 0 },
+                    'talco': { name: '🧼 Talco/Fougère', value: parseInt(document.getElementById('talco').value) || 0 },
+                    'floral': { name: '🌸 Floral', value: parseInt(document.getElementById('floral').value) || 0 },
+                    'frutas': { name: '🍓 Frutas', value: parseInt(document.getElementById('frutas').value) || 0 }
+                };
 
-            const total = Object.values(families).reduce((sum, f) => sum + f.value, 0);
+                const total = Object.values(families).reduce((sum, f) => sum + f.value, 0);
 
-            if (total === 0) {
-                alert('Adicione pelo menos 1 perfume para analisar');
+                if (total === 0) {
+                    alert('⚠️ Adicione pelo menos 1 perfume à sua coleção OU preencha os contadores de família para analisar!');
+                    return;
+                }
+
+                // MOSTRAR POPUP DE LOADING
+                mostrarLoading();
+
+                // Simular processamento por 2.5 segundos
+                setTimeout(() => {
+                    fecharLoading();
+                    processarAnalise(families, total);
+                }, 2500);
                 return;
             }
+            
+            // Sistema novo (lista de perfumes) - usa IA
+            // Validar campos obrigatórios
+            if (!ambiente) {
+                alert('⚠️ Por favor, selecione seu ambiente de trabalho!');
+                document.getElementById('ambiente').focus();
+                return;
+            }
+            
+            if (!orcamento) {
+                alert('⚠️ Por favor, selecione sua faixa de orçamento!');
+                document.getElementById('orcamento').focus();
+                return;
+            }
+            
+            // Montar diagnóstico completo para enviar ao Perfumista
+            const diagnostico = `
+COLEÇÃO COMPLETA:
+${perfumes.map((p, i) => `${i + 1}. ${p}`).join('\n')}
 
-            // MOSTRAR POPUP DE LOADING
-            mostrarLoading();
+CONTEXTO:
+- Clima: ${clima === 'quente' ? '🌡️ Quente' : clima === 'frio' ? '❄️ Frio' : '🌤️ Temperado'}
+- Ambiente de trabalho: ${ambiente === 'fechado' ? '🏢 Fechado' : ambiente === 'aberto' ? '🌳 Aberto' : '🔀 Ambos'}
+- Faixa de orçamento: ${orcamento}
 
-            // Simular processamento por 2.5 segundos
-            setTimeout(() => {
-                fecharLoading();
-                processarAnalise(families, total);
-            }, 2500);
+OBJETIVO:
+Analise minha coleção, identifique quais famílias olfativas EU JÁ TENHO e quais FALTAM.
+Considerando meu clima, ambiente e orçamento, sugira os 3 MELHORES perfumes para EQUILIBRAR minha coleção.
+            `.trim();
+            
+            // Salvar diagnóstico no localStorage
+            localStorage.setItem('diagnostico_completo', diagnostico);
+            
+            // Abrir iframe do Perfumista
+            abrirPerfumistaNoMapa();
         }
+
 
         function mostrarLoading() {
             const overlay = document.createElement('div');
@@ -2213,6 +2352,287 @@
                 card.style.transform = 'translateY(0)';
             }, index * 100);
         });
+
+        // ============ FUNÇÕES PARA GERENCIAR COLEÇÃO DE PERFUMES ============
+
+        // Formatar nome em Title Case
+        function formatarNome(nome) {
+            return nome
+                .trim()
+                .toLowerCase()
+                .split(' ')
+                .map(palavra => palavra.charAt(0).toUpperCase() + palavra.slice(1))
+                .join(' ');
+        }
+
+        // Adicionar perfume
+        function adicionarPerfume() {
+            const input = document.getElementById('perfume-input');
+            let nome = input.value.trim();
+            
+            if (!nome) {
+                alert('⚠️ Digite o nome do perfume!');
+                return;
+            }
+            
+            // Formatar nome (Title Case)
+            nome = formatarNome(nome);
+            
+            // Pegar coleção atual
+            let colecao = JSON.parse(localStorage.getItem('minhaColecao') || '[]');
+            
+            // Verificar duplicata
+            if (colecao.includes(nome)) {
+                alert('⚠️ Este perfume já está na sua coleção!');
+                return;
+            }
+            
+            // Adicionar à coleção
+            colecao.push(nome);
+            localStorage.setItem('minhaColecao', JSON.stringify(colecao));
+            
+            // Limpar input
+            input.value = '';
+            
+            // Atualizar contador
+            atualizarContador();
+            
+            // Feedback visual
+            input.style.borderColor = '#00ff00';
+            setTimeout(() => {
+                input.style.borderColor = 'rgba(212, 175, 55, 0.3)';
+            }, 500);
+            
+            console.log('✅ Perfume adicionado:', nome);
+        }
+
+        // Atualizar contador
+        function atualizarContador() {
+            const colecao = JSON.parse(localStorage.getItem('minhaColecao') || '[]');
+            const count = colecao.length;
+            document.getElementById('perfume-count').textContent = count;
+            
+            // Habilitar/desabilitar botão ver coleção
+            const btn = document.getElementById('btn-ver-colecao');
+            if (count === 0) {
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+                btn.disabled = true;
+            } else {
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+                btn.disabled = false;
+            }
+        }
+
+        // Abrir popup da coleção
+        function abrirPopupColecao() {
+            const colecao = JSON.parse(localStorage.getItem('minhaColecao') || '[]');
+            
+            if (colecao.length === 0) {
+                alert('⚠️ Sua coleção está vazia!');
+                return;
+            }
+            
+            // Criar overlay
+            const overlay = document.createElement('div');
+            overlay.id = 'popup-colecao';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.9);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                animation: fadeIn 0.3s ease;
+            `;
+            
+            // Criar conteúdo do popup
+            overlay.innerHTML = `
+                <div style="
+                    background: linear-gradient(135deg, #2d2d2d 0%, #1e1e1e 100%);
+                    border: 3px solid #d4af37;
+                    border-radius: 20px;
+                    padding: 30px;
+                    max-width: 600px;
+                    width: 90%;
+                    max-height: 80vh;
+                    overflow-y: auto;
+                    box-shadow: 0 20px 60px rgba(212, 175, 55, 0.5);
+                ">
+                    <div style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 25px;
+                        padding-bottom: 20px;
+                        border-bottom: 2px solid rgba(212, 175, 55, 0.3);
+                    ">
+                        <h2 style="color: #d4af37; margin: 0; font-size: 1.8em;">
+                            📚 Minha Coleção (${colecao.length})
+                        </h2>
+                        <button 
+                            onclick="fecharPopupColecao()"
+                            style="
+                                background: rgba(255, 0, 0, 0.2);
+                                border: 2px solid rgba(255, 0, 0, 0.4);
+                                border-radius: 8px;
+                                color: #ff6666;
+                                padding: 8px 15px;
+                                cursor: pointer;
+                                font-weight: 600;
+                            "
+                        >
+                            ✕ Fechar
+                        </button>
+                    </div>
+                    
+                    <div id="lista-perfumes" style="display: flex; flex-direction: column; gap: 12px;">
+                        ${colecao.map((perfume, index) => `
+                            <div style="
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: center;
+                                padding: 15px;
+                                background: rgba(212, 175, 55, 0.08);
+                                border: 2px solid rgba(212, 175, 55, 0.2);
+                                border-radius: 12px;
+                                transition: all 0.3s ease;
+                            "
+                            onmouseover="this.style.borderColor='rgba(212, 175, 55, 0.5)'; this.style.background='rgba(212, 175, 55, 0.12)'"
+                            onmouseout="this.style.borderColor='rgba(212, 175, 55, 0.2)'; this.style.background='rgba(212, 175, 55, 0.08)'"
+                            >
+                                <div style="
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 15px;
+                                    flex: 1;
+                                ">
+                                    <span style="
+                                        color: #d4af37;
+                                        font-weight: 700;
+                                        font-size: 1.2em;
+                                        min-width: 30px;
+                                    ">${index + 1}.</span>
+                                    <span style="color: #fff; font-size: 1em;">${perfume}</span>
+                                </div>
+                                <button 
+                                    onclick="removerPerfume(${index})"
+                                    style="
+                                        background: rgba(255, 0, 0, 0.15);
+                                        border: 2px solid rgba(255, 0, 0, 0.3);
+                                        border-radius: 8px;
+                                        color: #ff6666;
+                                        padding: 8px 12px;
+                                        cursor: pointer;
+                                        font-size: 0.9em;
+                                        transition: all 0.3s ease;
+                                    "
+                                    onmouseover="this.style.background='rgba(255, 0, 0, 0.3)'; this.style.borderColor='#ff0000'"
+                                    onmouseout="this.style.background='rgba(255, 0, 0, 0.15)'; this.style.borderColor='rgba(255, 0, 0, 0.3)'"
+                                >
+                                    🗑️ Excluir
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div style="
+                        margin-top: 25px;
+                        padding-top: 20px;
+                        border-top: 2px solid rgba(212, 175, 55, 0.3);
+                        text-align: center;
+                    ">
+                        <button 
+                            onclick="limparColecao()"
+                            style="
+                                background: rgba(255, 0, 0, 0.2);
+                                border: 2px solid rgba(255, 0, 0, 0.4);
+                                border-radius: 10px;
+                                color: #ff6666;
+                                padding: 12px 25px;
+                                cursor: pointer;
+                                font-weight: 600;
+                                transition: all 0.3s ease;
+                            "
+                            onmouseover="this.style.background='rgba(255, 0, 0, 0.3)'"
+                            onmouseout="this.style.background='rgba(255, 0, 0, 0.2)'"
+                        >
+                            🗑️ LIMPAR TODA A COLEÇÃO
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(overlay);
+        }
+
+        // Fechar popup
+        function fecharPopupColecao() {
+            const popup = document.getElementById('popup-colecao');
+            if (popup) {
+                popup.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => popup.remove(), 300);
+            }
+        }
+
+        // Remover perfume
+        function removerPerfume(index) {
+            if (!confirm('Tem certeza que deseja remover este perfume?')) {
+                return;
+            }
+            
+            let colecao = JSON.parse(localStorage.getItem('minhaColecao') || '[]');
+            const perfumeRemovido = colecao[index];
+            
+            colecao.splice(index, 1);
+            localStorage.setItem('minhaColecao', JSON.stringify(colecao));
+            
+            console.log('🗑️ Perfume removido:', perfumeRemovido);
+            
+            // Atualizar contador
+            atualizarContador();
+            
+            // Fechar e reabrir popup (para atualizar lista)
+            fecharPopupColecao();
+            
+            if (colecao.length > 0) {
+                setTimeout(() => abrirPopupColecao(), 350);
+            }
+        }
+
+        // Limpar toda a coleção
+        function limparColecao() {
+            if (!confirm('⚠️ ATENÇÃO: Isso irá remover TODOS os perfumes da sua coleção!\n\nTem certeza?')) {
+                return;
+            }
+            
+            localStorage.removeItem('minhaColecao');
+            console.log('🗑️ Coleção limpa!');
+            
+            atualizarContador();
+            fecharPopupColecao();
+        }
+
+        // Event listener para Enter no input e carregar contador
+        (function() {
+            const input = document.getElementById('perfume-input');
+            if (input) {
+                input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        adicionarPerfume();
+                    }
+                });
+            }
+            
+            // Atualizar contador ao carregar
+            atualizarContador();
+        })();
+
     </script>
 </body>
 </html>
