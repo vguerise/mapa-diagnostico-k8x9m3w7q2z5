@@ -864,7 +864,7 @@
                 </div>
 
 
-                <!-- IFRAME INVISÍVEL (só processa, não aparece) -->
+                <!-- IFRAME INVISÍVEL -->
                 <iframe
                     id="perfumista-iframe"
                     src="https://vguerise.github.io/operfumista/"
@@ -886,19 +886,23 @@
     </div>
 
     <script>
-        // ===============================================
-        // SELECIONAR CLIMA
-        // ===============================================
         function selecionarClima(clima, btn) {
+            // Remover todas as classes de seleção
             document.querySelectorAll('.clima-btn').forEach(function(b) {
                 b.classList.remove('selected-quente');
                 b.classList.remove('selected-temperado');
                 b.classList.remove('selected-frio');
             });
             
+            // Adicionar classe específica do clima
             btn.classList.add('selected-' + clima);
+            
+            // Atualizar valor do input hidden
             document.getElementById('clima').value = clima;
+            
+            // Salvar no localStorage
             localStorage.setItem('clima', clima);
+            
             console.log('✅ Clima selecionado:', clima);
         }
 
@@ -908,21 +912,19 @@
                 localStorage.setItem(this.id, this.checked);
             });
             
+            // Carregar estado salvo
             const saved = localStorage.getItem(checkbox.id);
             if (saved === 'true') {
                 checkbox.checked = true;
             }
         });
 
-        // ===============================================
-        // ANALISAR COLEÇÃO - VERSÃO MAPA PAI
-        // Apenas envia para IA e mostra resultado
-        // ===============================================
+        // Analisar coleção com loading
+        // Analisar coleção - VERSÃO SIMPLIFICADA (só usa lista de perfumes)
         
         function analyzeCollection() {
             console.log('🚀 Analisando coleção...');
             
-            // Pegar perfumes do localStorage
             const perfumes = JSON.parse(localStorage.getItem('minhaColecao') || '[]');
             
             if (perfumes.length === 0) {
@@ -930,12 +932,10 @@
                 return;
             }
             
-            // Pegar dados do contexto
             const clima = document.getElementById('clima').value || 'temperado';
             const ambiente = document.getElementById('ambiente').value;
             const orcamento = document.getElementById('orcamento').value;
             
-            // Validar campos obrigatórios
             if (!ambiente) {
                 alert('⚠️ Por favor, selecione seu ambiente de trabalho!');
                 document.getElementById('ambiente').focus();
@@ -950,16 +950,9 @@
             
             console.log('✅ Validações OK. Enviando para IA...');
             
-            // Mostrar loading
             mostrarLoading(clima, ambiente, orcamento);
-            
-            // Enviar para IA
             enviarParaIA(perfumes, clima, ambiente, orcamento);
         }
-        
-        // ===============================================
-        // MOSTRAR LOADING
-        // ===============================================
         
         function mostrarLoading(clima, ambiente, orcamento) {
             const resultDiv = document.getElementById('result');
@@ -967,7 +960,6 @@
             const adviceDiv = document.getElementById('balance-advice');
             const nextDiv = document.getElementById('next-purchase');
             
-            // Labels
             const climaLabel = clima === 'quente' ? '🌡️ Quente' : clima === 'frio' ? '❄️ Frio' : '🌤️ Temperado';
             const ambienteLabel = ambiente === 'fechado' ? '🏢 Fechado' : ambiente === 'aberto' ? '🌳 Aberto' : '🔀 Ambos';
             
@@ -1009,10 +1001,6 @@
             resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
         
-        // ===============================================
-        // ENVIAR PARA IA
-        // ===============================================
-        
         function enviarParaIA(perfumes, clima, ambiente, orcamento) {
             const iframe = document.getElementById('perfumista-iframe');
             
@@ -1022,7 +1010,6 @@
                 return;
             }
             
-            // Montar diagnóstico
             const diagnostico = `
 COLEÇÃO COMPLETA:
 ${perfumes.map((p, i) => `${i + 1}. ${p}`).join('\n')}
@@ -1036,22 +1023,20 @@ OBJETIVO:
 Analise minha coleção completa e retorne análise detalhada + recomendações.
             `.trim();
             
-            // Salvar diagnóstico
             localStorage.setItem('diagnostico_completo', diagnostico);
             localStorage.setItem('contexto_clima', clima);
             localStorage.setItem('contexto_ambiente', ambiente);
             localStorage.setItem('contexto_orcamento', orcamento);
             
-            console.log('📋 Diagnóstico montado:', diagnostico);
+            console.log('📋 Diagnóstico montado');
             
-            // Enviar para iframe
             const sendToIframe = () => {
                 try {
                     iframe.contentWindow.postMessage(
                         { source: 'mapa', type: 'set_and_run', text: diagnostico },
                         'https://vguerise.github.io'
                     );
-                    console.log('✅ Mensagem enviada para iframe');
+                    console.log('✅ Mensagem enviada');
                 } catch (e) {
                     console.error('❌ Erro ao enviar:', e);
                     mostrarErro('Erro ao conectar com sistema de recomendações.');
@@ -1062,10 +1047,6 @@ Analise minha coleção completa e retorne análise detalhada + recomendações.
             sendToIframe();
         }
         
-        // ===============================================
-        // RECEBER RESPOSTA DA IA
-        // ===============================================
-        
         window.addEventListener('message', function(event) {
             if (event.origin !== 'https://vguerise.github.io') {
                 return;
@@ -1074,14 +1055,10 @@ Analise minha coleção completa e retorne análise detalhada + recomendações.
             const data = event.data;
             
             if (data.source === 'operfumista' && data.type === 'result') {
-                console.log('✅ Recebeu resposta da IA:', data);
+                console.log('✅ Recebeu resposta da IA');
                 renderizarResultado(data.result);
             }
         });
-        
-        // ===============================================
-        // RENDERIZAR RESULTADO (LAYOUT DO INDEX 13)
-        // ===============================================
         
         function renderizarResultado(resultado) {
             console.log('🎨 Renderizando resultado...');
@@ -1797,6 +1774,7 @@ Analise minha coleção completa e retorne análise detalhada + recomendações.
             if (colecao.length > 0) {
                 setTimeout(() => abrirPopupColecao(), 350);
             }
+
         }
 
         // Limpar toda a coleção
