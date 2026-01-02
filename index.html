@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mapa da Coleção Perfeita — MAPA_PAI_V10_20260102_005100</title>
+  <title>Mapa da Coleção Perfeita — MAPA_PAI_V11_20260102_005741</title>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{
@@ -766,6 +766,44 @@ function ensureIframeVisible(){
 }
 
 
+
+function postWhenIframeReady(payload){
+  const iframe = document.getElementById("perfumista-iframe");
+  if(!iframe){
+    console.warn("Iframe não encontrado.");
+    return;
+  }
+
+  // Se já carregou, tenta postar direto
+  try{
+    const doc = iframe.contentDocument;
+    if(doc && (doc.readyState === "complete" || doc.readyState === "interactive")){
+      iframe.contentWindow.postMessage({ type:"MAPA_DADOS", payload }, "*");
+      return;
+    }
+  }catch(e){
+    // cross-origin pode bloquear contentDocument (não deveria aqui), mas ok
+  }
+
+  // Se ainda não carregou, posta no load (1 vez)
+  const onLoad = ()=>{
+    try{
+      iframe.contentWindow.postMessage({ type:"MAPA_DADOS", payload }, "*");
+    }catch(err){
+      console.warn("Falha ao enviar dados ao iframe:", err);
+    }
+    iframe.removeEventListener("load", onLoad);
+  };
+  iframe.addEventListener("load", onLoad);
+
+  // Fallback: tenta novamente depois de um pequeno delay
+  setTimeout(()=>{
+    try{
+      iframe.contentWindow.postMessage({ type:"MAPA_DADOS", payload }, "*");
+    }catch(e){}
+  }, 800);
+}
+
 function sendToIframe(payload){
   const iframe = document.getElementById("perfumista-iframe");
   if(!iframe || !iframe.contentWindow){
@@ -964,7 +1002,7 @@ window.addEventListener("message", (e)=>{
   const btnMapear = document.getElementById("btnMapearColecao");
   if(btnMapear) btnMapear.addEventListener("click", analyzeCollection);
   // versão
-  console.log("✅ MAPA_PAI_V10_20260102_005100 carregado");
+  console.log("✅ MAPA_PAI_V11_20260102_005741 carregado");
   // Pré-carrega o motor
   setIframeSrcWithBust();
 })();
