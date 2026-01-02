@@ -1087,166 +1087,6 @@ Analise minha coleção completa e retorne análise detalhada + recomendações.
                             <div style="color: #f4e5b1; font-size: 1em;">${analise.familia_dominante.quantidade} perfumes · <strong style="color: #d4af37; font-size: 1.15em;">${analise.familia_dominante.porcentagem}%</strong> da coleção</div>
                         </div>
                     </div>
-                `;
-                
-                dominantDiv.innerHTML = `
-                    <div style="background: rgba(212, 175, 55, 0.15); padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #d4af37;">
-                        <div style="font-size: 1.3em; margin-bottom: 10px;">${analise.nivel.emoji} <strong>SEU NÍVEL: ${analise.nivel.titulo}</strong></div>
-                        <div style="color: #ccc; font-size: 0.95em;">${analise.nivel.descricao}</div>
-                    </div>
-                    ${infoCards}
-                `;
-                
-                const percentage = analise.familia_dominante.porcentagem;
-                let statusHtml = '';
-                
-                if (percentage >= 50) {
-                    statusHtml = `
-                        <div style="text-align: center; margin-bottom: 15px;">
-                            <div style="display: inline-block; background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1)); border: 2px solid #d4af37; border-radius: 8px; padding: 10px 30px;">
-                                <span style="color: #d4af37; font-size: 1.3em; font-weight: 700; letter-spacing: 2px;">📋 DIAGNÓSTICO</span>
-                            </div>
-                        </div>
-                        <div style="background: linear-gradient(135deg, rgba(255, 50, 50, 0.3), rgba(200, 0, 0, 0.2)); border: 4px solid #ff3333; border-radius: 12px; padding: 25px; margin-bottom: 20px;">
-                            <div style="font-size: 2em; text-align: center; margin-bottom: 10px;">🚨</div>
-                            <div style="font-size: 1.5em; font-weight: 700; color: #ff6666; text-align: center; text-transform: uppercase;">ATENÇÃO: COLEÇÃO DESBALANCEADA!</div>
-                        </div>
-                        <div style="font-size: 1.25em; line-height: 1.8; margin-top: 15px; text-align: center;">
-                            <strong style="color: #ff6666; font-size: 1.4em;">VOCÊ ESTÁ DESPERDIÇANDO DINHEIRO!</strong><br><br>
-                            <span style="font-size: 1.15em; color: #fff;">${analise.equilibrio.mensagem}</span>
-                        </div>
-                    `;
-                } else if (percentage >= 35) {
-                    statusHtml = `
-                        <div style="text-align: center; margin-bottom: 15px;">
-                            <div style="display: inline-block; background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1)); border: 2px solid #d4af37; border-radius: 8px; padding: 10px 30px;">
-                                <span style="color: #d4af37; font-size: 1.3em; font-weight: 700; letter-spacing: 2px;">📋 DIAGNÓSTICO</span>
-                            </div>
-                        </div>
-                        <div style="background: linear-gradient(135deg, rgba(255, 165, 0, 0.3), rgba(255, 140, 0, 0.2)); border: 4px solid #ff9933; border-radius: 12px; padding: 25px; margin-bottom: 20px;">
-                            <div style="font-size: 2em; text-align: center; margin-bottom: 10px;">⚠️</div>
-                            <div style="font-size: 1.4em; font-weight: 700; color: #ffaa00; text-align: center; text-transform: uppercase;">Alerta: Coleção com Viés!</div>
-                        </div>
-                        <div style="font-size: 1.25em; line-height: 1.8; margin-top: 15px; text-align: center;">
-                            <strong style="color: #ffaa00; font-size: 1.3em;">SUA COLEÇÃO ESTÁ DESEQUILIBRADA!</strong><br><br>
-                            <span style="font-size: 1.15em; color: #fff;">${analise.equilibrio.mensagem}</span>
-                        </div>
-                    `;
-                } else {
-                    statusHtml = `
-                        <div style="text-align: center; margin-bottom: 15px;">
-                            <div style="display: inline-block; background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1)); border: 2px solid #d4af37; border-radius: 8px; padding: 10px 30px;">
-                                <span style="color: #d4af37; font-size: 1.3em; font-weight: 700; letter-spacing: 2px;">📋 DIAGNÓSTICO</span>
-                            </div>
-                        </div>
-                        <div style="background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.1)); border: 3px solid rgba(76, 175, 80, 0.5); border-radius: 12px; padding: 20px; margin-bottom: 20px; text-align: center;">
-                            <div style="font-size: 1.8em; margin-bottom: 8px;">✅</div>
-                            <div style="font-size: 1.3em; font-weight: 700; color: #4caf50;">COLEÇÃO EQUILIBRADA!</div>
-                            <div style="color: #ccc; margin-top: 10px;">Boa distribuição entre as famílias</div>
-                        </div>
-                    `;
-                }
-                
-                let missingHtml = '';
-                if (analise.top3_faltando && analise.top3_faltando.length > 0) {
-                    missingHtml = '<div style="margin-top: 20px;"><div style="font-size: 1.1em; color: #d4af37; margin-bottom: 15px; font-weight: 700;">🔍 TOP 3 FAMÍLIAS QUE FALTAM:</div>';
-                    analise.top3_faltando.forEach((fam, i) => {
-                        missingHtml += `<div style="background: rgba(212, 175, 55, 0.08); border-left: 4px solid #d4af37; padding: 12px; margin-bottom: 8px; border-radius: 6px;"><span style="color: #d4af37; font-weight: 700;">${i + 1}.</span> <span style="color: #fff; margin-left: 8px;">${fam}</span></div>`;
-                    });
-                    missingHtml += '</div>';
-                }
-                
-                adviceDiv.innerHTML = statusHtml + missingHtml;
-                
-                let recomendacoesHtml = '<div style="margin-top: 30px;"><div style="font-size: 1.5em; color: #d4af37; font-weight: 700; margin-bottom: 20px; text-align: center;">🎁 3 RECOMENDAÇÕES PERSONALIZADAS</div>';
-                
-                recomendacoes.forEach((rec, i) => {
-                    recomendacoesHtml += `
-                        <div style="background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05)); border: 2px solid rgba(212, 175, 55, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 15px;">
-                            <div style="font-size: 1.3em; color: #d4af37; font-weight: 700; margin-bottom: 8px;">${i + 1}️⃣ ${rec.nome}</div>
-                            <div style="color: #f4e5b1; font-size: 0.95em; margin-bottom: 8px;">${rec.familia} • ${rec.faixa_preco}</div>
-                            <div style="color: #ccc; font-size: 0.9em; margin-bottom: 6px;"><strong style="color: #d4af37;">Por quê:</strong> ${rec.por_que}</div>
-                            <div style="color: #ccc; font-size: 0.9em;"><strong style="color: #d4af37;">Quando usar:</strong> ${rec.quando_usar}</div>
-                        </div>
-                    `;
-                });
-                
-                recomendacoesHtml += '</div>';
-                nextDiv.innerHTML = recomendacoesHtml;
-                
-                console.log('✅ Resultado renderizado!');
-                
-            } catch (e) {
-                console.error('❌ Erro:', e);
-                mostrarErro('Erro ao processar resposta da IA.');
-            }
-        }
-        
-        
-        function mostrarErro(mensagem) {
-            const dominantDiv = document.getElementById('dominant-family');
-            dominantDiv.innerHTML = `
-                <div style="background: rgba(255, 0, 0, 0.1); border: 2px solid rgba(255, 0, 0, 0.3); border-radius: 12px; padding: 30px; text-align: center;">
-                    <div style="font-size: 2em; margin-bottom: 15px;">❌</div>
-                    <div style="color: #ff6666; font-size: 1.2em; font-weight: 700;">${mensagem}</div>
-                    <div style="color: #ccc; margin-top: 15px;">Tente novamente ou entre em contato com o suporte.</div>
-                </div>
-            `;
-        }
-        function formatarNome(nome) {
-            return nome
-                .trim()
-                .toLowerCase()
-                .split(' ')
-        
-        function renderizarResultado(resultado) {
-            console.log('🎨 Renderizando resultado...');
-            
-            try {
-                const data = typeof resultado === 'string' ? JSON.parse(resultado) : resultado;
-                
-                if (!data.analise_colecao || !data.recomendacoes) {
-                    throw new Error('Formato inválido');
-                }
-                
-                const analise = data.analise_colecao;
-                const recomendacoes = data.recomendacoes;
-                
-                const clima = localStorage.getItem('contexto_clima') || 'temperado';
-                const ambiente = localStorage.getItem('contexto_ambiente') || '';
-                const orcamento = localStorage.getItem('contexto_orcamento') || '';
-                
-                const climaLabel = clima === 'quente' ? '🌡️ Quente' : clima === 'frio' ? '❄️ Frio' : '🌤️ Temperado';
-                const ambienteLabel = ambiente === 'fechado' ? '🏢 Fechado' : ambiente === 'aberto' ? '🌳 Aberto' : '🔀 Ambos';
-                
-                const dominantDiv = document.getElementById('dominant-family');
-                const adviceDiv = document.getElementById('balance-advice');
-                const nextDiv = document.getElementById('next-purchase');
-                
-                const infoCards = `
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;">
-                        <div style="background: linear-gradient(135deg, rgba(100, 150, 255, 0.15), rgba(100, 150, 255, 0.05)); border: 2px solid rgba(100, 150, 255, 0.4); border-radius: 8px; padding: 12px;">
-                            <div style="font-size: 0.85em; color: #9bc4ff; margin-bottom: 6px; font-weight: 600;">🌡️ CLIMA</div>
-                            <div style="color: #fff; font-size: 0.95em;">${climaLabel}</div>
-                        </div>
-                        <div style="background: linear-gradient(135deg, rgba(100, 150, 255, 0.15), rgba(100, 150, 255, 0.05)); border: 2px solid rgba(100, 150, 255, 0.4); border-radius: 8px; padding: 12px;">
-                            <div style="font-size: 0.85em; color: #9bc4ff; margin-bottom: 6px; font-weight: 600;">💼 AMBIENTE</div>
-                            <div style="color: #fff; font-size: 0.95em;">${ambienteLabel}</div>
-                        </div>
-                        <div style="background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05)); border: 2px solid rgba(212, 175, 55, 0.4); border-radius: 8px; padding: 12px;">
-                            <div style="font-size: 0.85em; color: #d4af37; margin-bottom: 6px; font-weight: 600;">📊 TOTAL</div>
-                            <div style="color: #fff; font-size: 1.3em; font-weight: 700;">${analise.total_perfumes} perfumes</div>
-                        </div>
-                        <div style="background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05)); border: 2px solid rgba(212, 175, 55, 0.4); border-radius: 8px; padding: 12px;">
-                            <div style="font-size: 0.85em; color: #d4af37; margin-bottom: 6px; font-weight: 600;">🎯 FAMÍLIAS</div>
-                            <div style="color: #fff; font-size: 1.3em; font-weight: 700;">${analise.familias_representadas}/9</div>
-                        </div>
-                        <div style="background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1)); border: 3px solid #d4af37; border-radius: 8px; padding: 12px; grid-column: 1 / -1;">
-                            <div style="font-size: 0.85em; color: #d4af37; margin-bottom: 8px; font-weight: 600;">👑 FAMÍLIA DOMINANTE</div>
-                            <div style="color: #fff; font-size: 1.2em; font-weight: 700; margin-bottom: 4px;">${analise.familia_dominante.nome}</div>
-                            <div style="color: #f4e5b1; font-size: 1em;">${analise.familia_dominante.quantidade} perfumes · <strong style="color: #d4af37; font-size: 1.15em;">${analise.familia_dominante.porcentagem}%</strong> da coleção</div>
-                        </div>
-                    </div>
                     
                     <div style="background: rgba(30, 30, 30, 0.5); border: 2px solid rgba(212, 175, 55, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
                         <div style="font-size: 1.1em; color: #d4af37; margin-bottom: 15px; font-weight: 700; text-align: center;">📊 DISTRIBUIÇÃO DAS FAMÍLIAS OLFATIVAS</div>
@@ -1263,7 +1103,7 @@ Analise minha coleção completa e retorne análise detalhada + recomendações.
                 `;
                 
                 // Renderizar gráfico
-                renderizarGrafico(analise.perfumes_por_familia);
+                setTimeout(() => renderizarGrafico(analise.perfumes_por_familia), 100);
                 
                 const percentage = analise.familia_dominante.porcentagem;
                 let statusHtml = '';
@@ -1361,15 +1201,15 @@ Analise minha coleção completa e retorne análise detalhada + recomendações.
             const valores = Object.values(perfumesPorFamilia);
             
             const cores = [
-                'rgba(255, 206, 86, 0.8)',   // Fresco/Cítrico
-                'rgba(75, 192, 192, 0.8)',   // Aromático/Verde
-                'rgba(255, 99, 132, 0.8)',   // Doce/Gourmand
-                'rgba(139, 69, 19, 0.8)',    // Amadeirado
-                'rgba(255, 140, 0, 0.8)',    // Especiado/Oriental
-                'rgba(54, 162, 235, 0.8)',   // Aquático
-                'rgba(201, 203, 207, 0.8)',  // Talco/Fougère
-                'rgba(255, 105, 180, 0.8)',  // Floral
-                'rgba(153, 102, 255, 0.8)'   // Frutado
+                'rgba(255, 206, 86, 0.8)',
+                'rgba(75, 192, 192, 0.8)',
+                'rgba(255, 99, 132, 0.8)',
+                'rgba(139, 69, 19, 0.8)',
+                'rgba(255, 140, 0, 0.8)',
+                'rgba(54, 162, 235, 0.8)',
+                'rgba(201, 203, 207, 0.8)',
+                'rgba(255, 105, 180, 0.8)',
+                'rgba(153, 102, 255, 0.8)'
             ];
             
             new Chart(canvas, {
@@ -1391,9 +1231,7 @@ Analise minha coleção completa e retorne análise detalhada + recomendações.
                             position: 'bottom',
                             labels: {
                                 color: '#fff',
-                                font: {
-                                    size: 11
-                                },
+                                font: { size: 11 },
                                 padding: 10
                             }
                         },
@@ -1404,7 +1242,7 @@ Analise minha coleção completa e retorne análise detalhada + recomendações.
                                     const value = context.parsed || 0;
                                     const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                     const percentage = ((value / total) * 100).toFixed(1);
-                                    return `${label}: ${value} perfumes (${percentage}%)`;
+                                    return label + ': ' + value + ' perfumes (' + percentage + '%)';
                                 }
                             }
                         }
