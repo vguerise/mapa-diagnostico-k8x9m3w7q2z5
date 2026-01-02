@@ -764,7 +764,7 @@
                 </div>
                 
                 
-                <!-- NOVO: Sistema de adicionar perfumes à coleção -->
+                <!-- Sistema de adicionar perfumes à coleção -->
                 <div style="
                     background: rgba(212, 175, 55, 0.08);
                     border: 2px solid rgba(212, 175, 55, 0.3);
@@ -852,45 +852,7 @@
                         </button>
                     </div>
                 </div>
-                
-                <div class="family-counter">
-                    <div class="counter-item">
-                        <label>🍋 Fresco/Cítrico</label>
-                        <input type="number" id="fresco" min="0" max="20" value="0">
-                    </div>
-                    <div class="counter-item">
-                        <label>🌿 Aromático/Verde</label>
-                        <input type="number" id="aromatico" min="0" max="20" value="0">
-                    </div>
-                    <div class="counter-item">
-                        <label>🍯 Doce/Gourmand</label>
-                        <input type="number" id="doce" min="0" max="20" value="0">
-                    </div>
-                    <div class="counter-item">
-                        <label>🪵 Amadeirado</label>
-                        <input type="number" id="amadeirado" min="0" max="20" value="0">
-                    </div>
-                    <div class="counter-item">
-                        <label>🔥 Especiado/Oriental</label>
-                        <input type="number" id="especiado" min="0" max="20" value="0">
-                    </div>
-                    <div class="counter-item">
-                        <label>🌊 Aquático</label>
-                        <input type="number" id="aquatico" min="0" max="20" value="0">
-                    </div>
-                    <div class="counter-item">
-                        <label>🧼 Talco/Fougère</label>
-                        <input type="number" id="talco" min="0" max="20" value="0">
-                    </div>
-                    <div class="counter-item">
-                        <label>🌸 Floral</label>
-                        <input type="number" id="floral" min="0" max="20" value="0">
-                    </div>
-                    <div class="counter-item">
-                        <label>🍓 Frutas</label>
-                        <input type="number" id="frutas" min="0" max="20" value="0">
-                    </div>
-                </div>
+
 
                 <button class="analyze-btn" onclick="analyzeCollection()">ANALISAR COLEÇÃO</button>
 
@@ -953,49 +915,21 @@
         });
 
         // Analisar coleção com loading
-        // Analisar coleção - VERSÃO HÍBRIDA (lista de perfumes OU contadores)
+        // Analisar coleção - VERSÃO SIMPLIFICADA (só usa lista de perfumes)
         function analyzeCollection() {
             // Pegar perfumes do localStorage
             const perfumes = JSON.parse(localStorage.getItem('minhaColecao') || '[]');
+            
+            if (perfumes.length === 0) {
+                alert('⚠️ Adicione pelo menos 1 perfume à sua coleção para analisar!');
+                return;
+            }
             
             // Pegar dados do contexto
             const clima = document.getElementById('clima').value || 'temperado';
             const ambiente = document.getElementById('ambiente').value;
             const orcamento = document.getElementById('orcamento').value;
             
-            // Se não tem perfumes na lista, usa sistema antigo (contadores)
-            if (perfumes.length === 0) {
-                const families = {
-                    'fresco': { name: '🍋 Fresco/Cítrico', value: parseInt(document.getElementById('fresco').value) || 0 },
-                    'aromatico': { name: '🌿 Aromático/Verde', value: parseInt(document.getElementById('aromatico').value) || 0 },
-                    'doce': { name: '🍯 Doce/Gourmand', value: parseInt(document.getElementById('doce').value) || 0 },
-                    'amadeirado': { name: '🪵 Amadeirado', value: parseInt(document.getElementById('amadeirado').value) || 0 },
-                    'especiado': { name: '🔥 Especiado/Oriental', value: parseInt(document.getElementById('especiado').value) || 0 },
-                    'aquatico': { name: '🌊 Aquático', value: parseInt(document.getElementById('aquatico').value) || 0 },
-                    'talco': { name: '🧼 Talco/Fougère', value: parseInt(document.getElementById('talco').value) || 0 },
-                    'floral': { name: '🌸 Floral', value: parseInt(document.getElementById('floral').value) || 0 },
-                    'frutas': { name: '🍓 Frutas', value: parseInt(document.getElementById('frutas').value) || 0 }
-                };
-
-                const total = Object.values(families).reduce((sum, f) => sum + f.value, 0);
-
-                if (total === 0) {
-                    alert('⚠️ Adicione pelo menos 1 perfume à sua coleção OU preencha os contadores de família para analisar!');
-                    return;
-                }
-
-                // MOSTRAR POPUP DE LOADING
-                mostrarLoading();
-
-                // Simular processamento por 2.5 segundos
-                setTimeout(() => {
-                    fecharLoading();
-                    processarAnalise(families, total);
-                }, 2500);
-                return;
-            }
-            
-            // Sistema novo (lista de perfumes) - usa IA
             // Validar campos obrigatórios
             if (!ambiente) {
                 alert('⚠️ Por favor, selecione seu ambiente de trabalho!');
@@ -1026,6 +960,8 @@ Considerando meu clima, ambiente e orçamento, sugira os 3 MELHORES perfumes par
             
             // Salvar diagnóstico no localStorage
             localStorage.setItem('diagnostico_completo', diagnostico);
+            
+            console.log('📋 Diagnóstico montado:', diagnostico);
             
             // Abrir iframe do Perfumista
             abrirPerfumistaNoMapa();
@@ -2410,18 +2346,23 @@ Considerando meu clima, ambiente e orçamento, sugira os 3 MELHORES perfumes par
         function atualizarContador() {
             const colecao = JSON.parse(localStorage.getItem('minhaColecao') || '[]');
             const count = colecao.length;
-            document.getElementById('perfume-count').textContent = count;
+            const countEl = document.getElementById('perfume-count');
+            if (countEl) {
+                countEl.textContent = count;
+            }
             
             // Habilitar/desabilitar botão ver coleção
             const btn = document.getElementById('btn-ver-colecao');
-            if (count === 0) {
-                btn.style.opacity = '0.5';
-                btn.style.cursor = 'not-allowed';
-                btn.disabled = true;
-            } else {
-                btn.style.opacity = '1';
-                btn.style.cursor = 'pointer';
-                btn.disabled = false;
+            if (btn) {
+                if (count === 0) {
+                    btn.style.opacity = '0.5';
+                    btn.style.cursor = 'not-allowed';
+                    btn.disabled = true;
+                } else {
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'pointer';
+                    btn.disabled = false;
+                }
             }
         }
 
@@ -2618,8 +2559,9 @@ Considerando meu clima, ambiente e orçamento, sugira os 3 MELHORES perfumes par
             fecharPopupColecao();
         }
 
-        // Event listener para Enter no input e carregar contador
+        // Inicializar ao carregar página
         (function() {
+            // Event listener para Enter no input
             const input = document.getElementById('perfume-input');
             if (input) {
                 input.addEventListener('keypress', function(e) {
