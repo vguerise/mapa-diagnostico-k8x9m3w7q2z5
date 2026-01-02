@@ -864,13 +864,6 @@
                 </div>
 
 
-                <!-- IFRAME INVISÍVEL -->
-                <iframe
-                    id="perfumista-iframe"
-                    src="https://vguerise.github.io/operfumista/"
-                    style="display: none;"
-                    loading="lazy"
-                ></iframe>
             </div>
         </div>
 
@@ -918,8 +911,12 @@
         // ===============================================
         // ANALISAR COLEÇÃO
         // ===============================================
+
+        // ===============================================
+        // ANALISAR COLEÇÃO - CHAMADA DIRETA À API
+        // ===============================================
         
-        function analyzeCollection() {
+        async function analyzeCollection() {
             console.log('🚀 Analisando coleção...');
             
             const perfumes = JSON.parse(localStorage.getItem('minhaColecao') || '[]');
@@ -945,10 +942,58 @@
                 return;
             }
             
-            console.log('✅ Validações OK. Enviando para IA...');
+            console.log('✅ Validações OK');
             
             mostrarLoading(clima, ambiente, orcamento);
-            enviarParaIA(perfumes, clima, ambiente, orcamento);
+            
+            // Montar diagnóstico
+            const diagnostico = `
+COLEÇÃO COMPLETA:
+${perfumes.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+
+CONTEXTO:
+- Clima: ${clima === 'quente' ? '🌡️ Quente' : clima === 'frio' ? '❄️ Frio' : '🌤️ Temperado'}
+- Ambiente de trabalho: ${ambiente === 'fechado' ? '🏢 Fechado' : ambiente === 'aberto' ? '🌳 Aberto' : '🔀 Ambos'}
+- Faixa de orçamento: ${orcamento}
+
+OBJETIVO:
+Analise minha coleção completa e retorne análise detalhada + recomendações.
+            `.trim();
+            
+            localStorage.setItem('diagnostico_completo', diagnostico);
+            localStorage.setItem('contexto_clima', clima);
+            localStorage.setItem('contexto_ambiente', ambiente);
+            localStorage.setItem('contexto_orcamento', orcamento);
+            
+            console.log('📋 Diagnóstico montado');
+            
+            // Chamar API direto
+            try {
+                console.log('🌐 Chamando API...');
+                
+                const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        diagnostico: diagnostico
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('✅ Resposta recebida da API');
+                
+                renderizarResultado(data);
+                
+            } catch (error) {
+                console.error('❌ Erro na API:', error);
+                mostrarErro('Erro ao conectar com servidor. Verifique sua conexão.');
+            }
         }
         
         function mostrarLoading(clima, ambiente, orcamento) {
@@ -956,9 +1001,6 @@
             const dominantDiv = document.getElementById('dominant-family');
             const adviceDiv = document.getElementById('balance-advice');
             const nextDiv = document.getElementById('next-purchase');
-            
-            const climaLabel = clima === 'quente' ? '🌡️ Quente' : clima === 'frio' ? '❄️ Frio' : '🌤️ Temperado';
-            const ambienteLabel = ambiente === 'fechado' ? '🏢 Fechado' : ambiente === 'aberto' ? '🌳 Aberto' : '🔀 Ambos';
             
             dominantDiv.innerHTML = `
                 <div style="
@@ -997,66 +1039,6 @@
             resultDiv.style.display = 'block';
             resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-        
-        function enviarParaIA(perfumes, clima, ambiente, orcamento) {
-            const iframe = document.getElementById('perfumista-iframe');
-            
-            if (!iframe) {
-                console.error('❌ Iframe não encontrado!');
-                mostrarErro('Erro ao carregar sistema de recomendações.');
-                return;
-            }
-            
-            const diagnostico = `
-COLEÇÃO COMPLETA:
-${perfumes.map((p, i) => `${i + 1}. ${p}`).join('\n')}
-
-CONTEXTO:
-- Clima: ${clima === 'quente' ? '🌡️ Quente' : clima === 'frio' ? '❄️ Frio' : '🌤️ Temperado'}
-- Ambiente de trabalho: ${ambiente === 'fechado' ? '🏢 Fechado' : ambiente === 'aberto' ? '🌳 Aberto' : '🔀 Ambos'}
-- Faixa de orçamento: ${orcamento}
-
-OBJETIVO:
-Analise minha coleção completa e retorne análise detalhada + recomendações.
-            `.trim();
-            
-            localStorage.setItem('diagnostico_completo', diagnostico);
-            localStorage.setItem('contexto_clima', clima);
-            localStorage.setItem('contexto_ambiente', ambiente);
-            localStorage.setItem('contexto_orcamento', orcamento);
-            
-            console.log('📋 Diagnóstico montado');
-            
-            const sendToIframe = () => {
-                try {
-                    iframe.contentWindow.postMessage(
-                        { source: 'mapa', type: 'set_and_run', text: diagnostico },
-                        'https://vguerise.github.io'
-                    );
-                    console.log('✅ Mensagem enviada');
-                } catch (e) {
-                    console.error('❌ Erro ao enviar:', e);
-                    mostrarErro('Erro ao conectar com sistema de recomendações.');
-                }
-            };
-            
-            iframe.addEventListener('load', sendToIframe, { once: true });
-            sendToIframe();
-        }
-        
-        window.addEventListener('message', function(event) {
-            if (event.origin !== 'https://vguerise.github.io') {
-                return;
-            }
-            
-            const data = event.data;
-            
-            if (data.source === 'operfumista' && data.type === 'result') {
-                console.log('✅ Recebeu resposta da IA');
-                renderizarResultado(data.result);
-            }
-        });
-        
         function renderizarResultado(resultado) {
             console.log('🎨 Renderizando resultado...');
             
@@ -1200,6 +1182,7 @@ Analise minha coleção completa e retorne análise detalhada + recomendações.
             }
         }
         
+        
         function mostrarErro(mensagem) {
             const dominantDiv = document.getElementById('dominant-family');
             dominantDiv.innerHTML = `
@@ -1210,35 +1193,6 @@ Analise minha coleção completa e retorne análise detalhada + recomendações.
                 </div>
             `;
         }
-        // Restaurar clima selecionado ao carregar página
-        const savedClima = localStorage.getItem('clima');
-        if (savedClima) {
-            document.getElementById('clima').value = savedClima;
-            // Marcar o botão correto visualmente
-            const climaBtns = document.querySelectorAll('.clima-btn');
-            climaBtns.forEach(btn => {
-                const onclickStr = btn.getAttribute('onclick');
-                if (onclickStr && onclickStr.includes(`'${savedClima}'`)) {
-                    btn.classList.add(`selected-${savedClima}`);
-                }
-            });
-        }
-
-        // Animação ao entrar
-        const cards = document.querySelectorAll('.card');
-        cards.forEach((card, index) => {
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(20px)';
-            setTimeout(() => {
-                card.style.transition = 'all 0.5s ease';
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
-            }, index * 100);
-        });
-
-        // ============ FUNÇÕES PARA GERENCIAR COLEÇÃO DE PERFUMES ============
-
-        // Formatar nome em Title Case
         function formatarNome(nome) {
             return nome
                 .trim()
