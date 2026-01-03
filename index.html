@@ -900,6 +900,104 @@
             </div>
         </div>
 
+        <!-- ========================================
+             NOVA SEÇÃO: PERGUNTAS AO PERFUMISTA
+             ======================================== -->
+        <div class="interactive-note" style="margin-top: 40px;">
+            <h3 style="
+                color: #d4af37;
+                font-size: 1.5em;
+                margin-bottom: 15px;
+                text-align: center;
+            ">
+                💬 Pergunte ao Perfumista
+            </h3>
+            
+            <p style="
+                color: #ccc;
+                text-align: center;
+                margin-bottom: 20px;
+                line-height: 1.6;
+            ">
+                Precisa saber se um perfume combina com sua coleção?<br>
+                Ou quer mais sugestões personalizadas? Digite aqui!
+            </p>
+
+            <div style="
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                margin-bottom: 20px;
+            ">
+                <textarea 
+                    id="pergunta-input" 
+                    placeholder="Ex: O Dior Homme combina com minha coleção? | Preciso de um perfume para o trabalho | Tenho R$400, o que comprar?"
+                    style="
+                        width: 100%;
+                        min-height: 80px;
+                        padding: 15px;
+                        background: rgba(0, 0, 0, 0.4);
+                        border: 2px solid rgba(212, 175, 55, 0.3);
+                        border-radius: 10px;
+                        color: white;
+                        font-size: 1em;
+                        font-family: inherit;
+                        resize: vertical;
+                    "
+                ></textarea>
+                
+                <button 
+                    onclick="perguntarAoPerfumista()" 
+                    style="
+                        padding: 14px 30px;
+                        background: linear-gradient(135deg, #d4af37 0%, #f4e5b1 100%);
+                        border: none;
+                        border-radius: 10px;
+                        color: #000;
+                        font-weight: 700;
+                        cursor: pointer;
+                        font-size: 1.05em;
+                        transition: all 0.3s ease;
+                        align-self: center;
+                    "
+                    onmouseover="this.style.transform='scale(1.05)'"
+                    onmouseout="this.style.transform='scale(1)'"
+                >
+                    🎯 PERGUNTAR
+                </button>
+            </div>
+
+            <div id="resposta-pergunta" style="display: none; margin-top: 20px;">
+                <div style="
+                    background: rgba(212, 175, 55, 0.1);
+                    border: 2px solid rgba(212, 175, 55, 0.3);
+                    border-radius: 12px;
+                    padding: 20px;
+                    margin-bottom: 20px;
+                ">
+                    <div style="color: #d4af37; font-weight: 600; font-size: 1.1em; margin-bottom: 10px;">
+                        💡 Resposta:
+                    </div>
+                    <div id="texto-resposta" style="color: #f4e5b1; line-height: 1.6;"></div>
+                </div>
+
+                <div style="
+                    color: #d4af37;
+                    font-weight: 600;
+                    font-size: 1.2em;
+                    margin-bottom: 15px;
+                    text-align: center;
+                ">
+                    🎁 3 Sugestões Personalizadas:
+                </div>
+
+                <div id="sugestoes-lista" style="
+                    display: grid;
+                    gap: 15px;
+                "></div>
+            </div>
+        </div>
+
         <div class="interactive-note">
             <h3 style="margin-bottom: 15px;">📋 COMO USAR ESTE MAPA</h3>
             <p style="line-height: 1.8;">
@@ -1589,6 +1687,126 @@ Analise minha coleção completa e retorne análise detalhada + recomendações.
             
             atualizarContador();
         })();
+
+        // ===============================================
+        // PERGUNTAR AO PERFUMISTA
+        // ===============================================
+        async function perguntarAoPerfumista() {
+            const perguntaInput = document.getElementById('pergunta-input');
+            const pergunta = perguntaInput.value.trim();
+            
+            if (!pergunta) {
+                alert('Por favor, digite sua pergunta!');
+                return;
+            }
+            
+            console.log('💬 Pergunta:', pergunta);
+            
+            // Pegar coleção atual
+            const colecao = JSON.parse(localStorage.getItem('perfumes') || '[]');
+            
+            // Pegar contexto
+            const clima = localStorage.getItem('clima') || 'temperado';
+            const ambiente = localStorage.getItem('ambiente') || 'fechado';
+            const orcamento = localStorage.getItem('orcamento') || 'R$ 350 - R$ 1.500';
+            
+            // Mostrar loading
+            const respostaDiv = document.getElementById('resposta-pergunta');
+            const textoResposta = document.getElementById('texto-resposta');
+            const sugestoes = document.getElementById('sugestoes-lista');
+            
+            respostaDiv.style.display = 'block';
+            textoResposta.innerHTML = '⏳ Consultando O Perfumista...';
+            sugestoes.innerHTML = '';
+            
+            try {
+                const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        pergunta: pergunta,
+                        colecao: colecao,
+                        clima: clima,
+                        ambiente: ambiente,
+                        orcamento: orcamento
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Erro na API');
+                }
+                
+                const data = await response.json();
+                console.log('✅ Resposta:', data);
+                
+                // Mostrar resposta
+                textoResposta.innerHTML = data.resposta || 'Aqui estão suas sugestões personalizadas:';
+                
+                // Mostrar sugestões
+                sugestoes.innerHTML = data.sugestoes.map((sug, index) => `
+                    <div style="
+                        background: rgba(0, 0, 0, 0.3);
+                        border: 2px solid rgba(212, 175, 55, 0.3);
+                        border-radius: 12px;
+                        padding: 20px;
+                    ">
+                        <div style="
+                            color: #d4af37;
+                            font-weight: 700;
+                            font-size: 1.2em;
+                            margin-bottom: 10px;
+                        ">
+                            ${index + 1}. ${sug.nome}
+                        </div>
+                        
+                        <div style="
+                            display: flex;
+                            gap: 15px;
+                            margin-bottom: 12px;
+                            flex-wrap: wrap;
+                        ">
+                            <span style="
+                                background: rgba(212, 175, 55, 0.2);
+                                padding: 5px 12px;
+                                border-radius: 6px;
+                                color: #f4e5b1;
+                                font-size: 0.9em;
+                            ">
+                                ${sug.familia}
+                            </span>
+                            <span style="
+                                background: rgba(100, 200, 100, 0.2);
+                                padding: 5px 12px;
+                                border-radius: 6px;
+                                color: #90EE90;
+                                font-size: 0.9em;
+                                font-weight: 600;
+                            ">
+                                ${sug.faixa_preco}
+                            </span>
+                        </div>
+                        
+                        <div style="color: #ccc; margin-bottom: 8px; line-height: 1.5;">
+                            <strong style="color: #d4af37;">Por quê:</strong> ${sug.por_que}
+                        </div>
+                        
+                        <div style="color: #ccc; line-height: 1.5;">
+                            <strong style="color: #d4af37;">Quando usar:</strong> ${sug.quando_usar}
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Scroll suave até a resposta
+                respostaDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                
+            } catch (error) {
+                console.error('❌ Erro:', error);
+                textoResposta.innerHTML = '❌ Erro ao consultar O Perfumista. Tente novamente.';
+                sugestoes.innerHTML = '';
+            }
+        }
 
     </script>
     
