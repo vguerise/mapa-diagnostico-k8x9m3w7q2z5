@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MAPA DA COLEÇÃO PERFEITA</title>
+    <title>Mapa de Coleção de Perfumes</title>
     <style>
         * {
             margin: 0;
@@ -493,7 +493,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>MAPA DA COLEÇÃO PERFEITA</h1>
+            <h1>MAPA DE COLEÇÃO PERFEITA</h1>
             <p class="subtitle">Monte sua coleção sem redundâncias e com função real</p>
         </header>
 
@@ -1012,6 +1012,123 @@
 
     <script>
         // ===============================================
+        // SISTEMA DE TRACKING DE DADOS
+        // ===============================================
+        
+        // Configuração Supabase (COLE SUAS CREDENCIAIS AQUI)
+        const SUPABASE_URL = 'COLE_SUA_URL_AQUI'; // Ex: https://xyzabc.supabase.co
+        const SUPABASE_ANON_KEY = 'COLE_SUA_CHAVE_AQUI'; // Chave anon/public
+        
+        // Gerar hash anônimo do usuário (sem dados pessoais)
+        function gerarUserHash() {
+            let hash = localStorage.getItem('user_hash');
+            if (!hash) {
+                hash = 'user_' + Date.now().toString(36) + Math.random().toString(36).substr(2);
+                localStorage.setItem('user_hash', hash);
+            }
+            return hash;
+        }
+        
+        // Detectar região aproximada
+        function detectarRegiao() {
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const regiaoMap = {
+                'America/Sao_Paulo': 'Sudeste',
+                'America/Rio_Branco': 'Norte',
+                'America/Manaus': 'Norte',
+                'America/Fortaleza': 'Nordeste',
+                'America/Recife': 'Nordeste',
+                'America/Bahia': 'Nordeste',
+                'America/Cuiaba': 'Centro-Oeste',
+                'America/Campo_Grande': 'Centro-Oeste',
+            };
+            return regiaoMap[timezone] || 'Brasil';
+        }
+        
+        // Salvar análise no Supabase
+        async function salvarAnaliseTracking(analiseData, perfumes, clima, ambiente, orcamento) {
+            if (SUPABASE_URL === 'COLE_SUA_URL_AQUI' || !SUPABASE_URL) {
+                console.log('⚠️ Tracking desabilitado - configure Supabase');
+                return;
+            }
+            
+            try {
+                const dados = {
+                    perfumes: perfumes,
+                    total_perfumes: perfumes.length,
+                    familias_distribuicao: analiseData.perfumes_por_familia || {},
+                    familia_dominante: analiseData.familia_dominante?.nome || null,
+                    porcentagem_dominante: analiseData.familia_dominante?.porcentagem || null,
+                    clima: clima,
+                    ambiente: ambiente,
+                    orcamento: orcamento,
+                    regiao: detectarRegiao(),
+                    pais: 'BR',
+                    user_hash: gerarUserHash(),
+                    user_agent: navigator.userAgent,
+                    timestamp: new Date().toISOString()
+                };
+                
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/analises`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify(dados)
+                });
+                
+                if (response.ok) {
+                    console.log('✅ Análise salva no tracking');
+                }
+            } catch (error) {
+                console.warn('⚠️ Erro no tracking:', error.message);
+            }
+        }
+        
+        // Salvar pergunta no Supabase
+        async function salvarPerguntaTracking(pergunta, colecao, clima, ambiente, orcamento, resposta, sugestoes) {
+            if (SUPABASE_URL === 'COLE_SUA_URL_AQUI' || !SUPABASE_URL) {
+                console.log('⚠️ Tracking desabilitado - configure Supabase');
+                return;
+            }
+            
+            try {
+                const dados = {
+                    pergunta: pergunta,
+                    colecao: colecao,
+                    clima: clima,
+                    ambiente: ambiente,
+                    orcamento: orcamento,
+                    resposta: resposta,
+                    sugestoes: sugestoes,
+                    regiao: detectarRegiao(),
+                    user_hash: gerarUserHash(),
+                    timestamp: new Date().toISOString()
+                };
+                
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/perguntas`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify(dados)
+                });
+                
+                if (response.ok) {
+                    console.log('✅ Pergunta salva no tracking');
+                }
+            } catch (error) {
+                console.warn('⚠️ Erro no tracking pergunta:', error.message);
+            }
+        }
+        
+        // ===============================================
         // SELECIONAR CLIMA
         // ===============================================
         function selecionarClima(clima, btn) {
@@ -1119,6 +1236,10 @@ Analise minha coleção completa e retorne análise detalhada + recomendações.
                 
                 const data = await response.json();
                 console.log('✅ Resposta recebida da API');
+                
+                // Salvar dados no tracking (silencioso)
+                const perfumes = JSON.parse(localStorage.getItem('minhaColecao') || '[]');
+                salvarAnaliseTracking(data.analise_colecao, perfumes, clima, ambiente, orcamento);
                 
                 renderizarResultado(data);
                 
@@ -1741,6 +1862,9 @@ Analise minha coleção completa e retorne análise detalhada + recomendações.
                 
                 const data = await response.json();
                 console.log('✅ Resposta:', data);
+                
+                // Salvar pergunta no tracking (silencioso)
+                salvarPerguntaTracking(pergunta, colecao, clima, ambiente, orcamento, data.resposta, data.sugestoes);
                 
                 // Mostrar resposta
                 textoResposta.innerHTML = data.resposta || 'Aqui estão suas sugestões personalizadas:';
