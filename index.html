@@ -887,7 +887,106 @@
                 </div>
 
 
-                <button class="analyze-btn" onclick="analyzeCollection()">ANALISAR COLEÇÃO</button>
+                <!-- ========================================
+                     SEÇÃO: PERGUNTAS AO PERFUMISTA
+                     ======================================== -->
+                <div class="interactive-note" style="margin-top: 40px; margin-bottom: 40px;">
+                    <h3 style="
+                        color: #d4af37;
+                        font-size: 1.5em;
+                        margin-bottom: 15px;
+                        text-align: center;
+                    ">
+                        💬 Pergunte ao Perfumista
+                    </h3>
+                    
+                    <p style="
+                        color: #ccc;
+                        text-align: center;
+                        margin-bottom: 20px;
+                        line-height: 1.6;
+                    ">
+                        Precisa saber se um perfume combina com sua coleção?<br>
+                        Ou quer mais sugestões personalizadas? Digite aqui!
+                    </p>
+
+                    <div style="
+                        display: flex;
+                        flex-direction: column;
+                        gap: 15px;
+                        margin-bottom: 20px;
+                    ">
+                        <textarea 
+                            id="pergunta-input" 
+                            placeholder="Ex: O Dior Homme combina com minha coleção? | Preciso de um perfume para o trabalho | Tenho R$400, o que comprar?"
+                            style="
+                                width: 100%;
+                                min-height: 80px;
+                                padding: 15px;
+                                background: rgba(0, 0, 0, 0.4);
+                                border: 2px solid rgba(212, 175, 55, 0.3);
+                                border-radius: 10px;
+                                color: white;
+                                font-size: 1em;
+                                font-family: inherit;
+                                resize: vertical;
+                            "
+                        ></textarea>
+                        
+                        <button 
+                            onclick="perguntarAoPerfumista()" 
+                            style="
+                                padding: 14px 30px;
+                                background: linear-gradient(135deg, #d4af37 0%, #f4e5b1 100%);
+                                border: none;
+                                border-radius: 10px;
+                                color: #000;
+                                font-weight: 700;
+                                cursor: pointer;
+                                font-size: 1.05em;
+                                transition: all 0.3s ease;
+                                align-self: center;
+                            "
+                            onmouseover="this.style.transform='scale(1.05)'"
+                            onmouseout="this.style.transform='scale(1)'"
+                        >
+                            🎯 PERGUNTAR
+                        </button>
+                    </div>
+
+                    <div id="resposta-pergunta" style="display: none; margin-top: 20px;">
+                        <div style="
+                            background: rgba(212, 175, 55, 0.1);
+                            border: 2px solid rgba(212, 175, 55, 0.3);
+                            border-radius: 12px;
+                            padding: 20px;
+                            margin-bottom: 20px;
+                        ">
+                            <div style="color: #d4af37; font-weight: 600; font-size: 1.1em; margin-bottom: 10px;">
+                                💡 Resposta:
+                            </div>
+                            <div id="texto-resposta" style="color: #f4e5b1; line-height: 1.6;"></div>
+                        </div>
+
+                        <div style="
+                            color: #d4af37;
+                            font-weight: 600;
+                            font-size: 1.2em;
+                            margin-bottom: 15px;
+                            text-align: center;
+                        ">
+                            🎁 3 Sugestões Personalizadas:
+                        </div>
+
+                        <div id="sugestoes-lista" style="
+                            display: grid;
+                            gap: 15px;
+                        "></div>
+                    </div>
+                </div>
+
+
+                <button class="analyze-btn" onclick="analyzeCollection()">MAPEIE MINHA COLEÇÃO</button>
 
                 <div id="result" class="result-box" style="display: none;">
                     <div class="result-title">📊 RESULTADO DA ANÁLISE</div>
@@ -897,104 +996,6 @@
                 </div>
 
 
-            </div>
-        </div>
-
-        <!-- ========================================
-             NOVA SEÇÃO: PERGUNTAS AO PERFUMISTA
-             ======================================== -->
-        <div class="interactive-note" style="margin-top: 40px;">
-            <h3 style="
-                color: #d4af37;
-                font-size: 1.5em;
-                margin-bottom: 15px;
-                text-align: center;
-            ">
-                💬 Pergunte ao Perfumista
-            </h3>
-            
-            <p style="
-                color: #ccc;
-                text-align: center;
-                margin-bottom: 20px;
-                line-height: 1.6;
-            ">
-                Precisa saber se um perfume combina com sua coleção?<br>
-                Ou quer mais sugestões personalizadas? Digite aqui!
-            </p>
-
-            <div style="
-                display: flex;
-                flex-direction: column;
-                gap: 15px;
-                margin-bottom: 20px;
-            ">
-                <textarea 
-                    id="pergunta-input" 
-                    placeholder="Ex: O Dior Homme combina com minha coleção? | Preciso de um perfume para o trabalho | Tenho R$400, o que comprar?"
-                    style="
-                        width: 100%;
-                        min-height: 80px;
-                        padding: 15px;
-                        background: rgba(0, 0, 0, 0.4);
-                        border: 2px solid rgba(212, 175, 55, 0.3);
-                        border-radius: 10px;
-                        color: white;
-                        font-size: 1em;
-                        font-family: inherit;
-                        resize: vertical;
-                    "
-                ></textarea>
-                
-                <button 
-                    onclick="perguntarAoPerfumista()" 
-                    style="
-                        padding: 14px 30px;
-                        background: linear-gradient(135deg, #d4af37 0%, #f4e5b1 100%);
-                        border: none;
-                        border-radius: 10px;
-                        color: #000;
-                        font-weight: 700;
-                        cursor: pointer;
-                        font-size: 1.05em;
-                        transition: all 0.3s ease;
-                        align-self: center;
-                    "
-                    onmouseover="this.style.transform='scale(1.05)'"
-                    onmouseout="this.style.transform='scale(1)'"
-                >
-                    🎯 PERGUNTAR
-                </button>
-            </div>
-
-            <div id="resposta-pergunta" style="display: none; margin-top: 20px;">
-                <div style="
-                    background: rgba(212, 175, 55, 0.1);
-                    border: 2px solid rgba(212, 175, 55, 0.3);
-                    border-radius: 12px;
-                    padding: 20px;
-                    margin-bottom: 20px;
-                ">
-                    <div style="color: #d4af37; font-weight: 600; font-size: 1.1em; margin-bottom: 10px;">
-                        💡 Resposta:
-                    </div>
-                    <div id="texto-resposta" style="color: #f4e5b1; line-height: 1.6;"></div>
-                </div>
-
-                <div style="
-                    color: #d4af37;
-                    font-weight: 600;
-                    font-size: 1.2em;
-                    margin-bottom: 15px;
-                    text-align: center;
-                ">
-                    🎁 3 Sugestões Personalizadas:
-                </div>
-
-                <div id="sugestoes-lista" style="
-                    display: grid;
-                    gap: 15px;
-                "></div>
             </div>
         </div>
 
