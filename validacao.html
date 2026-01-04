@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validando acesso...</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 500px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .logo {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #d4af37;
+            font-size: 2em;
+            margin-bottom: 15px;
+        }
+        
+        p {
+            color: #ccc;
+            font-size: 1.1em;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(212, 175, 55, 0.3);
+            border-top: 5px solid #d4af37;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: rgba(255, 0, 0, 0.1);
+            border: 2px solid rgba(255, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .error-title {
+            color: #ff6666;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .error-message {
+            color: #ccc;
+        }
+        
+        .btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #d4af37 0%, #f4e5b1 100%);
+            color: #1e1e1e;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 700;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(212, 175, 55, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🎯</div>
+        <h1>Mapa da Coleção Perfeita</h1>
+        <p id="status">Validando seu acesso...</p>
+        <div class="loading" id="loading"></div>
+        
+        <div class="error" id="error">
+            <div class="error-title">❌ Acesso negado</div>
+            <div class="error-message" id="error-message"></div>
+            <a href="https://pay.hotmart.com/SEU_LINK_AQUI" class="btn">Adquirir acesso</a>
+        </div>
+    </div>
+    
+    <script>
+        // Pega token da URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        
+        // Validar token
+        async function validarAcesso() {
+            // Se não tem token
+            if (!token) {
+                mostrarErro('Nenhum código de acesso fornecido. Adquira o produto primeiro.');
+                return;
+            }
+            
+            try {
+                // OPÇÃO A: Validar com seu backend (recomendado)
+                // const response = await fetch('https://seu-backend.com/validar-hotmart', {
+                //     method: 'POST',
+                //     headers: { 'Content-Type': 'application/json' },
+                //     body: JSON.stringify({ token })
+                // });
+                
+                // OPÇÃO B: Validar direto com Hotmart API
+                // Nota: Isso requer configuração de CORS no Hotmart
+                // Para produção, use backend próprio
+                
+                // SIMULAÇÃO (REMOVA EM PRODUÇÃO):
+                // Aceita qualquer token que tenha formato válido
+                if (token.length > 10) {
+                    // Token válido - salva e redireciona
+                    localStorage.setItem('hotmart_token', token);
+                    localStorage.setItem('hotmart_validated', 'true');
+                    localStorage.setItem('hotmart_validation_date', new Date().toISOString());
+                    
+                    document.getElementById('status').textContent = '✅ Acesso liberado! Redirecionando...';
+                    document.getElementById('loading').style.display = 'none';
+                    
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1500);
+                } else {
+                    mostrarErro('Token inválido. Entre em contato com o suporte.');
+                }
+                
+            } catch (error) {
+                console.error('Erro na validação:', error);
+                mostrarErro('Erro ao validar acesso. Tente novamente.');
+            }
+        }
+        
+        function mostrarErro(mensagem) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('status').style.display = 'none';
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('error-message').textContent = mensagem;
+        }
+        
+        // Inicia validação
+        validarAcesso();
+    </script>
+</body>
+</html>
