@@ -4,6 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mapa da Coleção Perfeita</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Análise inteligente de coleção de perfumes masculinos com IA">
+    <meta name="theme-color" content="#d4af37">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Mapa Perfumes">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Ícones para iOS -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-192x192.png">
+    
     <style>
         * {
             margin: 0;
@@ -2355,5 +2371,136 @@ ${recomendacoes.map((rec, i) => `*${i + 1}. ${rec.nome}*
     
     <!-- Chart.js para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Service Worker para PWA -->
+    <script>
+        // Registrar Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then((registration) => {
+                        console.log('✅ ServiceWorker registrado:', registration.scope);
+                        
+                        // Verificar se há atualização
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // Nova versão disponível
+                                    if (confirm('Nova versão disponível! Atualizar agora?')) {
+                                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .catch((error) => {
+                        console.error('❌ Erro ao registrar ServiceWorker:', error);
+                    });
+            });
+        }
+        
+        // Detectar quando PWA pode ser instalado
+        let deferredPrompt;
+        const installButton = document.createElement('button');
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('💾 PWA instalável detectado');
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Criar botão de instalação
+            installButton.innerHTML = '📱 INSTALAR APP';
+            installButton.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                padding: 15px 25px;
+                background: linear-gradient(135deg, #d4af37 0%, #f4e5b1 100%);
+                border: none;
+                border-radius: 50px;
+                color: #1e1e1e;
+                font-weight: 700;
+                font-size: 1em;
+                cursor: pointer;
+                box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+                z-index: 9999;
+                transition: all 0.3s ease;
+                animation: pulse 2s infinite;
+            `;
+            
+            // Adicionar animação pulse
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes pulse {
+                    0%, 100% { transform: scale(1); }
+                    50% { transform: scale(1.05); }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            installButton.addEventListener('mouseover', () => {
+                installButton.style.transform = 'scale(1.1)';
+                installButton.style.boxShadow = '0 6px 25px rgba(212, 175, 55, 0.6)';
+            });
+            
+            installButton.addEventListener('mouseout', () => {
+                installButton.style.transform = 'scale(1)';
+                installButton.style.boxShadow = '0 4px 15px rgba(212, 175, 55, 0.4)';
+            });
+            
+            installButton.addEventListener('click', async () => {
+                installButton.style.display = 'none';
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`PWA instalação: ${outcome}`);
+                deferredPrompt = null;
+            });
+            
+            document.body.appendChild(installButton);
+        });
+        
+        // Quando PWA é instalado
+        window.addEventListener('appinstalled', () => {
+            console.log('✅ PWA instalado com sucesso!');
+            if (installButton && installButton.parentNode) {
+                installButton.remove();
+            }
+            deferredPrompt = null;
+            
+            // Mostrar mensagem de sucesso
+            const toast = document.createElement('div');
+            toast.innerHTML = '✅ App instalado! Encontre-o na tela inicial.';
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 80px;
+                left: 50%;
+                transform: translateX(-50%);
+                padding: 15px 30px;
+                background: rgba(76, 175, 80, 0.95);
+                color: white;
+                border-radius: 10px;
+                font-weight: 600;
+                z-index: 10000;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.transition = 'opacity 0.5s';
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
+        });
+        
+        // Detectar se está rodando como PWA
+        const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                      window.navigator.standalone === true;
+        
+        if (isPWA) {
+            console.log('🚀 Rodando como PWA instalado');
+        }
+    </script>
 </body>
 </html>
