@@ -5,6 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mapa da Coleção Perfeita</title>
     
+    <!-- PROTEÇÃO HOTMART -->
+    <script>
+    (function() {
+        // Verifica se usuário tem acesso
+        const isValidated = localStorage.getItem('hotmart_validated');
+        const token = localStorage.getItem('hotmart_token');
+        const validationDate = localStorage.getItem('hotmart_validation_date');
+        
+        // Se não está validado, redireciona
+        if (!isValidated || !token) {
+            // Pega token da URL (se vier do Hotmart)
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlToken = urlParams.get('token');
+            
+            if (urlToken) {
+                // Tem token na URL - redireciona para validação
+                window.location.href = '/validacao.html?token=' + urlToken;
+            } else {
+                // Não tem token - redireciona para página de venda
+                // ⚠️ TROQUE PELO SEU LINK DO HOTMART
+                window.location.href = 'https://pay.hotmart.com/M103540661D?checkoutMode=10';
+            }
+            return;
+        }
+        
+        // Verificar se validação expirou (opcional - 365 dias)
+        if (validationDate) {
+            const validationTime = new Date(validationDate).getTime();
+            const now = new Date().getTime();
+            const daysPassed = (now - validationTime) / (1000 * 60 * 60 * 24);
+            
+            if (daysPassed > 365) {
+                // Expirou - limpa e redireciona
+                localStorage.clear();
+                window.location.href = 'https://pay.hotmart.com/M103540661D?checkoutMode=10';
+                return;
+            }
+        }
+        
+        // Tudo OK - usuário tem acesso
+        console.log('✅ Acesso validado - Hotmart');
+    })();
+    </script>
+    <!-- FIM PROTEÇÃO HOTMART -->
+    
     <!-- PWA Meta Tags -->
     <meta name="description" content="Análise inteligente de coleção de perfumes masculinos com IA">
     <meta name="theme-color" content="#d4af37">
