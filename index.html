@@ -1517,6 +1517,24 @@ Considere minha idade e orçamento. Priorize nichos acessíveis.
                     </div>
                 `).join('')}
                 
+                <!-- Botão WhatsApp -->
+                <button onclick="enviarParaWhatsAppInicio(${JSON.stringify(recomendacoes).replace(/"/g, '&quot;')})" style="
+                    width: 100%;
+                    margin-top: 20px;
+                    padding: 15px;
+                    background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+                    border: none;
+                    border-radius: 10px;
+                    color: white;
+                    font-size: 1.1em;
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 5px 20px rgba(37, 211, 102, 0.4)'"
+                   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                    📱 ENVIAR PRO MEU WHATSAPP
+                </button>
+                
                 <div style="
                     margin-top: 25px;
                     padding: 15px;
@@ -1533,6 +1551,15 @@ Considere minha idade e orçamento. Priorize nichos acessíveis.
                     </div>
                 </div>
             `;
+            
+            // Scroll suave até o resultado
+            setTimeout(() => {
+                const resultElement = document.getElementById('result');
+                resultElement.scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }, 300);
         }
         
         async function salvarInicioColecaoTracking(clima, ambiente, idade, orcamento, sugestoes) {
@@ -1575,6 +1602,49 @@ Considere minha idade e orçamento. Priorize nichos acessíveis.
             } catch (error) {
                 console.warn('⚠️ Erro no tracking:', error.message);
             }
+        }
+        
+        // Enviar sugestões iniciais para WhatsApp
+        function enviarParaWhatsAppInicio(recomendacoes) {
+            const texto = `🎯 *Mapa da Coleção Perfeita*
+Minhas sugestões para começar:
+
+${recomendacoes.map((rec, i) => `*${i + 1}. ${rec.nome}*
+🌿 Família: ${rec.familia}
+💰 Preço: ${rec.faixa_preco}
+📝 Por quê: ${rec.por_que}
+⏰ Quando: ${rec.quando_usar}`).join('\n\n')}
+
+---
+✨ Gerado em: mapadeperfumes.com.br`;
+            
+            const urlWhatsApp = `https://wa.me/?text=${encodeURIComponent(texto)}`;
+            window.open(urlWhatsApp, '_blank');
+        }
+        
+        // Enviar análise para WhatsApp
+        function enviarParaWhatsAppAnalise(recomendacoes) {
+            const colecao = JSON.parse(localStorage.getItem('minhaColecao') || '[]');
+            
+            const texto = `🎯 *Mapa da Coleção Perfeita*
+Análise da minha coleção
+
+📦 *Minha coleção atual:*
+${colecao.slice(0, 5).join(', ')}${colecao.length > 5 ? '...' : ''}
+
+🎁 *Recomendações personalizadas:*
+
+${recomendacoes.map((rec, i) => `*${i + 1}. ${rec.nome}*
+🌿 Família: ${rec.familia}
+💰 Preço: ${rec.faixa_preco}
+📝 Por quê: ${rec.por_que}
+⏰ Quando: ${rec.quando_usar}`).join('\n\n')}
+
+---
+✨ Gerado em: mapadeperfumes.com.br`;
+            
+            const urlWhatsApp = `https://wa.me/?text=${encodeURIComponent(texto)}`;
+            window.open(urlWhatsApp, '_blank');
         }
         
         function mostrarLoading(clima, ambiente, orcamento) {
@@ -1760,7 +1830,25 @@ Considere minha idade e orçamento. Priorize nichos acessíveis.
                     `;
                 });
                 
-                recomendacoesHtml += '</div>';
+                recomendacoesHtml += `
+                    <!-- Botão WhatsApp -->
+                    <button onclick='enviarParaWhatsAppAnalise(${JSON.stringify(recomendacoes).replace(/'/g, "\\'")})' style="
+                        width: 100%;
+                        margin-top: 20px;
+                        padding: 15px;
+                        background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+                        border: none;
+                        border-radius: 10px;
+                        color: white;
+                        font-size: 1.1em;
+                        font-weight: 700;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 5px 20px rgba(37, 211, 102, 0.4)'"
+                       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                        📱 ENVIAR PRO MEU WHATSAPP
+                    </button>
+                </div>`;
                 nextDiv.innerHTML = recomendacoesHtml;
                 
                 console.log('✅ Resultado renderizado!');
