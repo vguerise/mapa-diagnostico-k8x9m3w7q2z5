@@ -299,14 +299,6 @@
             border-color: #d4af37;
         }
 
-        /* Container dos botões */
-        .buttons-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-top: 30px;
-        }
-
         /* Botão de análise (dourado) */
         .analyze-btn {
             padding: 18px;
@@ -328,7 +320,7 @@
         /* Botão iniciar coleção (vermelho) */
         .start-btn {
             padding: 18px;
-            font-size: 1.2em;
+            font-size: 1.1em;
             font-weight: 700;
             background: linear-gradient(90deg, #e74c3c, #c0392b);
             color: white;
@@ -341,14 +333,6 @@
         .start-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 20px rgba(231, 76, 60, 0.4);
-        }
-
-        /* Responsivo - botões empilham em mobile */
-        @media (max-width: 768px) {
-            .buttons-container {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
         }
 
         .result-box {
@@ -819,6 +803,27 @@
                                 </button>
                             </div>
                             
+                            <!-- Botão AINDA NÃO COMECEI - logo abaixo dos botões de clima -->
+                            <button onclick="iniciarColecao()" style="
+                                width: 100%;
+                                margin-top: 15px;
+                                padding: 15px 10px;
+                                background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+                                border: 2px solid rgba(231, 76, 60, 0.5);
+                                color: white;
+                                border-radius: 10px;
+                                cursor: pointer;
+                                font-size: 0.95em;
+                                font-weight: 600;
+                                transition: all 0.3s;
+                                text-align: center;
+                            " onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 25px rgba(231, 76, 60, 0.6)'"
+                               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                                <div style="font-size: 1.5em; margin-bottom: 5px;">🚫</div>
+                                <div style="font-weight: 600;">Ainda não comecei</div>
+                                <div style="font-size: 0.75em; color: rgba(255,255,255,0.8); margin-top: 3px;">Minha coleção</div>
+                            </button>
+                            
                             <style>
                                 .clima-btn:hover {
                                     transform: translateY(-3px) scale(1.05);
@@ -1042,16 +1047,10 @@
                 </div>
 
 
-                <!-- Container com os dois botões -->
-                <div class="buttons-container">
-                    <button class="start-btn" onclick="iniciarColecao()">
-                        🚫 AINDA NÃO COMECEI MINHA COLEÇÃO!
-                    </button>
-                    
-                    <button class="analyze-btn" onclick="analyzeCollection()">
-                        📊 ANALISE MINHA COLEÇÃO
-                    </button>
-                </div>
+                <!-- Botão de análise (dourado) -->
+                <button class="analyze-btn" onclick="analyzeCollection()" style="width: 100%; margin-top: 30px;">
+                    📊 ANALISE MINHA COLEÇÃO
+                </button>
 
                 <div id="result" class="result-box" style="display: none;">
                     <div class="result-title">📊 RESULTADO DA ANÁLISE</div>
