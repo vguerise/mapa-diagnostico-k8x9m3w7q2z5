@@ -1675,6 +1675,17 @@ Analise minha coleção completa e retorne análise detalhada + recomendações.
             
             mostrarLoadingInicio(clima, ambiente, idade, orcamento);
             
+            // Scroll automático para resultado
+            setTimeout(() => {
+                const resultDiv = document.getElementById('result');
+                if (resultDiv) {
+                    resultDiv.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start' 
+                    });
+                }
+            }, 300); // Aguarda 300ms para o conteúdo aparecer
+            
             // Montar contexto para iniciar coleção
             const contextoInicio = `
 Quero COMEÇAR minha coleção de perfumes do zero.
