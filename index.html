@@ -3662,9 +3662,19 @@ if (document.readyState === 'loading') {
 }
 
 // Observer para mudanças no localStorage (quando adiciona/remove perfume)
+// Detecta mudanças SEM redesenhar constantemente
+let ultimaColecao = localStorage.getItem('minhaColecao') || '[]';
+
 setInterval(() => {
-    atualizarNivelDOM();
-}, 1000); // Atualiza a cada 1 segundo
+    const colecaoAtual = localStorage.getItem('minhaColecao') || '[]';
+    
+    // Só atualiza se a coleção REALMENTE mudou
+    if (colecaoAtual !== ultimaColecao) {
+        console.log('🔄 Coleção mudou, atualizando nível...');
+        ultimaColecao = colecaoAtual;
+        atualizarNivelDOM();
+    }
+}, 500); // Verifica a cada 0.5s (mas só redesenha se mudou)
     </script>
 
 </body>
