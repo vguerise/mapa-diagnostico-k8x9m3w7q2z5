@@ -1133,6 +1133,10 @@
 const PRODUCT_ID = "mapa_de_perfumes";
 const HOTMART_CHECKOUT_URL = "https://pay.hotmart.com/TROQUE_AQUI";
 
+// Configuração Supabase
+const SUPABASE_URL = 'https://frivahuiffxrxzcjrlom.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZyaXZhaHVpZmZ4cnh6Y2pybG9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzgxMTAsImV4cCI6MjA4MzA1NDExMH0.9cIQs8qhctqZsiNlh4hOVHCjOBMR7UBFpBXiVST6iL4';
+
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 function showMsg(msg) {
@@ -1230,7 +1234,7 @@ async function sendMagicLink() {
   const { error } = await supabaseClient.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: "https://mapadeperfumes.com.br",
+      emailRedirectTo: "https://www.mapadeperfumes.com.br",
     },
   });
 
