@@ -832,7 +832,7 @@
             <p class="subtitle">Monte sua coleção sem redundâncias e com função real</p>
         </header>
 
-<h2 class="section-title">🎯 MAPEIE SUA COLEÇÃO</h2>
+<h2 class="section-title">🎯 DIAGNÓSTICO AVANÇADO: SUA COLEÇÃO ESTÁ EQUILIBRADA?</h2>
         <h2 class="section-title">🎯 DIAGNÓSTICO AVANÇADO: SUA COLEÇÃO ESTÁ EQUILIBRADA?</h2>
         
         <div class="balance-section">
@@ -1632,7 +1632,7 @@ Analise minha coleção completa e retorne análise detalhada + recomendações.
                 const perfumes = JSON.parse(localStorage.getItem('minhaColecao') || '[]');
                 salvarAnaliseTracking(data.analise_colecao, perfumes, clima, ambiente, idade, orcamento);
                 
-                renderizarResultado(data);
+                renderizarMissaoGameficada(data);
                 
             } catch (error) {
                 console.error('❌ Erro na API:', error);
@@ -2813,7 +2813,15 @@ ${recomendacoes.map((rec, i) => `*${i + 1}. ${rec.nome}*
 // ========================================
 
 function renderizarMissaoGameficada(data) {
-    const { analise, recomendacoes, contexto_aplicado } = data;
+    // Normalizar nome dos campos (API retorna analise_colecao)
+    const analise = data.analise_colecao || data.analise;
+    const recomendacoes = data.recomendacoes;
+    const contexto_aplicado = {
+        clima: localStorage.getItem('contexto_clima') || 'temperado',
+        ambiente: localStorage.getItem('contexto_ambiente') || '',
+        idade: localStorage.getItem('contexto_idade') || '',
+        orcamento: localStorage.getItem('contexto_orcamento') || ''
+    };
     
     // Gera missão baseada na análise
     const missao = gerarMissao(analise, contexto_aplicado);
@@ -2896,14 +2904,27 @@ function renderizarMissaoGameficada(data) {
         </div>
     `;
     
-    // Insere no DOM (antes do radar/gráfico)
+    // Card do gráfico radar
+    const radarHTML = `
+        <div style="background: rgba(255, 255, 255, 0.05); border: 2px solid rgba(212, 175, 55, 0.3); border-radius: 15px; padding: 30px; margin-top: 30px;">
+            <h3 style="color: #d4af37; margin-bottom: 20px; font-size: 1.5em; text-align: center;">📊 SEU MAPA OLFATIVO</h3>
+            <div style="background: rgba(30, 30, 30, 0.5); border: 2px solid rgba(212, 175, 55, 0.3); border-radius: 12px; padding: 20px;">
+                <canvas id="grafico-familias" style="max-width: 400px; max-height: 400px; margin: 0 auto; display: block;"></canvas>
+            </div>
+        </div>
+    `;
+    
+    // Insere no DOM
     const resultDiv = document.getElementById('result');
-    resultDiv.innerHTML = missaoHTML + resultDiv.innerHTML;
+    resultDiv.innerHTML = missaoHTML + radarHTML;
     resultDiv.style.display = 'block';
     
     // Mostra container com animação
     setTimeout(() => {
         document.getElementById('missionContainer').style.display = 'block';
+        
+        // Renderiza gráfico
+        setTimeout(() => renderizarGrafico(analise.perfumes_por_familia), 100);
         
         // Scroll suave até a missão
         setTimeout(() => {
