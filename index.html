@@ -2934,13 +2934,17 @@ function renderizarMissaoGameficada(data) {
     }, 100);
 }
 
-function gerarMissao(analise, contexto) {
+function gerarMissao(analise, contexto, missaoIndex = 0) {
     const { familia_dominante, top3_faltando, nivel, perfumes_por_familia } = analise;
     
-    // Determina qual família atacar
-    const familiaAlvo = top3_faltando && top3_faltando.length > 0 
-        ? top3_faltando[0] 
-        : getFamiliaComMenosPerfumes(perfumes_por_familia);
+    // Determina qual família atacar baseado no índice de rotação
+    let familiaAlvo;
+    if (top3_faltando && top3_faltando.length > missaoIndex) {
+        familiaAlvo = top3_faltando[missaoIndex];
+    } else {
+        // Fallback: pega família com menos perfumes
+        familiaAlvo = getFamiliaComMenosPerfumes(perfumes_por_familia);
+    }
     
     // Calcula compras faltantes
     const totalPerfumes = Object.values(perfumes_por_familia).reduce((a, b) => a + b, 0);
@@ -2949,7 +2953,7 @@ function gerarMissao(analise, contexto) {
                              (20 - totalPerfumes);
     
     // Gera título da missão
-    const titulo = gerarTituloMissao(familiaAlvo, familia_dominante, contexto);
+    const titulo = gerarTituloMissao(familiaAlvo, familia_dominante, contexto, missaoIndex);
     
     // Gera alvo específico
     const alvo = getAlvoEspecifico(familiaAlvo);
@@ -2974,9 +2978,11 @@ function gerarMissao(analise, contexto) {
     };
 }
 
-function gerarTituloMissao(familiaAlvo, familiaDominante, contexto) {
+function gerarTituloMissao(familiaAlvo, familiaDominante, contexto, missaoIndex = 0) {
     const ambiente = contexto.ambiente ? contexto.ambiente.toLowerCase() : 'trabalho';
     const idade = contexto.idade || '25-35';
+    
+    const prefixo = missaoIndex === 0 ? '' : missaoIndex === 1 ? 'Alternativa: ' : 'Opção extra: ';
     
     const titulos = {
         '🍋 Fresco/Cítrico': `Adicionar frescor ${ambiente === 'aberto' ? 'para ambientes abertos' : 'discreto ao seu arsenal'}`,
@@ -2990,7 +2996,8 @@ function gerarTituloMissao(familiaAlvo, familiaDominante, contexto) {
         '🍎 Frutado': 'Adicionar frutado jovial e energético'
     };
     
-    return titulos[familiaAlvo] || `Equilibrar sua coleção com ${familiaAlvo}`;
+    const tituloBase = titulos[familiaAlvo] || `Equilibrar sua coleção com ${familiaAlvo}`;
+    return prefixo + tituloBase;
 }
 
 function getAlvoEspecifico(familia) {
@@ -3053,9 +3060,312 @@ function mostrarCandidatos() {
 }
 
 function gerarNovaMissao() {
-    // Reanalisa focando em outra família
-    alert('🔄 Gerando nova missão... (implementar lógica de reanalise focando em 2ª ou 3ª família faltante)');
-    // TODO: Implementar rotação de missões
+    // Pega estado atual da missão
+    const missaoAtual = window.missaoAtualIndex || 0;
+    const dadosAnalise = window.dadosAnaliseAtual;
+    
+    if (!dadosAnalise) {
+        alert('❌ Erro: dados da análise não encontrados. Faça uma nova análise.');
+        return;
+    }
+    
+    // Próxima missão (rotação 0 → 1 → 2 → 0...)
+    const proximaMissao = (missaoAtual + 1) % 3;
+    window.missaoAtualIndex = proximaMissao;
+    
+    console.log(`🔄 Rotação: Missão ${missaoAtual} → Missão ${proximaMissao}`);
+    
+    // Regenera missão com foco na próxima família
+    renderizarMissaoGameficada(dadosAnalise, proximaMissao);
+}
+
+// ========================================
+// SISTEMA DE NÍVEIS E PROGRESSÃO
+// ========================================
+
+function calcularNivelProgresso(analise) {
+    const { total_perfumes, familias_representadas, perfumes_por_familia, familia_dominante } = analise;
+    
+    // Pontuação base (0-100)
+    let pontos = 0;
+    
+    // 1. Quantidade de perfumes (40 pontos máx)
+    if (total_perfumes >= 20) pontos += 40;
+    else if (total_perfumes >= 12) pontos += 30;
+    else if (total_perfumes >= 7) pontos += 20;
+    else if (total_perfumes >= 4) pontos += 10;
+    else pontos += 5;
+    
+    // 2. Diversidade de famílias (30 pontos máx)
+    pontos += (familias_representadas / 9) * 30;
+    
+    // 3. Equilíbrio (30 pontos máx)
+    const porcentagemDominante = familia_dominante.porcentagem;
+    if (porcentagemDominante < 30) pontos += 30; // Muito equilibrado
+    else if (porcentagemDominante < 40) pontos += 25;
+    else if (porcentagemDominante < 50) pontos += 15;
+    else if (porcentagemDominante < 60) pontos += 5;
+    // Acima de 60% = 0 pontos (muito desbalanceado)
+    
+    // Limita entre 0-100
+    pontos = Math.min(100, Math.max(0, pontos));
+    
+    // Define nível baseado nos pontos
+    let nivel = {};
+    if (pontos < 25) {
+        nivel = {
+            nome: "Iniciante",
+            emoji: "🌱",
+            progresso: pontos,
+            proximoNivel: "Explorador",
+            pontosProximo: 25,
+            cor: "#4caf50"
+        };
+    } else if (pontos < 50) {
+        nivel = {
+            nome: "Explorador",
+            emoji: "🔍",
+            progresso: pontos,
+            proximoNivel: "Colecionador",
+            pontosProximo: 50,
+            cor: "#2196f3"
+        };
+    } else if (pontos < 75) {
+        nivel = {
+            nome: "Colecionador",
+            emoji: "⭐",
+            progresso: pontos,
+            proximoNivel: "Expert",
+            pontosProximo: 75,
+            cor: "#9c27b0"
+        };
+    } else if (pontos < 90) {
+        nivel = {
+            nome: "Expert",
+            emoji: "💎",
+            progresso: pontos,
+            proximoNivel: "Mestre",
+            pontosProximo: 90,
+            cor: "#ff9800"
+        };
+    } else {
+        nivel = {
+            nome: "Mestre",
+            emoji: "👑",
+            progresso: pontos,
+            proximoNivel: "Máximo!",
+            pontosProximo: 100,
+            cor: "#d4af37"
+        };
+    }
+    
+    // Calcula % até próximo nível
+    const pontosFaixa = nivel.pontosProximo - (nivel.progresso < 25 ? 0 : nivel.progresso < 50 ? 25 : nivel.progresso < 75 ? 50 : nivel.progresso < 90 ? 75 : 90);
+    const totalFaixa = nivel.pontosProximo - (nivel.progresso < 25 ? 0 : nivel.progresso < 50 ? 25 : nivel.progresso < 75 ? 50 : nivel.progresso < 90 ? 75 : 90);
+    nivel.percentualProximo = Math.round((pontosFaixa / totalFaixa) * 100);
+    
+    return nivel;
+}
+
+function renderizarBarraProgresso(nivel, analise) {
+    const { total_perfumes, familias_representadas } = analise;
+    
+    return `
+        <div style="
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
+            border: 2px solid ${nivel.cor};
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+        ">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <div>
+                    <div style="color: ${nivel.cor}; font-size: 1.4em; font-weight: 700; margin-bottom: 5px;">
+                        ${nivel.emoji} ${nivel.nome}
+                    </div>
+                    <div style="color: #ccc; font-size: 0.9em;">
+                        ${total_perfumes} perfumes • ${familias_representadas}/9 famílias
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="color: ${nivel.cor}; font-size: 2em; font-weight: 700;">
+                        ${nivel.progresso}
+                    </div>
+                    <div style="color: #999; font-size: 0.85em;">pontos</div>
+                </div>
+            </div>
+            
+            <!-- Barra de progresso -->
+            <div style="
+                background: rgba(0, 0, 0, 0.3);
+                border-radius: 10px;
+                height: 30px;
+                overflow: hidden;
+                position: relative;
+                margin-bottom: 10px;
+            ">
+                <div style="
+                    background: linear-gradient(90deg, ${nivel.cor} 0%, ${nivel.cor}aa 100%);
+                    height: 100%;
+                    width: ${nivel.percentualProximo}%;
+                    transition: width 1s ease-out;
+                    display: flex;
+                    align-items: center;
+                    justify-content: flex-end;
+                    padding-right: 10px;
+                ">
+                    <span style="color: white; font-weight: 700; font-size: 0.9em;">
+                        ${nivel.percentualProximo}%
+                    </span>
+                </div>
+            </div>
+            
+            <div style="color: #ccc; font-size: 0.9em; text-align: center;">
+                ${nivel.proximoNivel === "Máximo!" 
+                    ? "🎉 Você atingiu o nível máximo!" 
+                    : `Faltam ${nivel.pontosProximo - nivel.progresso} pontos para ${nivel.emoji === "🌱" ? "🔍" : nivel.emoji === "🔍" ? "⭐" : nivel.emoji === "⭐" ? "💎" : "👑"} ${nivel.proximoNivel}`
+                }
+            </div>
+        </div>
+    `;
+}
+
+// ========================================
+// RENDERIZAR MISSÃO (ATUALIZADO)
+// ========================================
+
+function renderizarMissaoGameficada(data, missaoIndex = 0) {
+    // Salva dados para rotação de missões
+    window.dadosAnaliseAtual = data;
+    window.missaoAtualIndex = missaoIndex;
+    
+    // Normalizar nome dos campos (API retorna analise_colecao)
+    const analise = data.analise_colecao || data.analise;
+    const recomendacoes = data.recomendacoes;
+    const contexto_aplicado = {
+        clima: localStorage.getItem('contexto_clima') || 'temperado',
+        ambiente: localStorage.getItem('contexto_ambiente') || '',
+        idade: localStorage.getItem('contexto_idade') || '',
+        orcamento: localStorage.getItem('contexto_orcamento') || ''
+    };
+    
+    // Gera missão baseada na análise (com índice de rotação)
+    const missao = gerarMissao(analise, contexto_aplicado, missaoIndex);
+    
+    // Calcula nível e progresso
+    const nivel = calcularNivelProgresso(analise);
+    
+    // HTML da missão
+    const missaoHTML = `
+        <div class="mission-container" id="missionContainer">
+            <!-- Barra de Nível e Progresso -->
+            ${renderizarBarraProgresso(nivel, analise)}
+            
+            <!-- Card Principal da Missão -->
+            <div class="mission-card">
+                <div class="mission-badge">🎯 SUA MISSÃO ${missaoIndex === 0 ? "PRINCIPAL" : missaoIndex === 1 ? "SECUNDÁRIA" : "TERCIÁRIA"}</div>
+                
+                <h2 class="mission-title">${missao.titulo}</h2>
+                
+                <div class="mission-details">
+                    <div class="detail-row">
+                        <strong>Alvo:</strong> ${missao.alvo}
+                    </div>
+                    <div class="detail-row">
+                        <strong>Uso:</strong> ${missao.uso}
+                    </div>
+                    <div class="detail-row">
+                        <strong>Clima:</strong> ${missao.clima}
+                    </div>
+                    <div class="detail-row">
+                        <strong>Faixa ideal:</strong> ${missao.faixa_preco}
+                    </div>
+                </div>
+                
+                <div class="mission-why">
+                    <strong>Por quê?</strong><br>
+                    ${missao.justificativa}
+                </div>
+                
+                <div class="mission-progress">
+                    ✅ Você está <strong>${missao.compras_faltantes} ${missao.compras_faltantes === 1 ? 'compra' : 'compras'}</strong> de ter uma coleção redonda
+                </div>
+                
+                <div class="mission-actions">
+                    <button class="btn-mission-primary" onclick="mostrarCandidatos()">
+                        🎁 Ver ${recomendacoes.length} candidatos perfeitos
+                    </button>
+                    <button class="btn-mission-secondary" onclick="gerarNovaMissao()">
+                        🔄 ${missaoIndex === 2 ? "Voltar à missão principal" : "Quero outra missão"}
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Card de Candidatos (oculto inicialmente) -->
+            <div class="candidates-card" id="candidatesCard">
+                <h3 style="color: #d4af37; margin-bottom: 20px; font-size: 1.5em;">
+                    🎁 Candidatos Perfeitos para sua Missão
+                </h3>
+                ${recomendacoes.map((rec, i) => `
+                    <div class="candidate-item">
+                        <div class="candidate-name">${i + 1}. ${rec.nome}</div>
+                        <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
+                        <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
+                        <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
+                    </div>
+                `).join('')}
+                
+                <!-- Botão WhatsApp -->
+                <button onclick='enviarParaWhatsAppAnalise(${JSON.stringify(recomendacoes).replace(/'/g, "\\'")})'  style="
+                    width: 100%;
+                    margin-top: 20px;
+                    padding: 15px;
+                    background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+                    border: none;
+                    border-radius: 10px;
+                    color: white;
+                    font-size: 1.1em;
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 5px 20px rgba(37, 211, 102, 0.4)'"
+                   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                    📱 ENVIAR PRO MEU WHATSAPP
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Card do gráfico radar
+    const radarHTML = `
+        <div style="background: rgba(255, 255, 255, 0.05); border: 2px solid rgba(212, 175, 55, 0.3); border-radius: 15px; padding: 30px; margin-top: 30px;">
+            <h3 style="color: #d4af37; margin-bottom: 20px; font-size: 1.5em; text-align: center;">📊 SEU MAPA OLFATIVO</h3>
+            <div style="background: rgba(30, 30, 30, 0.5); border: 2px solid rgba(212, 175, 55, 0.3); border-radius: 12px; padding: 20px;">
+                <canvas id="grafico-familias" style="max-width: 400px; max-height: 400px; margin: 0 auto; display: block;"></canvas>
+            </div>
+        </div>
+    `;
+    
+    // Insere no DOM
+    const resultDiv = document.getElementById('result');
+    resultDiv.innerHTML = missaoHTML + radarHTML;
+    resultDiv.style.display = 'block';
+    
+    // Mostra container com animação
+    setTimeout(() => {
+        document.getElementById('missionContainer').style.display = 'block';
+        
+        // Renderiza gráfico
+        setTimeout(() => renderizarGrafico(analise.perfumes_por_familia), 100);
+        
+        // Scroll suave até a missão
+        setTimeout(() => {
+            document.getElementById('missionContainer').scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 200);
+    }, 100);
 }
     </script>
 
