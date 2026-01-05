@@ -522,6 +522,271 @@
             }
         }
 
+
+        /* ========================================
+           GAMIFICAÇÃO - CARD MISSÃO
+           ======================================== */
+/* ========================================
+   CARD MISSÃO GAMIFICADA
+   ======================================== */
+
+.mission-container {
+    display: none; /* Oculto inicialmente, aparece após análise */
+    margin-top: 40px;
+    animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.mission-card {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%);
+    border: 3px solid #d4af37;
+    border-radius: 20px;
+    padding: 35px;
+    margin-bottom: 30px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(212, 175, 55, 0.3);
+}
+
+.mission-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background: linear-gradient(90deg, #d4af37, #f4e5b1, #d4af37);
+    animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+.mission-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #d4af37 0%, #f4e5b1 100%);
+    color: #1e1e1e;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.9em;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+}
+
+.mission-title {
+    color: #fff;
+    font-size: 1.8em;
+    font-weight: 700;
+    margin: 0 0 25px 0;
+    line-height: 1.3;
+}
+
+.mission-details {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.detail-row {
+    color: #ccc;
+    font-size: 1.05em;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    line-height: 1.6;
+}
+
+.detail-row:last-child {
+    margin-bottom: 0;
+}
+
+.detail-row strong {
+    color: #d4af37;
+    min-width: 120px;
+    margin-right: 10px;
+}
+
+.mission-why {
+    background: rgba(212, 175, 55, 0.1);
+    border-left: 4px solid #d4af37;
+    padding: 15px 20px;
+    margin: 20px 0;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1.05em;
+    line-height: 1.6;
+}
+
+.mission-why strong {
+    color: #d4af37;
+}
+
+.mission-progress {
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(76, 175, 80, 0.1) 100%);
+    border: 2px solid rgba(76, 175, 80, 0.4);
+    border-radius: 10px;
+    padding: 15px 20px;
+    text-align: center;
+    margin: 20px 0;
+    color: #4caf50;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.mission-progress strong {
+    color: #66ff66;
+    font-size: 1.2em;
+}
+
+.mission-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
+}
+
+.btn-mission-primary {
+    flex: 1;
+    padding: 18px 30px;
+    background: linear-gradient(135deg, #d4af37 0%, #f4e5b1 100%);
+    color: #1e1e1e;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.1em;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 20px rgba(212, 175, 55, 0.4);
+}
+
+.btn-mission-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(212, 175, 55, 0.6);
+}
+
+.btn-mission-secondary {
+    flex: 1;
+    padding: 18px 30px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #d4af37;
+    border: 2px solid rgba(212, 175, 55, 0.5);
+    border-radius: 12px;
+    font-size: 1.1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-mission-secondary:hover {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: #d4af37;
+    transform: translateY(-2px);
+}
+
+/* Card Candidatos (aparece quando clica "Ver candidatos") */
+.candidates-card {
+    display: none;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(212, 175, 55, 0.3);
+    border-radius: 15px;
+    padding: 30px;
+    margin-top: 20px;
+}
+
+.candidates-card.show {
+    display: block;
+    animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.candidate-item {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.05) 100%);
+    border: 2px solid rgba(212, 175, 55, 0.3);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+}
+
+.candidate-item:hover {
+    border-color: #d4af37;
+    transform: translateX(5px);
+    box-shadow: 0 5px 20px rgba(212, 175, 55, 0.3);
+}
+
+.candidate-name {
+    color: #d4af37;
+    font-size: 1.3em;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.candidate-family {
+    color: #f4e5b1;
+    font-size: 0.95em;
+    margin-bottom: 8px;
+}
+
+.candidate-why {
+    color: #ccc;
+    font-size: 0.95em;
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+.candidate-when {
+    color: #999;
+    font-size: 0.9em;
+    font-style: italic;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+    .mission-card {
+        padding: 25px 20px;
+    }
+    
+    .mission-title {
+        font-size: 1.4em;
+    }
+    
+    .mission-actions {
+        flex-direction: column;
+    }
+    
+    .btn-mission-primary,
+    .btn-mission-secondary {
+        padding: 15px 20px;
+        font-size: 1em;
+    }
+    
+    .detail-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .detail-row strong {
+        margin-bottom: 5px;
+    }
+}
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -567,154 +832,7 @@
             <p class="subtitle">Monte sua coleção sem redundâncias e com função real</p>
         </header>
 
-        <h2 class="section-title">AS 6 FUNÇÕES ESSENCIAIS</h2>
-        
-        <div class="grid">
-            <div class="card">
-                <div class="card-title">🌞 CALOR</div>
-                <div class="card-description">
-                    Perfume leve, fresco e que não sufoca. Alta temperatura exige baixa densidade. Evite doces pesados e âmbares densos.
-                </div>
-                <div class="card-tags">
-                    <span class="tag">Cítrico</span>
-                    <span class="tag">Aquático</span>
-                    <span class="tag">Verde</span>
-                </div>
-                <div class="examples">
-                    <div class="examples-title">Construções ideais:</div>
-                    <div class="examples-list">
-                        • Cítrico + aquático<br>
-                        • Verde fresco<br>
-                        • Aromático leve
-                    </div>
-                </div>
-                <div class="checkbox-container">
-                    <input type="checkbox" id="calor">
-                    <label for="calor">Tenho um perfume para calor</label>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-title">❄️ FRIO</div>
-                <div class="card-description">
-                    Perfume denso, quente e envolvente. Baixa temperatura pede alta projeção. Aqui entram os âmbares, especiarias e madeiras.
-                </div>
-                <div class="card-tags">
-                    <span class="tag">Âmbar</span>
-                    <span class="tag">Madeira</span>
-                    <span class="tag">Especiaria</span>
-                </div>
-                <div class="examples">
-                    <div class="examples-title">Construções ideais:</div>
-                    <div class="examples-list">
-                        • Âmbar + baunilha<br>
-                        • Madeira seca + especiaria<br>
-                        • Oriental denso
-                    </div>
-                </div>
-                <div class="checkbox-container">
-                    <input type="checkbox" id="frio">
-                    <label for="frio">Tenho um perfume para frio</label>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-title">💼 TRABALHO</div>
-                <div class="card-description">
-                    Perfume discreto, profissional e sem polarização. Médio alcance, baixa doçura. Deve passar despercebido até ser notado de perto.
-                </div>
-                <div class="card-tags">
-                    <span class="tag">Aromático</span>
-                    <span class="tag">Amadeirado seco</span>
-                    <span class="tag">Fresco discreto</span>
-                </div>
-                <div class="examples">
-                    <div class="examples-title">Construções ideais:</div>
-                    <div class="examples-list">
-                        • Aromático limpo<br>
-                        • Amadeirado elegante<br>
-                        • Fresco-seco balanceado
-                    </div>
-                </div>
-                <div class="checkbox-container">
-                    <input type="checkbox" id="trabalho">
-                    <label for="trabalho">Tenho um perfume para trabalho</label>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-title">🌙 NOITE</div>
-                <div class="card-description">
-                    Perfume marcante, de presença forte. Alta projeção, notas intensas. Aqui você pode ousar: doces densos, especiarias, couro.
-                </div>
-                <div class="card-tags">
-                    <span class="tag">Doce denso</span>
-                    <span class="tag">Couro</span>
-                    <span class="tag">Oriental intenso</span>
-                </div>
-                <div class="examples">
-                    <div class="examples-title">Construções ideais:</div>
-                    <div class="examples-list">
-                        • Doce + especiaria<br>
-                        • Couro + fumaça<br>
-                        • Âmbar + oud
-                    </div>
-                </div>
-                <div class="checkbox-container">
-                    <input type="checkbox" id="noite">
-                    <label for="noite">Tenho um perfume para noite</label>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-title">✍️ ASSINATURA</div>
-                <div class="card-description">
-                    Seu perfume identidade. O que te representa independente de contexto. Deve ser confortável, versátil e você deve amar usá-lo.
-                </div>
-                <div class="card-tags">
-                    <span class="tag">Pessoal</span>
-                    <span class="tag">Versátil</span>
-                    <span class="tag">Confortável</span>
-                </div>
-                <div class="examples">
-                    <div class="examples-title">Características:</div>
-                    <div class="examples-list">
-                        • Funciona em várias situações<br>
-                        • Você nunca cansa dele<br>
-                        • As pessoas te associam a ele
-                    </div>
-                </div>
-                <div class="checkbox-container">
-                    <input type="checkbox" id="assinatura">
-                    <label for="assinatura">Tenho meu perfume assinatura</label>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-title">🎊 OCASIÕES ESPECIAIS</div>
-                <div class="card-description">
-                    Perfume para momentos únicos. Casamentos, festas, eventos importantes, aniversários. Aquele que você reserva para ocasiões memoráveis.
-                </div>
-                <div class="card-tags">
-                    <span class="tag">Festivo</span>
-                    <span class="tag">Marcante</span>
-                    <span class="tag">Especial</span>
-                </div>
-                <div class="examples">
-                    <div class="examples-title">Ocasiões ideais:</div>
-                    <div class="examples-list">
-                        • Casamentos e formaturas<br>
-                        • Festas e celebrações<br>
-                        • Jantares especiais e eventos
-                    </div>
-                </div>
-                <div class="checkbox-container">
-                    <input type="checkbox" id="ocasioes">
-                    <label for="ocasioes">Tenho perfume para ocasiões especiais</label>
-                </div>
-            </div>
-        </div>
-
+<h2 class="section-title">🎯 MAPEIE SUA COLEÇÃO</h2>
         <h2 class="section-title">🎯 DIAGNÓSTICO AVANÇADO: SUA COLEÇÃO ESTÁ EQUILIBRADA?</h2>
         
         <div class="balance-section">
@@ -2685,5 +2803,242 @@ ${recomendacoes.map((rec, i) => `*${i + 1}. ${rec.nome}*
     </script>
 
 </div>
+
+    <!-- ========================================
+         GAMIFICAÇÃO - LÓGICA MISSÃO
+         ======================================== -->
+    <script>
+// ========================================
+// RENDERIZAÇÃO GAMIFICADA DA MISSÃO
+// ========================================
+
+function renderizarMissaoGameficada(data) {
+    const { analise, recomendacoes, contexto_aplicado } = data;
+    
+    // Gera missão baseada na análise
+    const missao = gerarMissao(analise, contexto_aplicado);
+    
+    // HTML da missão
+    const missaoHTML = `
+        <div class="mission-container" id="missionContainer">
+            <!-- Card Principal da Missão -->
+            <div class="mission-card">
+                <div class="mission-badge">🎯 SUA MISSÃO ATUAL</div>
+                
+                <h2 class="mission-title">${missao.titulo}</h2>
+                
+                <div class="mission-details">
+                    <div class="detail-row">
+                        <strong>Alvo:</strong> ${missao.alvo}
+                    </div>
+                    <div class="detail-row">
+                        <strong>Uso:</strong> ${missao.uso}
+                    </div>
+                    <div class="detail-row">
+                        <strong>Clima:</strong> ${missao.clima}
+                    </div>
+                    <div class="detail-row">
+                        <strong>Faixa ideal:</strong> ${missao.faixa_preco}
+                    </div>
+                </div>
+                
+                <div class="mission-why">
+                    <strong>Por quê?</strong><br>
+                    ${missao.justificativa}
+                </div>
+                
+                <div class="mission-progress">
+                    ✅ Você está <strong>${missao.compras_faltantes} ${missao.compras_faltantes === 1 ? 'compra' : 'compras'}</strong> de ter uma coleção redonda
+                </div>
+                
+                <div class="mission-actions">
+                    <button class="btn-mission-primary" onclick="mostrarCandidatos()">
+                        🎁 Ver ${recomendacoes.length} candidatos perfeitos
+                    </button>
+                    <button class="btn-mission-secondary" onclick="gerarNovaMissao()">
+                        🔄 Quero outra missão
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Card de Candidatos (oculto inicialmente) -->
+            <div class="candidates-card" id="candidatesCard">
+                <h3 style="color: #d4af37; margin-bottom: 20px; font-size: 1.5em;">
+                    🎁 Candidatos Perfeitos para sua Missão
+                </h3>
+                ${recomendacoes.map((rec, i) => `
+                    <div class="candidate-item">
+                        <div class="candidate-name">${i + 1}. ${rec.nome}</div>
+                        <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
+                        <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
+                        <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
+                    </div>
+                `).join('')}
+                
+                <!-- Botão WhatsApp -->
+                <button onclick='enviarParaWhatsAppAnalise(${JSON.stringify(recomendacoes).replace(/'/g, "\\'")})'  style="
+                    width: 100%;
+                    margin-top: 20px;
+                    padding: 15px;
+                    background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+                    border: none;
+                    border-radius: 10px;
+                    color: white;
+                    font-size: 1.1em;
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 5px 20px rgba(37, 211, 102, 0.4)'"
+                   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                    📱 ENVIAR PRO MEU WHATSAPP
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Insere no DOM (antes do radar/gráfico)
+    const resultDiv = document.getElementById('result');
+    resultDiv.innerHTML = missaoHTML + resultDiv.innerHTML;
+    resultDiv.style.display = 'block';
+    
+    // Mostra container com animação
+    setTimeout(() => {
+        document.getElementById('missionContainer').style.display = 'block';
+        
+        // Scroll suave até a missão
+        setTimeout(() => {
+            document.getElementById('missionContainer').scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 200);
+    }, 100);
+}
+
+function gerarMissao(analise, contexto) {
+    const { familia_dominante, top3_faltando, nivel, perfumes_por_familia } = analise;
+    
+    // Determina qual família atacar
+    const familiaAlvo = top3_faltando && top3_faltando.length > 0 
+        ? top3_faltando[0] 
+        : getFamiliaComMenosPerfumes(perfumes_por_familia);
+    
+    // Calcula compras faltantes
+    const totalPerfumes = Object.values(perfumes_por_familia).reduce((a, b) => a + b, 0);
+    const comprasFaltantes = totalPerfumes < 7 ? (7 - totalPerfumes) : 
+                             totalPerfumes < 12 ? (12 - totalPerfumes) : 
+                             (20 - totalPerfumes);
+    
+    // Gera título da missão
+    const titulo = gerarTituloMissao(familiaAlvo, familia_dominante, contexto);
+    
+    // Gera alvo específico
+    const alvo = getAlvoEspecifico(familiaAlvo);
+    
+    // Gera uso sugerido
+    const uso = getUsoSugerido(familiaAlvo, contexto);
+    
+    // Justificativa
+    const porcentagemDominante = familia_dominante.porcentagem;
+    const justificativa = porcentagemDominante > 50 
+        ? `Você tem ${porcentagemDominante}% de ${familia_dominante.nome} e quase nada de ${familiaAlvo}`
+        : `Falta ${familiaAlvo} para equilibrar sua coleção`;
+    
+    return {
+        titulo,
+        alvo,
+        uso,
+        clima: contexto.clima || 'Temperado',
+        faixa_preco: contexto.orcamento || 'R$ 300-800',
+        justificativa,
+        compras_faltantes: Math.max(1, comprasFaltantes)
+    };
+}
+
+function gerarTituloMissao(familiaAlvo, familiaDominante, contexto) {
+    const ambiente = contexto.ambiente ? contexto.ambiente.toLowerCase() : 'trabalho';
+    const idade = contexto.idade || '25-35';
+    
+    const titulos = {
+        '🍋 Fresco/Cítrico': `Adicionar frescor ${ambiente === 'aberto' ? 'para ambientes abertos' : 'discreto ao seu arsenal'}`,
+        '🌳 Aromático/Verde': `Equilibrar com aromáticos ${ambiente === 'fechado' ? 'para trabalho' : 'versáteis'}`,
+        '🍯 Doce/Gourmand': 'Adicionar doçura sem ficar enjoativo',
+        '🪵 Amadeirado': `Conquistar elegância amadeirada para ${ambiente === 'fechado' ? 'TRABALHO' : 'NOITE'}`,
+        '🌶️ Especiado/Oriental': 'Dominar especiarias orientais marcantes',
+        '💧 Aquático': 'Completar com aquático fresco e moderno',
+        '🧼 Talco/Fougère': 'Adicionar clássico talcado atemporal',
+        '🌸 Floral': 'Equilibrar com floral masculino',
+        '🍎 Frutado': 'Adicionar frutado jovial e energético'
+    };
+    
+    return titulos[familiaAlvo] || `Equilibrar sua coleção com ${familiaAlvo}`;
+}
+
+function getAlvoEspecifico(familia) {
+    const alvos = {
+        '🍋 Fresco/Cítrico': '🍋 Cítrico limpo / Bergamota fresca',
+        '🌳 Aromático/Verde': '🌳 Aromático verde / Lavanda',
+        '🍯 Doce/Gourmand': '🍯 Doce equilibrado / Baunilha + madeira',
+        '🪵 Amadeirado': '🪵 Amadeirado seco / Âmbar discreto',
+        '🌶️ Especiado/Oriental': '🌶️ Especiaria oriental / Cardamomo + âmbar',
+        '💧 Aquático': '💧 Aquático moderno / Sal marinho',
+        '🧼 Talco/Fougère': '🧼 Fougère clássico / Talco + lavanda',
+        '🌸 Floral': '🌸 Floral masculino / Gerânio + vetiver',
+        '🍎 Frutado': '🍎 Frutado fresco / Maçã + bergamota'
+    };
+    
+    return alvos[familia] || familia;
+}
+
+function getUsoSugerido(familia, contexto) {
+    const usos = {
+        '🍋 Fresco/Cítrico': 'Dia • trabalho • verão',
+        '🌳 Aromático/Verde': 'Trabalho • casual • dia a dia',
+        '🍯 Doce/Gourmand': 'Noite • encontros • inverno',
+        '🪵 Amadeirado': 'Noite • eventos • ambientes fechados',
+        '🌶️ Especiado/Oriental': 'Noite • ocasiões especiais • clima frio',
+        '💧 Aquático': 'Verão • esportes • casual',
+        '🧼 Talco/Fougère': 'Trabalho • formal • qualquer ocasião',
+        '🌸 Floral': 'Primavera • casual • dia',
+        '🍎 Frutado': 'Casual • dia • verão'
+    };
+    
+    return usos[familia] || 'Diversas ocasiões';
+}
+
+function getFamiliaComMenosPerfumes(perfumesPorFamilia) {
+    let minFamilia = null;
+    let minCount = Infinity;
+    
+    for (const [familia, count] of Object.entries(perfumesPorFamilia)) {
+        if (count < minCount) {
+            minCount = count;
+            minFamilia = familia;
+        }
+    }
+    
+    return minFamilia || '🪵 Amadeirado';
+}
+
+function mostrarCandidatos() {
+    const card = document.getElementById('candidatesCard');
+    card.classList.add('show');
+    
+    // Scroll até os candidatos
+    setTimeout(() => {
+        card.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }, 100);
+}
+
+function gerarNovaMissao() {
+    // Reanalisa focando em outra família
+    alert('🔄 Gerando nova missão... (implementar lógica de reanalise focando em 2ª ou 3ª família faltante)');
+    // TODO: Implementar rotação de missões
+}
+    </script>
+
 </body>
 </html>
