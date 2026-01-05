@@ -530,27 +530,15 @@
   <div style="max-width:420px; margin:7vh auto; background:#111; border:1px solid #2a2a2a; border-radius:14px; padding:18px;">
     <h2 style="margin:0 0 8px; font-size:20px;">Entrar</h2>
     <p style="margin:0 0 16px; color:#cfcfcf; font-size:14px; line-height:1.4;">
-      Para acessar, confirme seu e-mail. Se você já comprou, o acesso libera automaticamente.
+      Para acessar, envie um link de acesso para o seu e-mail. Se você já comprou, o acesso libera automaticamente após entrar.
     </p>
 
     <div id="authStepEmail">
       <label style="display:block; font-size:13px; margin-bottom:6px; color:#cfcfcf;">Seu e-mail</label>
       <input id="authEmail" type="email" placeholder="voce@exemplo.com"
         style="width:100%; box-sizing:border-box; padding:12px; border-radius:10px; border:1px solid #333; background:#0b0b0b; color:#fff; outline:none;" />
-      <button id="authSendCode" style="margin-top:12px; width:100%; padding:12px; border-radius:10px; border:0; background:#d4af37; color:#111; font-weight:700; cursor:pointer;">
-        Enviar código
-      </button>
-    </div>
-
-    <div id="authStepCode" style="display:none;">
-      <label style="display:block; font-size:13px; margin-bottom:6px; color:#cfcfcf;">Código recebido por e-mail</label>
-      <input id="authCode" inputmode="numeric" placeholder="123456"
-        style="width:100%; box-sizing:border-box; padding:12px; border-radius:10px; border:1px solid #333; background:#0b0b0b; color:#fff; outline:none;" />
-      <button id="authVerifyCode" style="margin-top:12px; width:100%; padding:12px; border-radius:10px; border:0; background:#d4af37; color:#111; font-weight:700; cursor:pointer;">
-        Confirmar e entrar
-      </button>
-      <button id="authBack" style="margin-top:10px; width:100%; padding:10px; border-radius:10px; border:1px solid #333; background:transparent; color:#fff; cursor:pointer;">
-        Voltar
+      <button id="authSendLink" style="margin-top:12px; width:100%; padding:12px; border-radius:10px; border:0; background:#d4af37; color:#111; font-weight:700; cursor:pointer;">
+        Enviar link de acesso
       </button>
     </div>
 
@@ -1139,15 +1127,7 @@
     </div>
 
     <script>
-        // ===============================================
-        // SISTEMA DE TRACKING DE DADOS
-        // ===============================================
-        
-        // Configuração Supabase
-        const SUPABASE_URL = 'https://frivahuiffxrxzcjrlom.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZyaXZhaHVpZmZ4cnh6Y2pybG9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzgxMTAsImV4cCI6MjA4MzA1NDExMH0.9cIQs8qhctqZsiNlh4hOVHCjOBMR7UBFpBXiVST6iL4';
-
-// ==========================
+        // ==========================
 // Acesso (Hotmart -> Supabase)
 // ==========================
 const PRODUCT_ID = "mapa_de_perfumes";
@@ -1175,18 +1155,35 @@ function showApp() {
 }
 function showEmailStep() {
   document.getElementById("authStepEmail").style.display = "block";
-  document.getElementById("authStepCode").style.display = "none";
-  document.getElementById("paywall").style.display = "none";
-}
-function showCodeStep() {
-  document.getElementById("authStepEmail").style.display = "none";
-  document.getElementById("authStepCode").style.display = "block";
   document.getElementById("paywall").style.display = "none";
 }
 function showPaywall() {
   document.getElementById("authStepEmail").style.display = "none";
-  document.getElementById("authStepCode").style.display = "none";
   document.getElementById("paywall").style.display = "block";
+}
+
+async function handleAuthCallbackIfAny() {
+  // Se o usuário voltou do magic link, o Supabase usa o parâmetro "code" (PKCE)
+  try {
+    const url = new URL(window.location.href);
+    const code = url.searchParams.get("code");
+    if (!code) return;
+
+    const { error } = await supabaseClient.auth.exchangeCodeForSession(window.location.href);
+    // Limpa a URL para não ficar com parâmetros de login
+    url.searchParams.delete("code");
+    url.searchParams.delete("type");
+    url.searchParams.delete("redirect_to");
+    window.history.replaceState({}, document.title, url.toString());
+
+    if (error) {
+      showGate();
+      showEmailStep();
+      showMsg("Não consegui finalizar seu login. Tente enviar o link novamente.");
+    }
+  } catch (_) {
+    // silencioso
+  }
 }
 
 async function checkEntitlement() {
@@ -1225,74 +1222,60 @@ async function checkEntitlement() {
   showApp();
 }
 
-async function sendCode() {
+async function sendMagicLink() {
   clearMsg();
   const email = (document.getElementById("authEmail").value || "").trim().toLowerCase();
   if (!email) return showMsg("Digite um e-mail válido.");
 
-  const { error } = await supabaseClient.auth.signInWithOtp({ email });
-  if (error) return showMsg(error.message || "Falha ao enviar o código.");
-
-  showCodeStep();
-  showMsg("Código enviado. Confira seu e-mail.");
-}
-
-async function verifyCode() {
-  clearMsg();
-  const email = (document.getElementById("authEmail").value || "").trim().toLowerCase();
-  const token = (document.getElementById("authCode").value || "").trim();
-
-  if (!email) return showMsg("Digite seu e-mail.");
-  if (!token) return showMsg("Digite o código recebido.");
-
-  const { error } = await supabaseClient.auth.verifyOtp({
+  const { error } = await supabaseClient.auth.signInWithOtp({
     email,
-    token,
-    type: "email",
+    options: {
+      emailRedirectTo: "https://mapadeperfumes.com.br",
+    },
   });
 
-  if (error) return showMsg("Código inválido ou expirado.");
+  if (error) return showMsg(error.message || "Falha ao enviar o link.");
 
-  await checkEntitlement();
+  showMsg("Link enviado. Abra seu e-mail e clique para entrar.");
 }
 
 async function signOut() {
   await supabaseClient.auth.signOut();
   document.getElementById("authEmail").value = "";
-  document.getElementById("authCode").value = "";
   showGate();
   showEmailStep();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Botões
-  const btnSend = document.getElementById("authSendCode");
-  const btnVerify = document.getElementById("authVerifyCode");
-  const btnBack = document.getElementById("authBack");
+  const btnSend = document.getElementById("authSendLink");
   const btnCheckout = document.getElementById("goCheckout");
   const btnSignOut = document.getElementById("authSignOut");
 
-  btnSend?.addEventListener("click", sendCode);
-  btnVerify?.addEventListener("click", verifyCode);
-  btnBack?.addEventListener("click", () => { clearMsg(); showEmailStep(); });
+  btnSend?.addEventListener("click", sendMagicLink);
   btnCheckout?.addEventListener("click", () => { window.location.href = HOTMART_CHECKOUT_URL; });
   btnSignOut?.addEventListener("click", signOut);
 
-  // Enter para enviar/confirmar
   document.getElementById("authEmail")?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") sendCode();
-  });
-  document.getElementById("authCode")?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") verifyCode();
+    if (e.key === "Enter") sendMagicLink();
   });
 
   // Gate inicial
   showGate();
   showEmailStep();
-  checkEntitlement();
+
+  // Se voltou do e-mail (magic link), troca o "code" por sessão
+  (async () => {
+    await handleAuthCallbackIfAny();
+    await checkEntitlement();
+  })();
+
+  // Se a sessão mudar (login), revalida acesso
+  supabaseClient.auth.onAuthStateChange((_event) => {
+    checkEntitlement();
+  });
 });
 
-        
+
         // Gerar hash anônimo do usuário (sem dados pessoais)
         function gerarUserHash() {
             let hash = localStorage.getItem('user_hash');
