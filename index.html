@@ -871,6 +871,284 @@
         ::-webkit-scrollbar-thumb:hover {
             background: rgba(212, 175, 55, 0.7);
         }
+
+        /* ========================================
+           GAMIFICAÇÃO - CARD MISSÃO
+           ======================================== */
+        .mission-container {
+            margin-top: 30px;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .mission-card {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%);
+            border: 3px solid #d4af37;
+            border-radius: 20px;
+            padding: 35px;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(212, 175, 55, 0.3);
+        }
+
+        .mission-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(90deg, #d4af37, #f4e5b1, #d4af37);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .mission-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #d4af37 0%, #f4e5b1 100%);
+            color: #1e1e1e;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.9em;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+        }
+
+        .mission-title {
+            color: #fff;
+            font-size: 1.8em;
+            font-weight: 700;
+            margin: 0 0 25px 0;
+            line-height: 1.3;
+        }
+
+        .mission-details {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .detail-row {
+            color: #ccc;
+            font-size: 1.05em;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            line-height: 1.6;
+        }
+
+        .detail-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .detail-row strong {
+            color: #d4af37;
+            min-width: 120px;
+            margin-right: 10px;
+        }
+
+        .mission-why {
+            background: rgba(212, 175, 55, 0.1);
+            border-left: 4px solid #d4af37;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1.05em;
+            line-height: 1.6;
+        }
+
+        .mission-why strong {
+            color: #d4af37;
+        }
+
+        .mission-progress {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(76, 175, 80, 0.1) 100%);
+            border: 2px solid rgba(76, 175, 80, 0.4);
+            border-radius: 10px;
+            padding: 15px 20px;
+            text-align: center;
+            margin: 20px 0;
+            color: #4caf50;
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+
+        .mission-progress strong {
+            color: #66ff66;
+            font-size: 1.2em;
+        }
+
+        .mission-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .btn-mission-primary {
+            flex: 1;
+            min-width: 200px;
+            padding: 18px 30px;
+            background: linear-gradient(135deg, #d4af37 0%, #f4e5b1 100%);
+            color: #1e1e1e;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(212, 175, 55, 0.4);
+        }
+
+        .btn-mission-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(212, 175, 55, 0.6);
+        }
+
+        .btn-mission-secondary {
+            flex: 1;
+            min-width: 200px;
+            padding: 18px 30px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #d4af37;
+            border: 2px solid rgba(212, 175, 55, 0.5);
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-mission-secondary:hover {
+            background: rgba(212, 175, 55, 0.15);
+            border-color: #d4af37;
+            transform: translateY(-2px);
+        }
+
+        .candidates-card {
+            display: none;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 20px;
+        }
+
+        .candidates-card.show {
+            display: block;
+            animation: fadeInUp 0.4s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .candidate-item {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.05) 100%);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .candidate-item:hover {
+            border-color: #d4af37;
+            transform: translateX(5px);
+            box-shadow: 0 5px 20px rgba(212, 175, 55, 0.3);
+        }
+
+        .candidate-name {
+            color: #d4af37;
+            font-size: 1.3em;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .candidate-family {
+            color: #f4e5b1;
+            font-size: 0.95em;
+            margin-bottom: 8px;
+        }
+
+        .candidate-why {
+            color: #ccc;
+            font-size: 0.95em;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+
+        .candidate-when {
+            color: #999;
+            font-size: 0.9em;
+            font-style: italic;
+        }
+
+        /* Botão "Estou começando" */
+        .start-collection-button {
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(135deg, #4caf50, #66bb6a);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.2em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
+        }
+
+        .start-collection-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(76, 175, 80, 0.6);
+        }
+
+        @media (max-width: 768px) {
+            .mission-card {
+                padding: 25px;
+            }
+
+            .mission-title {
+                font-size: 1.4em;
+            }
+
+            .mission-actions {
+                flex-direction: column;
+            }
+
+            .btn-mission-primary,
+            .btn-mission-secondary {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -988,6 +1266,11 @@
                         <h1>🎯 Minha Coleção</h1>
                         <p class="subtitle">Adicione seus perfumes e visualize o radar da sua coleção</p>
                     </header>
+
+                    <!-- Botão para quem está começando -->
+                    <button class="start-collection-button" onclick="iniciarColecaoDoZero()">
+                        🌱 Estou começando minha coleção!
+                    </button>
 
                     <!-- Input de Perfume -->
                     <div class="perfume-input-container">
@@ -1113,9 +1396,14 @@ function carregarAnaliseCache() {
     const resultContainer = document.getElementById('result-container');
     
     // Se tem análise salva E a coleção não mudou
-    if (ultimaAnalise.colecao === colecaoAtualString && ultimaAnalise.resultado) {
+    if (ultimaAnalise.colecao === colecaoAtualString && ultimaAnalise.dados) {
         console.log('📦 Carregando análise em cache');
-        resultContainer.innerHTML = ultimaAnalise.resultado;
+        
+        // Restaura dados globais para rotação de missões
+        window.dadosAnaliseAtual = ultimaAnalise.dados;
+        window.missaoAtualIndex = 0;
+        
+        renderizarMissaoGameficada(ultimaAnalise.dados);
     }
 }
 
@@ -1330,9 +1618,9 @@ async function analisarColecao() {
     const ultimaAnalise = JSON.parse(localStorage.getItem('ultimaAnalise') || '{}');
     const colecaoAtualString = JSON.stringify(minhaColecao.sort());
     
-    if (ultimaAnalise.colecao === colecaoAtualString && ultimaAnalise.resultado) {
+    if (ultimaAnalise.colecao === colecaoAtualString && ultimaAnalise.dados) {
         console.log('✅ Usando análise em cache');
-        resultContainer.innerHTML = ultimaAnalise.resultado;
+        renderizarMissaoGameficada(ultimaAnalise.dados);
         return;
     }
     
@@ -1358,6 +1646,8 @@ ANÁLISE SOLICITADA:
 6. Considere clima, ambiente e orçamento do usuário
 7. PRIORIZE perfumes de nicho acessível (<5k reviews Fragantica)
 8. EVITE perfumes mainstream hypados (>20k reviews)
+
+Analise minha coleção completa e retorne análise detalhada + recomendações.
 `;
         
         const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
@@ -1368,43 +1658,18 @@ ANÁLISE SOLICITADA:
         
         const data = await response.json();
         
-        // Renderiza resultado
-        let html = '<div class="result-container">';
-        html += '<div class="result-title">🎯 Análise da Sua Coleção</div>';
-        
-        if (data.diagnostico) {
-            html += `<div class="result-text">${data.diagnostico.replace(/\n/g, '<br>')}</div>`;
-        }
-        
-        if (data.recomendacoes && data.recomendacoes.length > 0) {
-            html += '<div class="section-title">💡 Recomendações Personalizadas</div>';
-            html += '<div class="suggestions-grid">';
-            
-            data.recomendacoes.forEach(sug => {
-                html += `
-                    <div class="suggestion-card">
-                        <div class="suggestion-name">${sug.nome}</div>
-                        <div class="suggestion-familia">${sug.familia}</div>
-                        <div class="suggestion-preco">${sug.faixa_preco}</div>
-                        <div class="suggestion-por-que">${sug.por_que}</div>
-                        <div class="suggestion-quando">${sug.quando_usar}</div>
-                    </div>
-                `;
-            });
-            
-            html += '</div>';
-        }
-        
-        html += '</div>';
-        
-        // Salva análise no cache
+        // Salva análise no cache com dados completos
         localStorage.setItem('ultimaAnalise', JSON.stringify({
             colecao: colecaoAtualString,
-            resultado: html,
+            dados: data,
             timestamp: Date.now()
         }));
         
-        resultContainer.innerHTML = html;
+        // Salva dados globalmente para rotação de missões
+        window.dadosAnaliseAtual = data;
+        window.missaoAtualIndex = 0;
+        
+        renderizarMissaoGameficada(data);
         
     } catch (error) {
         console.error('Erro:', error);
@@ -1812,6 +2077,328 @@ function atualizarNivelDOM() {
             </div>
         `;
         container.style.display = 'block';
+    }
+}
+
+// ===================================
+// GAMIFICAÇÃO - RENDERIZAÇÃO DE MISSÕES
+// ===================================
+
+function renderizarMissaoGameficada(data) {
+    const analise = data.analise_colecao || data.analise;
+    const recomendacoes = data.recomendacoes;
+    const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
+    
+    const contexto_aplicado = {
+        clima: perfil.clima || 'Temperado',
+        ambiente: perfil.ambiente || 'Ambos',
+        idade: perfil.idade || '25-35',
+        orcamento: perfil.orcamento || 'R$ 300-500'
+    };
+    
+    // Gera missão baseada na análise
+    const missao = gerarMissao(analise, contexto_aplicado);
+    
+    // HTML da missão
+    const missaoHTML = `
+        <div class="mission-container" id="missionContainer">
+            <!-- Card Principal da Missão -->
+            <div class="mission-card">
+                <div class="mission-badge">🎯 SUA MISSÃO ATUAL</div>
+                
+                <h2 class="mission-title">${missao.titulo}</h2>
+                
+                <div class="mission-details">
+                    <div class="detail-row">
+                        <strong>Alvo:</strong> ${missao.alvo}
+                    </div>
+                    <div class="detail-row">
+                        <strong>Uso:</strong> ${missao.uso}
+                    </div>
+                    <div class="detail-row">
+                        <strong>Clima:</strong> ${missao.clima}
+                    </div>
+                    <div class="detail-row">
+                        <strong>Faixa ideal:</strong> ${missao.faixa_preco}
+                    </div>
+                </div>
+                
+                <div class="mission-why">
+                    <strong>Por quê?</strong><br>
+                    ${missao.justificativa}
+                </div>
+                
+                <div class="mission-progress">
+                    ✅ Você está <strong>${missao.compras_faltantes} ${missao.compras_faltantes === 1 ? 'compra' : 'compras'}</strong> de ter uma coleção redonda
+                </div>
+                
+                <div class="mission-actions">
+                    <button class="btn-mission-primary" onclick="mostrarCandidatos()">
+                        🎁 Ver ${recomendacoes.length} candidatos perfeitos
+                    </button>
+                    <button class="btn-mission-secondary" onclick="gerarNovaMissao()">
+                        🔄 Quero outra missão
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Card de Candidatos (oculto inicialmente) -->
+            <div class="candidates-card" id="candidatesCard">
+                <h3 style="color: #d4af37; margin-bottom: 20px; font-size: 1.5em;">
+                    🎁 Candidatos Perfeitos para sua Missão
+                </h3>
+                ${recomendacoes.map((rec, i) => `
+                    <div class="candidate-item">
+                        <div class="candidate-name">${i + 1}. ${rec.nome}</div>
+                        <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
+                        <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
+                        <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    
+    const resultContainer = document.getElementById('result-container');
+    resultContainer.innerHTML = missaoHTML;
+}
+
+function gerarMissao(analise, contexto, missaoIndex = 0) {
+    const { familia_dominante, top3_faltando, perfumes_por_familia } = analise;
+    
+    // Determina qual família atacar baseado no índice de rotação
+    let familiaAlvo;
+    if (top3_faltando && top3_faltando.length > missaoIndex) {
+        familiaAlvo = top3_faltando[missaoIndex];
+    } else {
+        familiaAlvo = getFamiliaComMenosPerfumes(perfumes_por_familia);
+    }
+    
+    // Calcula compras faltantes
+    const totalPerfumes = Object.values(perfumes_por_familia).reduce((a, b) => a + b, 0);
+    const comprasFaltantes = totalPerfumes < 7 ? (7 - totalPerfumes) : 
+                             totalPerfumes < 12 ? (12 - totalPerfumes) : 
+                             (20 - totalPerfumes);
+    
+    // Gera título da missão
+    const titulo = gerarTituloMissao(familiaAlvo, familia_dominante, contexto, missaoIndex);
+    
+    // Gera alvo específico
+    const alvo = getAlvoEspecifico(familiaAlvo);
+    
+    // Gera uso sugerido
+    const uso = getUsoSugerido(familiaAlvo, contexto);
+    
+    // Justificativa
+    const porcentagemDominante = familia_dominante.porcentagem;
+    const justificativa = porcentagemDominante > 50 
+        ? `Você tem ${porcentagemDominante}% de ${familia_dominante.nome} e quase nada de ${familiaAlvo}`
+        : `Falta ${familiaAlvo} para equilibrar sua coleção`;
+    
+    return {
+        titulo,
+        alvo,
+        uso,
+        clima: contexto.clima || 'Temperado',
+        faixa_preco: contexto.orcamento || 'R$ 300-800',
+        justificativa,
+        compras_faltantes: Math.max(1, comprasFaltantes)
+    };
+}
+
+function gerarTituloMissao(familiaAlvo, familiaDominante, contexto, missaoIndex = 0) {
+    const ambiente = contexto.ambiente ? contexto.ambiente.toLowerCase() : 'trabalho';
+    const prefixo = missaoIndex === 0 ? '' : missaoIndex === 1 ? 'Alternativa: ' : 'Opção extra: ';
+    
+    const titulos = {
+        '🍋 Fresco/Cítrico': `Adicionar frescor ${ambiente === 'aberto' ? 'para ambientes abertos' : 'discreto ao seu arsenal'}`,
+        '🌳 Aromático/Verde': `Equilibrar com aromáticos ${ambiente === 'fechado' ? 'para trabalho' : 'versáteis'}`,
+        '🍯 Doce/Gourmand': 'Adicionar doçura sem ficar enjoativo',
+        '🪵 Amadeirado': `Conquistar elegância amadeirada para ${ambiente === 'fechado' ? 'TRABALHO' : 'NOITE'}`,
+        '🌶️ Especiado/Oriental': 'Dominar especiarias orientais marcantes',
+        '💧 Aquático': 'Completar com aquático fresco e moderno',
+        '🧼 Talco/Fougère': 'Adicionar clássico talcado atemporal',
+        '🌸 Floral': 'Equilibrar com floral masculino',
+        '🍇 Frutado': 'Adicionar frutado jovial e energético'
+    };
+    
+    const tituloBase = titulos[familiaAlvo] || `Equilibrar sua coleção com ${familiaAlvo}`;
+    return prefixo + tituloBase;
+}
+
+function getAlvoEspecifico(familia) {
+    const alvos = {
+        '🍋 Fresco/Cítrico': '🍋 Cítrico limpo / Bergamota fresca',
+        '🌳 Aromático/Verde': '🌳 Aromático verde / Lavanda',
+        '🍯 Doce/Gourmand': '🍯 Doce equilibrado / Baunilha + madeira',
+        '🪵 Amadeirado': '🪵 Amadeirado seco / Âmbar discreto',
+        '🌶️ Especiado/Oriental': '🌶️ Especiaria oriental / Cardamomo + âmbar',
+        '💧 Aquático': '💧 Aquático moderno / Sal marinho',
+        '🧼 Talco/Fougère': '🧼 Fougère clássico / Talco + lavanda',
+        '🌸 Floral': '🌸 Floral masculino / Gerânio + vetiver',
+        '🍇 Frutado': '🍇 Frutado fresco / Maçã + bergamota'
+    };
+    
+    return alvos[familia] || familia;
+}
+
+function getUsoSugerido(familia, contexto) {
+    const usos = {
+        '🍋 Fresco/Cítrico': 'Dia • trabalho • verão',
+        '🌳 Aromático/Verde': 'Trabalho • casual • dia a dia',
+        '🍯 Doce/Gourmand': 'Noite • encontros • inverno',
+        '🪵 Amadeirado': 'Noite • eventos • ambientes fechados',
+        '🌶️ Especiado/Oriental': 'Noite • ocasiões especiais • clima frio',
+        '💧 Aquático': 'Verão • esportes • casual',
+        '🧼 Talco/Fougère': 'Trabalho • formal • qualquer ocasião',
+        '🌸 Floral': 'Primavera • casual • dia',
+        '🍇 Frutado': 'Casual • dia • verão'
+    };
+    
+    return usos[familia] || 'Diversas ocasiões';
+}
+
+function getFamiliaComMenosPerfumes(perfumesPorFamilia) {
+    let minFamilia = null;
+    let minCount = Infinity;
+    
+    for (const [familia, count] of Object.entries(perfumesPorFamilia)) {
+        if (count < minCount) {
+            minCount = count;
+            minFamilia = familia;
+        }
+    }
+    
+    return minFamilia || '🪵 Amadeirado';
+}
+
+function mostrarCandidatos() {
+    const card = document.getElementById('candidatesCard');
+    card.classList.add('show');
+    
+    setTimeout(() => {
+        card.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }, 100);
+}
+
+function gerarNovaMissao() {
+    const missaoAtual = window.missaoAtualIndex || 0;
+    const dadosAnalise = window.dadosAnaliseAtual;
+    
+    if (!dadosAnalise) {
+        alert('❌ Erro: dados da análise não encontrados. Faça uma nova análise.');
+        return;
+    }
+    
+    // Próxima missão (rotação 0 → 1 → 2 → 0...)
+    const proximaMissao = (missaoAtual + 1) % 3;
+    window.missaoAtualIndex = proximaMissao;
+    
+    console.log(`🔄 Rotação: Missão ${missaoAtual} → Missão ${proximaMissao}`);
+    
+    renderizarMissaoGameficada(dadosAnalise);
+}
+
+// ===================================
+// INICIAR COLEÇÃO DO ZERO
+// ===================================
+
+async function iniciarColecaoDoZero() {
+    const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
+    
+    if (!perfil.clima || !perfil.ambiente || !perfil.idade || !perfil.orcamento) {
+        alert('⚠️ Por favor, preencha seu perfil primeiro na aba "Perfil"!');
+        // Muda para aba perfil
+        document.querySelector('.nav-item[data-section="perfil"]').click();
+        return;
+    }
+    
+    // Muda para aba sugestões
+    document.querySelector('.nav-item[data-section="sugestoes"]').click();
+    
+    const chatMessages = document.getElementById('chat-messages');
+    chatMessages.innerHTML = '<div class="loading">🌱 Criando sua coleção inicial...</div>';
+    
+    try {
+        const contextoInicio = `
+Quero COMEÇAR minha coleção de perfumes do zero.
+
+MEU CONTEXTO:
+- Clima: ${perfil.clima}
+- Ambiente de trabalho: ${perfil.ambiente}
+- Faixa etária: ${perfil.idade}
+- Orçamento: ${perfil.orcamento}
+
+OBJETIVO:
+Sugira 3 perfumes ESSENCIAIS para começar minha coleção, cobrindo as funções básicas:
+1. DIA/TRABALHO - Versátil, discreto, profissional
+2. NOITE/SOCIAL - Marcante, sofisticado, sexy
+3. VERSÁTIL - Funciona em várias ocasiões
+
+Considere minha idade e orçamento. Priorize nichos acessíveis.
+        `.trim();
+        
+        const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                iniciar_colecao: true,
+                contexto: contextoInicio,
+                clima: perfil.clima,
+                ambiente: perfil.ambiente,
+                idade: perfil.idade,
+                orcamento: perfil.orcamento
+            })
+        });
+        
+        const data = await response.json();
+        
+        // Renderiza sugestões iniciais
+        let html = `
+            <div class="chat-message assistant">
+                <div class="chat-message-header">🧪 Perfumista</div>
+                <div class="chat-message-content">
+                    <strong>🌱 Sua Coleção Inicial Perfeita!</strong><br><br>
+                    Baseado no seu perfil, aqui estão 3 perfumes essenciais para começar:
+                    <div class="suggestions-grid" style="margin-top: 20px;">
+        `;
+        
+        if (data.recomendacoes && data.recomendacoes.length > 0) {
+            data.recomendacoes.forEach(sug => {
+                html += `
+                    <div class="suggestion-card">
+                        <div class="suggestion-name">${sug.nome}</div>
+                        <div class="suggestion-familia">${sug.familia}</div>
+                        <div class="suggestion-preco">${sug.faixa_preco}</div>
+                        <div class="suggestion-por-que">${sug.por_que}</div>
+                        <div class="suggestion-quando">${sug.quando_usar}</div>
+                    </div>
+                `;
+            });
+        }
+        
+        html += `
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        chatMessages.innerHTML = html;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+    } catch (error) {
+        console.error('Erro:', error);
+        chatMessages.innerHTML = `
+            <div class="chat-message assistant">
+                <div class="chat-message-header">🧪 Perfumista</div>
+                <div class="chat-message-content">
+                    ❌ Erro ao criar sugestões. Tente novamente.
+                </div>
+            </div>
+        `;
     }
 }
 
