@@ -1868,6 +1868,14 @@ function atualizarRadar() {
 
 function atualizarRadarComAPI(analiseAPI) {
     console.log('📊 Atualizando radar com classificação da API');
+    console.log('📦 Dados recebidos:', analiseAPI);
+    
+    if (!analiseAPI || !analiseAPI.perfumes_por_familia) {
+        console.error('❌ analiseAPI inválida:', analiseAPI);
+        return;
+    }
+    
+    console.log('👉 perfumes_por_familia:', analiseAPI.perfumes_por_familia);
     
     // Dados para o radar
     const familias = [
@@ -1893,6 +1901,8 @@ function atualizarRadarComAPI(analiseAPI) {
         analiseAPI.perfumes_por_familia['🌸 Floral'] || 0,
         analiseAPI.perfumes_por_familia['🍇 Frutado'] || 0
     ];
+    
+    console.log('📊 Valores para radar:', valores);
     
     renderizarRadarChart(familias, valores, analiseAPI);
 }
@@ -2092,12 +2102,17 @@ Sugira EXATAMENTE 3 perfumes onde:
 O usuário definiu orçamento de: ${perfil.orcamento || 'R$ 300-500'}
 
 REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
-- Se orçamento é "R$ 300-500" → Sugira APENAS perfumes de R$ 250-600
-- Se orçamento é "R$ 500-800" → Sugira APENAS perfumes de R$ 400-900
-- Se orçamento é "R$ 800-1500" → Sugira APENAS perfumes de R$ 700-1700
-- Se orçamento é "Acima de R$ 1500" → Pode sugerir qualquer preço alto
+- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 450-600
+- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900
+- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700
+- Se orçamento é "Acima de R$ 1500" → Sugira perfumes premium acima de R$ 1500
 
-NUNCA QUEBRE ESTA REGRA! Se o orçamento é R$ 800-1500, NÃO sugira perfume de R$ 400!
+⚠️ IMPORTANTE: Sempre PRIORIZE perfumes no TOPO da faixa (mais próximo do máximo).
+⚠️ NUNCA sugira perfumes ABAIXO do mínimo da faixa!
+
+EXEMPLOS:
+- Orçamento "R$ 800-1500" → ✅ Creed Aventus (R$ 1400), Tom Ford Oud Wood (R$ 1600)
+- Orçamento "R$ 800-1500" → ❌ Mont Blanc Legend (R$ 350) - MUITO ABAIXO!
 
 ===========================================================
 
@@ -2228,6 +2243,141 @@ function limparCache() {
     alert('✅ Cache limpo! Clique em "Analisar" para gerar nova análise.');
 }
 
+async function trocarSugestaoIndividual(indice) {
+    const dadosAnalise = window.dadosAnaliseAtual;
+    
+    if (!dadosAnalise) {
+        alert('❌ Erro: faça uma análise primeiro.');
+        return;
+    }
+    
+    const card = document.getElementById(`candidato-${indice}`);
+    if (!card) return;
+    
+    // Mostra loading no card
+    const conteudoOriginal = card.innerHTML;
+    card.innerHTML = `
+        <div style="text-align: center; padding: 40px 20px; color: #999;">
+            <div class="analyzing-spinner" style="margin: 0 auto 15px;"></div>
+            <div>🔍 Buscando nova sugestão...</div>
+        </div>
+    `;
+    
+    try {
+        const analise = dadosAnalise.analise_colecao || dadosAnalise.analise;
+        const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
+        const missaoIndex = window.missaoAtualIndex || 0;
+        
+        // Pega família alvo
+        const top3_faltando = analise.top3_faltando || [];
+        let familiaAlvo;
+        if (top3_faltando.length > missaoIndex) {
+            familiaAlvo = top3_faltando[missaoIndex];
+        } else {
+            familiaAlvo = getFamiliaComMenosPerfumes(analise.perfumes_por_familia);
+        }
+        
+        // Pega perfumes já sugeridos para não repetir
+        const sugestoesAtuais = [];
+        for (let i = 0; i < 3; i++) {
+            const cardAtual = document.getElementById(`candidato-${i}`);
+            if (cardAtual && i !== indice) {
+                const nome = cardAtual.querySelector('.candidate-name')?.textContent.replace(/^\d+\.\s*/, '');
+                if (nome) sugestoesAtuais.push(nome);
+            }
+        }
+        
+        const prompt = `
+PERFIL DO USUÁRIO:
+Clima: ${perfil.clima || 'Temperado'}
+Ambiente: ${perfil.ambiente || 'Ambos'}
+Idade: ${perfil.idade || '25-35'} anos
+Orçamento: ${perfil.orcamento || 'R$ 300-500'}
+
+COLEÇÃO ATUAL (${minhaColecao.length} perfumes):
+${minhaColecao.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+
+===========================================================
+🎯 MISSÃO: Sugerir 1 ÚNICO perfume
+===========================================================
+
+REGRAS CRÍTICAS:
+1️⃣ Deve ser da família: ${familiaAlvo}
+2️⃣ NÃO sugerir: ${minhaColecao.concat(sugestoesAtuais).join(', ')}
+3️⃣ Marca DIFERENTE das outras sugestões
+
+===========================================================
+💰 ORÇAMENTO - RESPEITE RIGOROSAMENTE! 💰
+===========================================================
+
+O usuário definiu orçamento de: ${perfil.orcamento || 'R$ 300-500'}
+
+REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
+- Se orçamento é "R$ 300-500" → Sugira APENAS perfumes de R$ 250-600
+- Se orçamento é "R$ 500-800" → Sugira APENAS perfumes de R$ 400-900
+- Se orçamento é "R$ 800-1500" → Sugira APENAS perfumes de R$ 700-1700
+- Se orçamento é "Acima de R$ 1500" → Pode sugerir qualquer preço alto
+
+PRIORIZE perfumes no TOPO da faixa (mais próximo do máximo).
+
+NUNCA QUEBRE ESTA REGRA!
+
+===========================================================
+
+Retorne APENAS 1 perfume com: nome, família, faixa_preco, por_que, quando_usar
+`;
+        
+        const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ diagnostico: prompt })
+        });
+        
+        const data = await response.json();
+        const novaSugestao = data.recomendacoes?.[0];
+        
+        if (!novaSugestao) {
+            card.innerHTML = conteudoOriginal;
+            alert('❌ Não foi possível gerar nova sugestão. Tente novamente.');
+            return;
+        }
+        
+        // Atualiza card
+        card.innerHTML = `
+            <div class="candidate-name">${indice + 1}. ${novaSugestao.nome}</div>
+            <div class="candidate-family">🌿 ${novaSugestao.familia} • 💰 ${novaSugestao.faixa_preco}</div>
+            <div class="candidate-why"><strong>Por quê:</strong> ${novaSugestao.por_que}</div>
+            <div class="candidate-when"><strong>Quando usar:</strong> ${novaSugestao.quando_usar}</div>
+            <button 
+                onclick="trocarSugestaoIndividual(${indice})"
+                style="
+                    margin-top: 12px;
+                    padding: 8px 16px;
+                    background: rgba(212, 175, 55, 0.1);
+                    border: 1px solid rgba(212, 175, 55, 0.3);
+                    border-radius: 8px;
+                    color: #d4af37;
+                    font-size: 0.9em;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                    width: 100%;
+                "
+                onmouseover="this.style.background='rgba(212, 175, 55, 0.2)'"
+                onmouseout="this.style.background='rgba(212, 175, 55, 0.1)'"
+            >
+                🔄 Trocar esta sugestão
+            </button>
+        `;
+        
+        console.log(`✅ Sugestão ${indice + 1} trocada:`, novaSugestao.nome);
+        
+    } catch (error) {
+        console.error('Erro:', error);
+        card.innerHTML = conteudoOriginal;
+        alert('❌ Erro ao trocar sugestão. Tente novamente.');
+    }
+}
+
 // ===================================
 // SUGESTÕES (CHAT)
 // ===================================
@@ -2257,7 +2407,7 @@ async function enviarPergunta() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                pergunta,
+                pergunta: pergunta + `\n\n[INSTRUÇÃO CRÍTICA: O usuário tem orçamento de ${perfil.orcamento || 'R$ 300-500'}. Se for "R$ 800-1500", sugira perfumes de R$ 700-1700, PRIORIZANDO os mais próximos de R$ 1500-1700. NUNCA sugira abaixo da faixa!]`,
                 colecao: minhaColecao,
                 clima: perfil.clima || 'Temperado',
                 ambiente: perfil.ambiente || 'Ambos',
@@ -2291,6 +2441,31 @@ async function enviarPergunta() {
             });
             
             resposta += '</div>';
+            
+            // Adiciona botão WhatsApp
+            resposta += `
+                <button 
+                    onclick="enviarSugestoesWhatsApp(${JSON.stringify(data.sugestoes).replace(/"/g, '&quot;')})"
+                    style="
+                        width: 100%;
+                        margin-top: 20px;
+                        padding: 14px;
+                        background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+                        border: none;
+                        border-radius: 10px;
+                        color: white;
+                        font-size: 1em;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s;
+                        box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
+                    "
+                    onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(37, 211, 102, 0.5)'"
+                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(37, 211, 102, 0.3)'"
+                >
+                    📱 Enviar pro meu WhatsApp
+                </button>
+            `;
         }
         
         adicionarMensagemChat('assistant', resposta);
@@ -2915,11 +3090,30 @@ function renderizarMissaoGameficada(data) {
                 
                 <div id="sugestoesContainer">
                     ${recomendacoes.map((rec, i) => `
-                        <div class="candidate-item">
+                        <div class="candidate-item" id="candidato-${i}" style="position: relative;">
                             <div class="candidate-name">${i + 1}. ${rec.nome}</div>
                             <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
                             <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
                             <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
+                            <button 
+                                onclick="trocarSugestaoIndividual(${i})"
+                                style="
+                                    margin-top: 12px;
+                                    padding: 8px 16px;
+                                    background: rgba(212, 175, 55, 0.1);
+                                    border: 1px solid rgba(212, 175, 55, 0.3);
+                                    border-radius: 8px;
+                                    color: #d4af37;
+                                    font-size: 0.9em;
+                                    cursor: pointer;
+                                    transition: all 0.3s;
+                                    width: 100%;
+                                "
+                                onmouseover="this.style.background='rgba(212, 175, 55, 0.2)'"
+                                onmouseout="this.style.background='rgba(212, 175, 55, 0.1)'"
+                            >
+                                🔄 Trocar esta sugestão
+                            </button>
                         </div>
                     `).join('')}
                 </div>
@@ -3219,7 +3413,7 @@ RESPONDA COM 3 PERFUMES DE MARCAS TOTALMENTE DIFERENTES!
             return;
         }
         
-        // 🔍 VALIDAÇÃO: Verifica se há marcas repetidas
+        // 🔍 VALIDAÇÃO 1: Verifica se há marcas repetidas
         const marcas = novasSugestoes.map(sug => {
             // Extrai primeira palavra do nome (geralmente é a marca)
             return sug.nome.split(' ')[0].toLowerCase();
@@ -3229,34 +3423,46 @@ RESPONDA COM 3 PERFUMES DE MARCAS TOTALMENTE DIFERENTES!
         
         if (marcasUnicas.size < novasSugestoes.length) {
             console.warn('⚠️ API retornou marcas repetidas:', marcas);
-            console.warn('Sugestões com problema:', novasSugestoes.map(s => s.nome));
-            
-            // Mostra aviso visual mas mantém as sugestões
-            container.innerHTML = `
-                <div style="background: rgba(255, 152, 0, 0.1); border: 2px solid rgba(255, 152, 0, 0.3); border-radius: 10px; padding: 15px; margin-bottom: 20px; color: #ff9800;">
-                    <strong>⚠️ Atenção:</strong> Detectamos marcas repetidas nas sugestões. Estamos trabalhando para melhorar isso.
-                </div>
-            ` + novasSugestoes.map((rec, i) => `
-                <div class="candidate-item">
-                    <div class="candidate-name">${i + 1}. ${rec.nome}</div>
-                    <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
-                    <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
-                    <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
-                </div>
-            `).join('');
+            // Mostra aviso mas continua
         } else {
             console.log('✅ Marcas diferentes validadas:', Array.from(marcasUnicas));
-            
-            // Atualiza UI com novas sugestões
-            container.innerHTML = novasSugestoes.map((rec, i) => `
-                <div class="candidate-item">
-                    <div class="candidate-name">${i + 1}. ${rec.nome}</div>
-                    <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
-                    <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
-                    <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
-                </div>
-            `).join('');
         }
+        
+        // 🔍 VALIDAÇÃO 2: Verifica orçamento
+        const faixas = {
+            'R$ 300-500': { min: 250, max: 600 },
+            'R$ 500-800': { min: 400, max: 900 },
+            'R$ 800-1500': { min: 700, max: 1700 },
+            'Acima de R$ 1500': { min: 1500, max: 999999 }
+        };
+        
+        const faixaUsuario = perfil.orcamento || 'R$ 300-500';
+        const limites = faixas[faixaUsuario];
+        
+        if (limites) {
+            novasSugestoes.forEach(sug => {
+                // Extrai valores de faixa_preco (ex: "R$ 400-600")
+                const match = sug.faixa_preco?.match(/(\d+)/g);
+                if (match && match.length >= 1) {
+                    const precoMin = parseInt(match[0]);
+                    if (precoMin < limites.min || precoMin > limites.max) {
+                        console.warn(`⚠️ ${sug.nome}: R$ ${precoMin} está FORA do orçamento ${faixaUsuario}`);
+                    } else {
+                        console.log(`✅ ${sug.nome}: R$ ${precoMin} dentro do orçamento`);
+                    }
+                }
+            });
+        }
+        
+        // Renderiza sugestões
+        container.innerHTML = novasSugestoes.map((rec, i) => `
+            <div class="candidate-item">
+                <div class="candidate-name">${i + 1}. ${rec.nome}</div>
+                <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
+                <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
+                <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
+            </div>
+        `).join('');
         
         // Track evento
         trackEvent('novas_sugestoes_geradas', {
