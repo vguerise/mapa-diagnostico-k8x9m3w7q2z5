@@ -1886,6 +1886,41 @@ function atualizarRadar() {
         analise.perfumes_por_familia['🍇 Frutado'] || 0
     ];
     
+    renderizarRadarChart(familias, valores, analise);
+}
+
+function atualizarRadarComAPI(analiseAPI) {
+    console.log('📊 Atualizando radar com classificação da API');
+    
+    // Dados para o radar
+    const familias = [
+        '🍋 Fresco',
+        '🌳 Aromático',
+        '🍯 Doce',
+        '🪵 Amadeirado',
+        '🌶️ Especiado',
+        '💧 Aquático',
+        '🧼 Talco',
+        '🌸 Floral',
+        '🍇 Frutado'
+    ];
+    
+    const valores = [
+        analiseAPI.perfumes_por_familia['🍋 Fresco/Cítrico'] || 0,
+        analiseAPI.perfumes_por_familia['🌳 Aromático/Verde'] || 0,
+        analiseAPI.perfumes_por_familia['🍯 Doce/Gourmand'] || 0,
+        analiseAPI.perfumes_por_familia['🪵 Amadeirado'] || 0,
+        analiseAPI.perfumes_por_familia['🌶️ Especiado/Oriental'] || 0,
+        analiseAPI.perfumes_por_familia['💧 Aquático'] || 0,
+        analiseAPI.perfumes_por_familia['🧼 Talco/Fougère'] || 0,
+        analiseAPI.perfumes_por_familia['🌸 Floral'] || 0,
+        analiseAPI.perfumes_por_familia['🍇 Frutado'] || 0
+    ];
+    
+    renderizarRadarChart(familias, valores, analiseAPI);
+}
+
+function renderizarRadarChart(familias, valores, analise) {
     const ctx = document.getElementById('radarChart');
     
     // Destrói chart anterior se existir
@@ -1961,10 +1996,7 @@ function atualizarColecao() {
         return;
     }
     
-    // Atualiza o radar com classificação local temporária
-    atualizarRadar();
-    
-    // Mostra mensagem de sucesso
+    // Mostra mensagem explicando que precisa ir na aba Missão
     const toast = document.createElement('div');
     toast.style.cssText = `
         position: fixed;
@@ -1972,21 +2004,28 @@ function atualizarColecao() {
         right: 20px;
         background: linear-gradient(135deg, #4caf50, #66bb6a);
         color: white;
-        padding: 15px 25px;
-        border-radius: 10px;
+        padding: 20px 30px;
+        border-radius: 12px;
         box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
         z-index: 10000;
         font-weight: 600;
         animation: fadeIn 0.3s ease-out;
+        max-width: 350px;
+        line-height: 1.5;
     `;
-    toast.textContent = '✅ Coleção atualizada!';
+    toast.innerHTML = `
+        <div style="font-size: 1.1em; margin-bottom: 8px;">✅ Perfumes salvos!</div>
+        <div style="font-size: 0.9em; opacity: 0.9;">
+            Vá na aba <strong>Missão</strong> e clique em<br>"Analisa minha Coleção" para atualizar o radar
+        </div>
+    `;
     document.body.appendChild(toast);
     
     setTimeout(() => {
         toast.style.transition = 'opacity 0.5s';
         toast.style.opacity = '0';
         setTimeout(() => toast.remove(), 500);
-    }, 2000);
+    }, 4000);
     
     // Track evento
     trackEvent('colecao_atualizada', {
@@ -2043,18 +2082,47 @@ COLEÇÃO ATUAL (${minhaColecao.length} perfumes):
 ${minhaColecao.map((p, i) => `${i + 1}. ${p}`).join('\n')}
 
 INSTRUÇÕES CRÍTICAS:
-1. Para CADA perfume, identifique sua família olfativa REAL (pesquise no Fragantica se necessário)
-2. As famílias possíveis são: Fresco/Cítrico, Aromático/Verde, Doce/Gourmand, Amadeirado, Especiado/Oriental, Aquático, Talco/Fougère, Floral, Frutado
-3. Conte quantos perfumes há em cada família (baseado na classificação REAL, não em suposições)
-4. Identifique as 3 famílias com MENOS perfumes (ou vazias)
-5. Sugira 3 perfumes que preencham as MAIORES LACUNAS da coleção
-6. Considere clima, ambiente e orçamento do usuário
-7. PRIORIZE perfumes de nicho acessível (<5k reviews Fragantica)
-8. EVITE perfumes mainstream hypados (>20k reviews)
 
-IMPORTANTE: A classificação por família precisa ser PRECISA. Se não conhecer um perfume, pesquise ou use o nome e marca como pista.
+═══════════════════════════════════════════════════════════
+📊 PARTE 1: CLASSIFICAÇÃO (OBRIGATÓRIO)
+═══════════════════════════════════════════════════════════
 
-Analise minha coleção completa e retorne análise detalhada + recomendações.
+Para CADA perfume acima, identifique sua família olfativa REAL:
+- Use conhecimento do Fragantica/Fragrantica
+- As famílias possíveis são: Fresco/Cítrico, Aromático/Verde, Doce/Gourmand, Amadeirado, Especiado/Oriental, Aquático, Talco/Fougère, Floral, Frutado
+- Conte quantos perfumes há em cada família
+- Identifique as 3 famílias com MENOS perfumes
+
+═══════════════════════════════════════════════════════════
+🚨 PARTE 2: SUGESTÕES - MARCAS DIFERENTES (OBRIGATÓRIO!) 🚨
+═══════════════════════════════════════════════════════════
+
+Sugira EXATAMENTE 3 perfumes onde:
+
+1️⃣ CADA perfume é de uma MARCA TOTALMENTE DIFERENTE
+2️⃣ NUNCA repita a mesma marca entre os 3 perfumes
+3️⃣ Preencham as MAIORES LACUNAS da coleção
+
+❌ EXEMPLOS PROIBIDOS (ERRADO):
+- Dior Sauvage, Dior Homme, Versace Eros (Dior repetiu!)
+- Paco Rabanne Invictus, Paco Rabanne 1 Million, Dior Sauvage (Paco Rabanne repetiu!)
+- Versace Eros, Versace Dylan Blue, Armani Code (Versace repetiu!)
+
+✅ EXEMPLOS CORRETOS:
+- Dior Sauvage, Versace Eros, Paco Rabanne Invictus (3 marcas diferentes!)
+- Creed Aventus, Tom Ford Oud Wood, Yves Saint Laurent La Nuit (3 marcas diferentes!)
+- Montblanc Explorer, Carolina Herrera Bad Boy, Azzaro Wanted (3 marcas diferentes!)
+
+═══════════════════════════════════════════════════════════
+
+REGRAS ADICIONAIS:
+4️⃣ Considere clima, ambiente e orçamento: ${perfil.orcamento || 'R$ 300-500'}
+5️⃣ PRIORIZE perfumes de nicho acessível (<5k reviews Fragantica)
+6️⃣ EVITE perfumes mainstream hypados (>20k reviews)
+
+IMPORTANTE: Classificação PRECISA + 3 MARCAS TOTALMENTE DIFERENTES!
+
+Analise e retorne análise detalhada + recomendações.
 `;
         
         const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
@@ -2067,13 +2135,23 @@ Analise minha coleção completa e retorne análise detalhada + recomendações.
         
         // Se API retornou análise de famílias, usa ela. Senão, usa local
         if (!data.analise_colecao || !data.analise_colecao.perfumes_por_familia) {
-            console.log('⚠️ API não retornou análise de famílias, usando classificação local');
-            data.analise_colecao = classificacaoLocal;
-        } else {
-            console.log('✅ Usando classificação validada pela API');
-            // Salva classificações validadas para uso futuro
-            localStorage.setItem('classificacoesValidadas', JSON.stringify(data.analise_colecao.perfumes_por_familia));
+            console.log('⚠️ API não retornou análise de famílias');
+            resultContainer.innerHTML = `
+                <div class="result-container">
+                    <div class="result-title">⚠️ Erro na Análise</div>
+                    <div class="result-text">A API não retornou classificação dos perfumes. Tente novamente.</div>
+                </div>
+            `;
+            return;
         }
+        
+        console.log('✅ Usando classificação validada pela API');
+        
+        // Salva classificações validadas para uso futuro
+        localStorage.setItem('classificacoesValidadas', JSON.stringify(data.analise_colecao.perfumes_por_familia));
+        
+        // ATUALIZA O RADAR com dados da API
+        atualizarRadarComAPI(data.analise_colecao);
         
         // Salva análise no cache com dados completos
         localStorage.setItem('ultimaAnalise', JSON.stringify({
@@ -2087,10 +2165,9 @@ Analise minha coleção completa e retorne análise detalhada + recomendações.
         window.missaoAtualIndex = 0;
         
         // 📊 TRACKING: Análise completa com coleção e nível
-        const analiseLocal = analisarColecaoLocal(minhaColecao);
         const nivelAtual = calcularNivelAtual();
-        trackCollection(minhaColecao, analiseLocal);
-        trackAnalysis(data.analise_colecao || analiseLocal, nivelAtual, data.recomendacoes);
+        trackCollection(minhaColecao, data.analise_colecao);
+        trackAnalysis(data.analise_colecao, nivelAtual, data.recomendacoes);
         
         renderizarMissaoGameficada(data);
         
@@ -2997,20 +3074,36 @@ Orçamento: ${perfil.orcamento || 'R$ 300-500'}
 COLEÇÃO ATUAL (${minhaColecao.length} perfumes):
 ${minhaColecao.map((p, i) => `${i + 1}. ${p}`).join('\n')}
 
-MISSÃO: Sugerir EXATAMENTE 3 perfumes da família ${familiaAlvo}
+═══════════════════════════════════════════════════════════
+🚨 REGRA CRÍTICA - MARCAS DIFERENTES (OBRIGATÓRIO!) 🚨
+═══════════════════════════════════════════════════════════
 
-REGRAS CRÍTICAS PARA ESTE CONJUNTO ${conjuntoAtual}:
-1. TODOS os 3 perfumes devem ser da família ${familiaAlvo}
-2. CADA perfume deve ser de uma MARCA DIFERENTE (3 marcas diferentes!)
-3. NÃO sugerir perfumes que o usuário já tem
-4. NÃO repetir perfumes dos conjuntos anteriores
-5. Considere clima, ambiente e orçamento
-6. PRIORIZE perfumes de nicho acessível (<5k reviews Fragantica)
-7. EVITE perfumes mainstream hypados (>20k reviews)
+Você DEVE sugerir EXATAMENTE 3 perfumes onde:
 
-IMPORTANTE: As 3 sugestões devem ter MARCAS TOTALMENTE DIFERENTES entre si!
-Exemplo CORRETO: Dior, Versace, Paco Rabanne
-Exemplo ERRADO: Dior Sauvage, Dior Homme, Dior Fahrenheit
+1️⃣ CADA perfume é de uma MARCA TOTALMENTE DIFERENTE
+2️⃣ NUNCA repita a mesma marca entre os 3 perfumes
+3️⃣ TODOS devem ser da família: ${familiaAlvo}
+
+❌ EXEMPLOS PROIBIDOS (ERRADO):
+- Dior Sauvage, Dior Homme, Versace Eros (Dior repetiu!)
+- Paco Rabanne Invictus, Paco Rabanne 1 Million, Dior Sauvage (Paco Rabanne repetiu!)
+- Versace Eros, Versace Dylan Blue, Armani Code (Versace repetiu!)
+
+✅ EXEMPLOS CORRETOS:
+- Dior Sauvage, Versace Eros, Paco Rabanne Invictus (3 marcas diferentes!)
+- Creed Aventus, Tom Ford Oud Wood, Yves Saint Laurent La Nuit (3 marcas diferentes!)
+- Montblanc Explorer, Carolina Herrera Bad Boy, Azzaro Wanted (3 marcas diferentes!)
+
+═══════════════════════════════════════════════════════════
+
+REGRAS ADICIONAIS:
+4️⃣ NÃO sugerir perfumes que o usuário já tem
+5️⃣ NÃO repetir perfumes dos conjuntos anteriores
+6️⃣ Considere o orçamento: ${perfil.orcamento || 'R$ 300-500'}
+7️⃣ PRIORIZE perfumes de nicho acessível (<5k reviews Fragantica)
+8️⃣ EVITE perfumes mainstream hypados (>20k reviews)
+
+RESPONDA COM 3 PERFUMES DE MARCAS TOTALMENTE DIFERENTES!
 `;
         
         // Chama API
@@ -3023,22 +3116,51 @@ Exemplo ERRADO: Dior Sauvage, Dior Homme, Dior Fahrenheit
         });
         
         const data = await response.json();
-        const novasSugestoes = data.recomendacoes || [];
+        let novasSugestoes = data.recomendacoes || [];
         
         if (novasSugestoes.length === 0) {
             container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">Não foi possível gerar novas sugestões. Tente novamente.</p>';
             return;
         }
         
-        // Atualiza UI com novas sugestões
-        container.innerHTML = novasSugestoes.map((rec, i) => `
-            <div class="candidate-item">
-                <div class="candidate-name">${i + 1}. ${rec.nome}</div>
-                <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
-                <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
-                <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
-            </div>
-        `).join('');
+        // 🔍 VALIDAÇÃO: Verifica se há marcas repetidas
+        const marcas = novasSugestoes.map(sug => {
+            // Extrai primeira palavra do nome (geralmente é a marca)
+            return sug.nome.split(' ')[0].toLowerCase();
+        });
+        
+        const marcasUnicas = new Set(marcas);
+        
+        if (marcasUnicas.size < novasSugestoes.length) {
+            console.warn('⚠️ API retornou marcas repetidas:', marcas);
+            console.warn('Sugestões com problema:', novasSugestoes.map(s => s.nome));
+            
+            // Mostra aviso visual mas mantém as sugestões
+            container.innerHTML = `
+                <div style="background: rgba(255, 152, 0, 0.1); border: 2px solid rgba(255, 152, 0, 0.3); border-radius: 10px; padding: 15px; margin-bottom: 20px; color: #ff9800;">
+                    <strong>⚠️ Atenção:</strong> Detectamos marcas repetidas nas sugestões. Estamos trabalhando para melhorar isso.
+                </div>
+            ` + novasSugestoes.map((rec, i) => `
+                <div class="candidate-item">
+                    <div class="candidate-name">${i + 1}. ${rec.nome}</div>
+                    <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
+                    <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
+                    <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
+                </div>
+            `).join('');
+        } else {
+            console.log('✅ Marcas diferentes validadas:', Array.from(marcasUnicas));
+            
+            // Atualiza UI com novas sugestões
+            container.innerHTML = novasSugestoes.map((rec, i) => `
+                <div class="candidate-item">
+                    <div class="candidate-name">${i + 1}. ${rec.nome}</div>
+                    <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
+                    <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
+                    <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
+                </div>
+            `).join('');
+        }
         
         // Track evento
         trackEvent('novas_sugestoes_geradas', {
