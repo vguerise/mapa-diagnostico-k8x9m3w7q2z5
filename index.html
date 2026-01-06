@@ -915,6 +915,16 @@
             .balance-grid {
                 grid-template-columns: 1fr;
             }
+            
+            .perfume-input-container > div {
+                flex-direction: column !important;
+            }
+            
+            .perfume-input-container .add-button,
+            .perfume-input-container .start-collection-button {
+                width: 100% !important;
+                min-width: auto !important;
+            }
         }
 
         /* Scrollbar personalizada */
@@ -1330,11 +1340,6 @@
                         <p class="subtitle">Adicione seus perfumes e visualize o radar da sua coleção</p>
                     </header>
 
-                    <!-- Botão para quem está começando -->
-                    <button class="start-collection-button" onclick="iniciarColecaoDoZero()">
-                        🌱 Estou começando minha coleção!
-                    </button>
-
                     <!-- Input de Perfume -->
                     <div class="perfume-input-container">
                         <input 
@@ -1344,14 +1349,18 @@
                             placeholder="Digite o nome do perfume (ex: Sauvage, Eros, Invictus...)"
                             onkeypress="if(event.key === 'Enter') adicionarPerfume()"
                         >
-                        <div style="text-align: center; margin-top: 15px;">
-                            <button class="add-button" onclick="adicionarPerfume()">➕ Adicionar</button>
-                            <button class="clear-button" onclick="limparColecao()">🗑️ Limpar Tudo</button>
+                        <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
+                            <button class="add-button" onclick="adicionarPerfume()" style="flex: 1; min-width: 200px;">
+                                ➕ Adicionar
+                            </button>
+                            <button class="start-collection-button" onclick="iniciarColecaoDoZero()" style="flex: 1; min-width: 200px; margin: 0; padding: 12px 30px; font-size: 1em;">
+                                🌱 Estou começando!
+                            </button>
                         </div>
                     </div>
 
                     <!-- Dropdown da Lista de Perfumes -->
-                    <div style="max-width: 800px; margin: 0 auto 30px auto;">
+                    <div style="max-width: 800px; margin: 30px auto;">
                         <button 
                             id="toggle-list-button"
                             onclick="toggleListaPerfumes()"
@@ -1376,6 +1385,20 @@
                         </button>
                         
                         <div id="perfume-list" class="perfume-list" style="display: none; margin-top: 10px;"></div>
+                        
+                        <!-- Botão Limpar dentro do dropdown -->
+                        <div id="clear-button-container" style="display: none; margin-top: 10px;">
+                            <button class="clear-button" onclick="limparColecao()" style="width: 100%; margin: 0;">
+                                🗑️ Limpar Toda a Coleção
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Botão Analisar Coleção -->
+                    <div style="text-align: center; margin: 30px 0;">
+                        <button class="analyze-button" onclick="analisarColecao()">
+                            🔍 Analisa minha Coleção
+                        </button>
                     </div>
 
                     <!-- Radar de Coleção -->
@@ -1402,12 +1425,6 @@
                         <h1>🏆 Sua Missão</h1>
                         <p class="subtitle">Complete sua jornada e alcance a coleção perfeita</p>
                     </header>
-
-                    <div style="text-align: center; margin-bottom: 30px;">
-                        <button class="analyze-button" onclick="analisarColecao()">
-                            🔍 Analisa minha Coleção
-                        </button>
-                    </div>
 
                     <!-- Resultado da Análise -->
                     <div id="result-container"></div>
@@ -1606,14 +1623,19 @@ function toggleListaPerfumes() {
     const lista = document.getElementById('perfume-list');
     const icon = document.getElementById('toggle-icon');
     const button = document.getElementById('toggle-list-button');
+    const clearContainer = document.getElementById('clear-button-container');
     
     if (lista.style.display === 'none') {
         lista.style.display = 'block';
+        if (minhaColecao.length > 0) {
+            clearContainer.style.display = 'block';
+        }
         icon.textContent = '▲';
         button.style.borderBottomLeftRadius = '0';
         button.style.borderBottomRightRadius = '0';
     } else {
         lista.style.display = 'none';
+        clearContainer.style.display = 'none';
         icon.textContent = '▼';
         button.style.borderBottomLeftRadius = '10px';
         button.style.borderBottomRightRadius = '10px';
@@ -2406,21 +2428,108 @@ function mostrarCandidatos() {
 }
 
 function gerarNovaMissao() {
-    const missaoAtual = window.missaoAtualIndex || 0;
     const dadosAnalise = window.dadosAnaliseAtual;
     
     if (!dadosAnalise) {
-        alert('❌ Erro: dados da análise não encontrados. Faça uma nova análise.');
+        alert('❌ Erro: faça uma análise primeiro clicando em "Analisa minha Coleção" na aba Coleção.');
         return;
     }
     
-    // Próxima missão (rotação 0 → 1 → 2 → 0...)
+    // Pega índice atual e incrementa (0 → 1 → 2 → 0...)
+    const missaoAtual = window.missaoAtualIndex || 0;
     const proximaMissao = (missaoAtual + 1) % 3;
     window.missaoAtualIndex = proximaMissao;
     
     console.log(`🔄 Rotação: Missão ${missaoAtual} → Missão ${proximaMissao}`);
     
-    renderizarMissaoGameficada(dadosAnalise);
+    // Regenera a interface com a nova missão
+    const analise = dadosAnalise.analise_colecao || dadosAnalise.analise;
+    const recomendacoes = dadosAnalise.recomendacoes;
+    const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
+    
+    const contexto_aplicado = {
+        clima: perfil.clima || 'Temperado',
+        ambiente: perfil.ambiente || 'Ambos',
+        idade: perfil.idade || '25-35',
+        orcamento: perfil.orcamento || 'R$ 300-500'
+    };
+    
+    // Gera missão baseada no novo índice
+    const missao = gerarMissao(analise, contexto_aplicado, proximaMissao);
+    
+    // HTML da missão
+    const missaoHTML = `
+        <div class="mission-container" id="missionContainer">
+            <!-- Card Principal da Missão -->
+            <div class="mission-card">
+                <div class="mission-badge">🎯 SUA MISSÃO ATUAL</div>
+                
+                <h2 class="mission-title">${missao.titulo}</h2>
+                
+                <div class="mission-details">
+                    <div class="detail-row">
+                        <strong>Alvo:</strong> ${missao.alvo}
+                    </div>
+                    <div class="detail-row">
+                        <strong>Uso:</strong> ${missao.uso}
+                    </div>
+                    <div class="detail-row">
+                        <strong>Clima:</strong> ${missao.clima}
+                    </div>
+                    <div class="detail-row">
+                        <strong>Faixa ideal:</strong> ${missao.faixa_preco}
+                    </div>
+                </div>
+                
+                <div class="mission-why">
+                    <strong>Por quê?</strong><br>
+                    ${missao.justificativa}
+                </div>
+                
+                <div class="mission-progress">
+                    ✅ Você está <strong>${missao.compras_faltantes} ${missao.compras_faltantes === 1 ? 'compra' : 'compras'}</strong> de ter uma coleção redonda
+                </div>
+                
+                <div class="mission-actions">
+                    <button class="btn-mission-primary" onclick="mostrarCandidatos()">
+                        🎁 Ver ${recomendacoes.length} candidatos perfeitos
+                    </button>
+                    <button class="btn-mission-secondary" onclick="gerarNovaMissao()">
+                        🔄 Quero outra missão
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Card de Candidatos (oculto inicialmente) -->
+            <div class="candidates-card" id="candidatesCard">
+                <h3 style="color: #d4af37; margin-bottom: 20px; font-size: 1.5em;">
+                    🎁 Candidatos Perfeitos para sua Missão
+                </h3>
+                ${recomendacoes.map((rec, i) => `
+                    <div class="candidate-item">
+                        <div class="candidate-name">${i + 1}. ${rec.nome}</div>
+                        <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
+                        <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
+                        <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    
+    const resultContainer = document.getElementById('result-container');
+    resultContainer.innerHTML = missaoHTML;
+    
+    // Scroll suave até o topo da missão
+    setTimeout(() => {
+        const missionContainer = document.getElementById('missionContainer');
+        if (missionContainer) {
+            missionContainer.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    }, 100);
 }
 
 // ===================================
