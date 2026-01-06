@@ -1,4 +1,32 @@
 <!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>Mapa de Perfumes</title>
+<style>
+body {margin:0; display:flex; font-family:sans-serif;}
+#sidebar {width:220px; background:#111; color:#fff; padding:10px;}
+#sidebar button {display:block; width:100%; margin:6px 0;}
+#content {flex:1; padding:10px;}
+.tab {display:none;}
+.tab.active {display:block;}
+</style>
+</head>
+<body>
+<div id="sidebar">
+<h3>Mapa</h3>
+<button onclick="showTab('perfil')">Perfil</button>
+<button onclick="showTab('colecao')">Coleção</button>
+<button onclick="showTab('missao')">Missão</button>
+<button onclick="showTab('sugestoes')">Sugestões</button>
+</div>
+<div id="content">
+<div id="perfil" class="tab active">
+<h2>Perfil</h2>
+<p>Seu contexto pessoal (travado no Supabase)</p>
+</div>
+<div id="colecao" class="tab">
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -3688,5 +3716,24 @@ setInterval(() => {
 }, 500); // Verifica a cada 0.5s (mas só redesenha se mudou)
     </script>
 
+</body>
+</html>
+
+</div>
+<div id="missao" class="tab">
+<h2>Missão</h2>
+<p>Resultado da análise gamificada.</p>
+</div>
+<div id="sugestoes" class="tab">
+<h2>Sugestões</h2>
+<p>Perfumes recomendados.</p>
+</div>
+</div>
+<script>
+function showTab(id) {
+ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+ document.getElementById(id).classList.add('active');
+}
+</script>
 </body>
 </html>
