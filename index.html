@@ -2170,14 +2170,50 @@ ${window.perfumesJaSugeridos && window.perfumesJaSugeridos.length > 0 ? window.p
 INSTRUÇÕES CRÍTICAS:
 
 ===========================================================
-📊 PARTE 1: CLASSIFICAÇÃO (OBRIGATÓRIO)
+📊 PARTE 1: CLASSIFICAÇÃO FRAGANTICA (OBRIGATÓRIO)
 ===========================================================
 
-Para CADA perfume acima, identifique sua família olfativa REAL:
-- Use conhecimento do Fragantica/Fragrantica
-- As famílias possíveis são: Fresco/Cítrico, Aromático/Verde, Doce/Gourmand, Amadeirado, Especiado/Oriental, Aquático, Talco/Fougère, Floral, Frutado
-- Conte quantos perfumes há em cada família
-- Identifique as 3 famílias com MENOS perfumes
+Para CADA perfume acima, você DEVE:
+
+1. Consultar a página do perfume no Fragantica
+2. Olhar a seção "Main Accords" (Principais Acordes)
+3. Usar a PRIMEIRA família listada nos acordes
+
+EXEMPLO CORRETO:
+- "Nishane Hacivat" → Main Accords: woody, citrus, mossy
+  → FAMÍLIA: Amadeirado (porque "woody" é o primeiro)
+  
+- "Parfums de Marly Percival" → Main Accords: woody, aromatic, citrus
+  → FAMÍLIA: Amadeirado (porque "woody" é o primeiro)
+  
+- "Dior Sauvage" → Main Accords: fresh spicy, aromatic, citrus
+  → FAMÍLIA: Aromático/Verde (porque "fresh spicy" + "aromatic")
+
+MAPEAMENTO DOS ACORDES PARA FAMÍLIAS:
+- woody, cedar, sandalwood → Amadeirado
+- fresh spicy, aromatic, green → Aromático/Verde
+- sweet, vanilla, caramel, gourmand → Doce/Gourmand
+- citrus, bergamot, lemon → Fresco/Cítrico
+- spicy, oriental, amber → Especiado/Oriental
+- aquatic, marine, ozonic → Aquático
+- powdery, lavender, fougere → Talco/Fougère
+- floral, rose, jasmine → Floral
+- fruity, apple, pineapple → Frutado
+
+IMPORTANTE: Use conhecimento REAL do Fragantica, não invente!
+
+As famílias possíveis são APENAS estas 9:
+1. Fresco/Cítrico
+2. Aromático/Verde
+3. Doce/Gourmand
+4. Amadeirado
+5. Especiado/Oriental
+6. Aquático
+7. Talco/Fougère
+8. Floral
+9. Frutado
+
+Conte quantos perfumes há em cada família e identifique as 3 famílias com MENOS perfumes.
 
 ===========================================================
 🚨 PARTE 2: SUGESTÕES - MARCAS DIFERENTES (OBRIGATÓRIO!) 🚨
@@ -2242,7 +2278,14 @@ Analise e retorne análise detalhada + recomendações.
         
         const data = await response.json();
         
-        console.log('📦 Dados parseados:', data);
+        console.log('📦 Dados parseados:');
+        console.log('  - analise_colecao:', data.analise_colecao ? 'existe' : 'NÃO EXISTE');
+        if (data.analise_colecao) {
+            console.log('  - perfumes_por_familia:', data.analise_colecao.perfumes_por_familia);
+            console.log('  - familia_dominante:', data.analise_colecao.familia_dominante);
+            console.log('  - top3_faltando:', data.analise_colecao.top3_faltando);
+        }
+        console.log('  - recomendacoes:', data.recomendacoes?.length || 0, 'perfumes');
         
         // Se API não retornou classificação
         if (!data.analise_colecao || !data.analise_colecao.perfumes_por_familia) {
