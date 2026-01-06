@@ -2036,9 +2036,9 @@ ${minhaColecao.map((p, i) => `${i + 1}. ${p}`).join('\n')}
 
 INSTRUÇÕES CRÍTICAS:
 
-═══════════════════════════════════════════════════════════
+===========================================================
 📊 PARTE 1: CLASSIFICAÇÃO (OBRIGATÓRIO)
-═══════════════════════════════════════════════════════════
+===========================================================
 
 Para CADA perfume acima, identifique sua família olfativa REAL:
 - Use conhecimento do Fragantica/Fragrantica
@@ -2046,9 +2046,9 @@ Para CADA perfume acima, identifique sua família olfativa REAL:
 - Conte quantos perfumes há em cada família
 - Identifique as 3 famílias com MENOS perfumes
 
-═══════════════════════════════════════════════════════════
+===========================================================
 🚨 PARTE 2: SUGESTÕES - MARCAS DIFERENTES (OBRIGATÓRIO!) 🚨
-═══════════════════════════════════════════════════════════
+===========================================================
 
 Sugira EXATAMENTE 3 perfumes onde:
 
@@ -2066,9 +2066,9 @@ Sugira EXATAMENTE 3 perfumes onde:
 - Creed Aventus, Tom Ford Oud Wood, Yves Saint Laurent La Nuit (3 marcas diferentes!)
 - Montblanc Explorer, Carolina Herrera Bad Boy, Azzaro Wanted (3 marcas diferentes!)
 
-═══════════════════════════════════════════════════════════
+===========================================================
 💰 PARTE 3: ORÇAMENTO - RESPEITE RIGOROSAMENTE! 💰
-═══════════════════════════════════════════════════════════
+===========================================================
 
 O usuário definiu orçamento de: ${perfil.orcamento || 'R$ 300-500'}
 
@@ -2080,7 +2080,7 @@ REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
 
 NUNCA QUEBRE ESTA REGRA! Se o orçamento é R$ 800-1500, NÃO sugira perfume de R$ 400!
 
-═══════════════════════════════════════════════════════════
+===========================================================
 
 REGRAS ADICIONAIS:
 4️⃣ Considere clima e ambiente do usuário
@@ -2167,7 +2167,7 @@ function mostrarToast(titulo, subtitulo, tipo = 'success') {
     `;
     toast.innerHTML = `
         <div style="font-size: 1.1em; margin-bottom: 5px;">${titulo}</div>
-        ${subtitulo ? `<div style="font-size: 0.9em; opacity: 0.95;">${subtitulo}</div>` : ''}
+        ${subtitulo ? '<div style="font-size: 0.9em; opacity: 0.95;">' + subtitulo + '</div>' : ''}
     `;
     document.body.appendChild(toast);
     
@@ -2206,9 +2206,9 @@ ${minhaColecao.map((p, i) => `${i + 1}. ${p}`).join('\n')}
 
 INSTRUÇÕES CRÍTICAS:
 
-═══════════════════════════════════════════════════════════
+===========================================================
 📊 PARTE 1: CLASSIFICAÇÃO (OBRIGATÓRIO)
-═══════════════════════════════════════════════════════════
+===========================================================
 
 Para CADA perfume acima, identifique sua família olfativa REAL:
 - Use conhecimento do Fragantica/Fragrantica
@@ -2216,9 +2216,9 @@ Para CADA perfume acima, identifique sua família olfativa REAL:
 - Conte quantos perfumes há em cada família
 - Identifique as 3 famílias com MENOS perfumes
 
-═══════════════════════════════════════════════════════════
+===========================================================
 🚨 PARTE 2: SUGESTÕES - MARCAS DIFERENTES (OBRIGATÓRIO!) 🚨
-═══════════════════════════════════════════════════════════
+===========================================================
 
 Sugira EXATAMENTE 3 perfumes onde:
 
@@ -2236,7 +2236,7 @@ Sugira EXATAMENTE 3 perfumes onde:
 - Creed Aventus, Tom Ford Oud Wood, Yves Saint Laurent La Nuit (3 marcas diferentes!)
 - Montblanc Explorer, Carolina Herrera Bad Boy, Azzaro Wanted (3 marcas diferentes!)
 
-═══════════════════════════════════════════════════════════
+===========================================================
 
 REGRAS ADICIONAIS:
 4️⃣ Considere clima, ambiente e orçamento: ${perfil.orcamento || 'R$ 300-500'}
@@ -2859,7 +2859,7 @@ function renderizarBarraNivel(nivel) {
             <div style="color: #ccc; font-size: 0.85em; text-align: center;">
                 ${nivel.proximo === "Máximo" 
                     ? "🎉 Você atingiu o nível máximo!" 
-                    : `Faltam ${nivel.faltam} pontos para ${nivel.proximo === "Explorador" ? "🔍" : nivel.proximo === "Colecionador" ? "⭐" : nivel.proximo === "Expert" ? "💎" : "👑"} ${nivel.proximo}`
+                    : "Faltam " + nivel.faltam + " pontos para " + (nivel.proximo === "Explorador" ? "🔍" : nivel.proximo === "Colecionador" ? "⭐" : nivel.proximo === "Expert" ? "💎" : "👑") + " " + nivel.proximo
                 }
             </div>
         </div>
@@ -3003,7 +3003,7 @@ function renderizarMissaoGameficada(data) {
                 
                 <!-- Botão WhatsApp -->
                 <button 
-                    onclick='enviarSugestoesWhatsApp(${JSON.stringify(recomendacoes).replace(/'/g, "\\'")})'
+                    id="btn-whatsapp"
                     style="
                         width: 100%;
                         margin-top: 25px;
@@ -3029,6 +3029,12 @@ function renderizarMissaoGameficada(data) {
     
     const resultContainer = document.getElementById('result-container');
     resultContainer.innerHTML = missaoHTML;
+    
+    // Adiciona listener ao botão WhatsApp DEPOIS de renderizar
+    const btnWhatsapp = document.getElementById('btn-whatsapp');
+    if (btnWhatsapp) {
+        btnWhatsapp.addEventListener('click', () => enviarSugestoesWhatsApp(recomendacoes));
+    }
 }
 
 function gerarMissao(analise, contexto, missaoIndex = 0) {
@@ -3226,9 +3232,9 @@ Orçamento: ${perfil.orcamento || 'R$ 300-500'}
 COLEÇÃO ATUAL (${minhaColecao.length} perfumes):
 ${minhaColecao.map((p, i) => `${i + 1}. ${p}`).join('\n')}
 
-═══════════════════════════════════════════════════════════
+===========================================================
 🚨 REGRA CRÍTICA - MARCAS DIFERENTES (OBRIGATÓRIO!) 🚨
-═══════════════════════════════════════════════════════════
+===========================================================
 
 Você DEVE sugerir EXATAMENTE 3 perfumes onde:
 
@@ -3246,7 +3252,7 @@ Você DEVE sugerir EXATAMENTE 3 perfumes onde:
 - Creed Aventus, Tom Ford Oud Wood, Yves Saint Laurent La Nuit (3 marcas diferentes!)
 - Montblanc Explorer, Carolina Herrera Bad Boy, Azzaro Wanted (3 marcas diferentes!)
 
-═══════════════════════════════════════════════════════════
+===========================================================
 
 REGRAS ADICIONAIS:
 4️⃣ NÃO sugerir perfumes que o usuário já tem
@@ -3637,8 +3643,7 @@ Considere minha idade e orçamento. Priorize nichos acessíveis.
                 <div class="chat-message-content">
                     <strong>🌱 Sua Coleção Inicial Perfeita!</strong><br><br>
                     Baseado no seu perfil, aqui estão 3 perfumes essenciais para começar:
-                    <div class="suggestions-grid" style="margin-top: 20px;">
-        `;
+                    <div class="suggestions-grid" style="margin-top: 20px;">`;
         
         if (data.recomendacoes && data.recomendacoes.length > 0) {
             data.recomendacoes.forEach(sug => {
