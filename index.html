@@ -1890,17 +1890,32 @@ function atualizarRadarComAPI(analiseAPI) {
         '🍇 Frutado'
     ];
     
-    const valores = [
-        analiseAPI.perfumes_por_familia['🍋 Fresco/Cítrico'] || 0,
-        analiseAPI.perfumes_por_familia['🌳 Aromático/Verde'] || 0,
-        analiseAPI.perfumes_por_familia['🍯 Doce/Gourmand'] || 0,
-        analiseAPI.perfumes_por_familia['🪵 Amadeirado'] || 0,
-        analiseAPI.perfumes_por_familia['🌶️ Especiado/Oriental'] || 0,
-        analiseAPI.perfumes_por_familia['💧 Aquático'] || 0,
-        analiseAPI.perfumes_por_familia['🧼 Talco/Fougère'] || 0,
-        analiseAPI.perfumes_por_familia['🌸 Floral'] || 0,
-        analiseAPI.perfumes_por_familia['🍇 Frutado'] || 0
-    ];
+    // MAPEAMENTO CORRETO: API retorna SEM emoji
+    const mapeamento = {
+        'Fresco/Cítrico': '🍋 Fresco',
+        'Aromático/Verde': '🌳 Aromático',
+        'Doce/Gourmand': '🍯 Doce',
+        'Amadeirado': '🪵 Amadeirado',
+        'Especiado/Oriental': '🌶️ Especiado',
+        'Aquático': '💧 Aquático',
+        'Talco/Fougère': '🧼 Talco',
+        'Floral': '🌸 Floral',
+        'Frutado': '🍇 Frutado'
+    };
+    
+    // Inverte mapeamento: emoji → nome_api
+    const mapeamentoInverso = {};
+    Object.keys(mapeamento).forEach(nomeAPI => {
+        mapeamentoInverso[mapeamento[nomeAPI]] = nomeAPI;
+    });
+    
+    // Extrai valores usando mapeamento
+    const valores = familias.map(familiaEmoji => {
+        const nomeAPI = mapeamentoInverso[familiaEmoji];
+        const valor = analiseAPI.perfumes_por_familia[nomeAPI] || 0;
+        console.log(`  ${familiaEmoji} (${nomeAPI}): ${valor}`);
+        return valor;
+    });
     
     console.log('📊 Valores para radar:', valores);
     
@@ -2063,6 +2078,9 @@ Orçamento: ${perfil.orcamento || 'R$ 300-500'}
 COLEÇÃO ATUAL (${minhaColecao.length} perfumes):
 ${minhaColecao.map((p, i) => `${i + 1}. ${p}`).join('\n')}
 
+⚠️ PERFUMES JÁ SUGERIDOS ANTES (NÃO REPITA):
+${window.perfumesJaSugeridos && window.perfumesJaSugeridos.length > 0 ? window.perfumesJaSugeridos.join(', ') : 'Nenhum ainda'}
+
 INSTRUÇÕES CRÍTICAS:
 
 ===========================================================
@@ -2175,6 +2193,19 @@ Analise e retorne análise detalhada + recomendações.
         
         // Renderiza missão (mas NÃO muda aba)
         renderizarMissaoGameficada(data);
+        
+        // Salva perfumes recomendados no histórico
+        if (data.recomendacoes && data.recomendacoes.length > 0) {
+            if (!window.perfumesJaSugeridos) {
+                window.perfumesJaSugeridos = [];
+            }
+            data.recomendacoes.forEach(rec => {
+                if (!window.perfumesJaSugeridos.includes(rec.nome)) {
+                    window.perfumesJaSugeridos.push(rec.nome);
+                }
+            });
+            console.log('📝 Histórico atualizado:', window.perfumesJaSugeridos);
+        }
         
         // Adiciona glow na aba Missão
         adicionarGlowMissao();
@@ -2407,7 +2438,7 @@ async function enviarPergunta() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                pergunta: pergunta + `\n\n[INSTRUÇÃO CRÍTICA: O usuário tem orçamento de ${perfil.orcamento || 'R$ 300-500'}. Se for "R$ 800-1500", sugira perfumes de R$ 700-1700, PRIORIZANDO os mais próximos de R$ 1500-1700. NUNCA sugira abaixo da faixa!]`,
+                pergunta: pergunta + `\n\n[INSTRUÇÃO CRÍTICA: O usuário tem orçamento de ${perfil.orcamento || 'R$ 300-500'}. Se for "R$ 800-1500", sugira perfumes de R$ 700-1700, PRIORIZANDO os mais próximos de R$ 1500-1700. NUNCA sugira abaixo da faixa! IMPORTANTE: NÃO REPITA NENHUM DESTES PERFUMES já sugeridos antes: ${window.perfumesJaSugeridos || []}]`,
                 colecao: minhaColecao,
                 clima: perfil.clima || 'Temperado',
                 ambiente: perfil.ambiente || 'Ambos',
@@ -2423,7 +2454,12 @@ async function enviarPergunta() {
         messages.removeChild(messages.lastChild);
         
         // Adiciona resposta
-        let resposta = data.resposta || 'Não foi possível gerar uma resposta.';
+        let resposta = data.resposta || '';
+        
+        // Se não tem resposta mas tem sugestões, cria resposta padrão
+        if (!resposta && data.sugestoes && data.sugestoes.length > 0) {
+            resposta = '✨ Aqui estão minhas recomendações baseadas no seu perfil e orçamento:';
+        }
         
         if (data.sugestoes && data.sugestoes.length > 0) {
             resposta += '<div class="suggestions-grid" style="margin-top: 20px;">';
@@ -2441,6 +2477,17 @@ async function enviarPergunta() {
             });
             
             resposta += '</div>';
+            
+            // Salva perfumes sugeridos no histórico global
+            if (!window.perfumesJaSugeridos) {
+                window.perfumesJaSugeridos = [];
+            }
+            data.sugestoes.forEach(sug => {
+                if (!window.perfumesJaSugeridos.includes(sug.nome)) {
+                    window.perfumesJaSugeridos.push(sug.nome);
+                }
+            });
+            console.log('📝 Histórico de sugestões:', window.perfumesJaSugeridos);
             
             // Adiciona botão WhatsApp
             resposta += `
