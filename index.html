@@ -963,6 +963,25 @@
                 transform: translateY(0);
             }
         }
+        
+        @keyframes missionChange {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .mission-changing {
+            animation: missionChange 0.6s ease-in-out;
+        }
 
         .mission-card {
             background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%);
@@ -2239,15 +2258,18 @@ function renderizarMissaoGameficada(data) {
         orcamento: perfil.orcamento || 'R$ 300-500'
     };
     
+    // Pega índice atual da missão (default 0)
+    const missaoIndex = window.missaoAtualIndex || 0;
+    
     // Gera missão baseada na análise
-    const missao = gerarMissao(analise, contexto_aplicado);
+    const missao = gerarMissao(analise, contexto_aplicado, missaoIndex);
     
     // HTML da missão
     const missaoHTML = `
         <div class="mission-container" id="missionContainer">
             <!-- Card Principal da Missão -->
             <div class="mission-card">
-                <div class="mission-badge">🎯 SUA MISSÃO ATUAL</div>
+                <div class="mission-badge">🎯 MISSÃO ${missaoIndex + 1} de 3</div>
                 
                 <h2 class="mission-title">${missao.titulo}</h2>
                 
@@ -2427,12 +2449,18 @@ function mostrarCandidatos() {
     }, 100);
 }
 
-function gerarNovaMissao() {
+async function gerarNovaMissao() {
     const dadosAnalise = window.dadosAnaliseAtual;
     
     if (!dadosAnalise) {
         alert('❌ Erro: faça uma análise primeiro clicando em "Analisa minha Coleção" na aba Coleção.');
         return;
+    }
+    
+    // Adiciona animação de mudança
+    const missionContainer = document.getElementById('missionContainer');
+    if (missionContainer) {
+        missionContainer.classList.add('mission-changing');
     }
     
     // Pega índice atual e incrementa (0 → 1 → 2 → 0...)
@@ -2442,94 +2470,223 @@ function gerarNovaMissao() {
     
     console.log(`🔄 Rotação: Missão ${missaoAtual} → Missão ${proximaMissao}`);
     
-    // Regenera a interface com a nova missão
-    const analise = dadosAnalise.analise_colecao || dadosAnalise.analise;
-    const recomendacoes = dadosAnalise.recomendacoes;
-    const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
-    
-    const contexto_aplicado = {
-        clima: perfil.clima || 'Temperado',
-        ambiente: perfil.ambiente || 'Ambos',
-        idade: perfil.idade || '25-35',
-        orcamento: perfil.orcamento || 'R$ 300-500'
-    };
-    
-    // Gera missão baseada no novo índice
-    const missao = gerarMissao(analise, contexto_aplicado, proximaMissao);
-    
-    // HTML da missão
-    const missaoHTML = `
-        <div class="mission-container" id="missionContainer">
-            <!-- Card Principal da Missão -->
-            <div class="mission-card">
-                <div class="mission-badge">🎯 SUA MISSÃO ATUAL</div>
-                
-                <h2 class="mission-title">${missao.titulo}</h2>
-                
-                <div class="mission-details">
-                    <div class="detail-row">
-                        <strong>Alvo:</strong> ${missao.alvo}
-                    </div>
-                    <div class="detail-row">
-                        <strong>Uso:</strong> ${missao.uso}
-                    </div>
-                    <div class="detail-row">
-                        <strong>Clima:</strong> ${missao.clima}
-                    </div>
-                    <div class="detail-row">
-                        <strong>Faixa ideal:</strong> ${missao.faixa_preco}
-                    </div>
-                </div>
-                
-                <div class="mission-why">
-                    <strong>Por quê?</strong><br>
-                    ${missao.justificativa}
-                </div>
-                
-                <div class="mission-progress">
-                    ✅ Você está <strong>${missao.compras_faltantes} ${missao.compras_faltantes === 1 ? 'compra' : 'compras'}</strong> de ter uma coleção redonda
-                </div>
-                
-                <div class="mission-actions">
-                    <button class="btn-mission-primary" onclick="mostrarCandidatos()">
-                        🎁 Ver ${recomendacoes.length} candidatos perfeitos
-                    </button>
-                    <button class="btn-mission-secondary" onclick="gerarNovaMissao()">
-                        🔄 Quero outra missão
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Card de Candidatos (oculto inicialmente) -->
-            <div class="candidates-card" id="candidatesCard">
-                <h3 style="color: #d4af37; margin-bottom: 20px; font-size: 1.5em;">
-                    🎁 Candidatos Perfeitos para sua Missão
-                </h3>
-                ${recomendacoes.map((rec, i) => `
-                    <div class="candidate-item">
-                        <div class="candidate-name">${i + 1}. ${rec.nome}</div>
-                        <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
-                        <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
-                        <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
-                    </div>
-                `).join('')}
+    // Mostra loading enquanto busca novas sugestões
+    const resultContainer = document.getElementById('result-container');
+    resultContainer.innerHTML = `
+        <div class="analyzing-animation">
+            <div class="analyzing-spinner"></div>
+            <div class="analyzing-text">🔄 Gerando nova missão<span class="loading-dots"></span></div>
+            <div class="analyzing-subtext">
+                Buscando os melhores perfumes para a nova família
             </div>
         </div>
     `;
     
-    const resultContainer = document.getElementById('result-container');
-    resultContainer.innerHTML = missaoHTML;
-    
-    // Scroll suave até o topo da missão
-    setTimeout(() => {
-        const missionContainer = document.getElementById('missionContainer');
-        if (missionContainer) {
-            missionContainer.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
-            });
+    try {
+        // Pega dados da análise
+        const analise = dadosAnalise.analise_colecao || dadosAnalise.analise;
+        const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
+        
+        // Identifica as 3 famílias mais deficitárias
+        const top3_faltando = analise.top3_faltando || [];
+        
+        // Seleciona a família alvo baseada no índice da missão
+        let familiaAlvo;
+        if (top3_faltando.length > proximaMissao) {
+            familiaAlvo = top3_faltando[proximaMissao];
+        } else {
+            familiaAlvo = getFamiliaComMenosPerfumes(analise.perfumes_por_familia);
         }
-    }, 100);
+        
+        console.log(`🎯 Família alvo da Missão ${proximaMissao}: ${familiaAlvo}`);
+        
+        // Monta prompt específico para a família alvo
+        const promptNovaMissao = `
+PERFIL DO USUÁRIO:
+Clima: ${perfil.clima || 'Temperado'}
+Ambiente: ${perfil.ambiente || 'Ambos'}
+Idade: ${perfil.idade || '25-35'} anos
+Orçamento: ${perfil.orcamento || 'R$ 300-500'}
+
+COLEÇÃO ATUAL (${minhaColecao.length} perfumes):
+${minhaColecao.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+
+MISSÃO ESPECÍFICA:
+Sugira EXATAMENTE 3 perfumes APENAS da família: ${familiaAlvo}
+
+REGRAS CRÍTICAS:
+1. TODOS os 3 perfumes devem ser da família ${familiaAlvo}
+2. NÃO sugira perfumes que o usuário já tem
+3. Considere clima, ambiente e orçamento do usuário
+4. PRIORIZE perfumes de nicho acessível (<5k reviews Fragantica)
+5. EVITE perfumes mainstream hypados (>20k reviews)
+
+IMPORTANTE: Esta é uma missão focada EXCLUSIVAMENTE em ${familiaAlvo}.
+`;
+        
+        // Chama API para novas sugestões
+        const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                diagnostico: promptNovaMissao
+            })
+        });
+        
+        const data = await response.json();
+        
+        // Se API retornou recomendações, usa elas. Senão, mantém as originais
+        const novasRecomendacoes = data.recomendacoes || dadosAnalise.recomendacoes;
+        
+        // Atualiza dados globais com novas recomendações
+        window.dadosAnaliseAtual.recomendacoes = novasRecomendacoes;
+        
+        // Gera contexto
+        const contexto_aplicado = {
+            clima: perfil.clima || 'Temperado',
+            ambiente: perfil.ambiente || 'Ambos',
+            idade: perfil.idade || '25-35',
+            orcamento: perfil.orcamento || 'R$ 300-500'
+        };
+        
+        // Gera missão baseada no novo índice
+        const missao = gerarMissao(analise, contexto_aplicado, proximaMissao);
+        
+        // HTML da missão com badge de número
+        const missaoHTML = `
+            <div class="mission-container" id="missionContainer">
+                <!-- Card Principal da Missão -->
+                <div class="mission-card">
+                    <div class="mission-badge">🎯 MISSÃO ${proximaMissao + 1} de 3</div>
+                    
+                    <h2 class="mission-title">${missao.titulo}</h2>
+                    
+                    <div class="mission-details">
+                        <div class="detail-row">
+                            <strong>Alvo:</strong> ${missao.alvo}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Uso:</strong> ${missao.uso}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Clima:</strong> ${missao.clima}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Faixa ideal:</strong> ${missao.faixa_preco}
+                        </div>
+                    </div>
+                    
+                    <div class="mission-why">
+                        <strong>Por quê?</strong><br>
+                        ${missao.justificativa}
+                    </div>
+                    
+                    <div class="mission-progress">
+                        ✅ Você está <strong>${missao.compras_faltantes} ${missao.compras_faltantes === 1 ? 'compra' : 'compras'}</strong> de ter uma coleção redonda
+                    </div>
+                    
+                    <div class="mission-actions">
+                        <button class="btn-mission-primary" onclick="mostrarCandidatos()">
+                            🎁 Ver ${novasRecomendacoes.length} candidatos perfeitos
+                        </button>
+                        <button class="btn-mission-secondary" onclick="gerarNovaMissao()">
+                            🔄 Quero outra missão
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Card de Candidatos (oculto inicialmente) -->
+                <div class="candidates-card" id="candidatesCard">
+                    <h3 style="color: #d4af37; margin-bottom: 20px; font-size: 1.5em;">
+                        🎁 Candidatos Perfeitos para sua Missão
+                    </h3>
+                    ${novasRecomendacoes.map((rec, i) => `
+                        <div class="candidate-item">
+                            <div class="candidate-name">${i + 1}. ${rec.nome}</div>
+                            <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
+                            <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
+                            <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        
+        resultContainer.innerHTML = missaoHTML;
+        
+        // Scroll suave até o topo da missão
+        setTimeout(() => {
+            const newMissionContainer = document.getElementById('missionContainer');
+            if (newMissionContainer) {
+                newMissionContainer.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        }, 100);
+        
+    } catch (error) {
+        console.error('Erro ao gerar nova missão:', error);
+        
+        // Em caso de erro, gera missão sem buscar novas sugestões (fallback)
+        const analise = dadosAnalise.analise_colecao || dadosAnalise.analise;
+        const recomendacoes = dadosAnalise.recomendacoes;
+        const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
+        
+        const contexto_aplicado = {
+            clima: perfil.clima || 'Temperado',
+            ambiente: perfil.ambiente || 'Ambos',
+            idade: perfil.idade || '25-35',
+            orcamento: perfil.orcamento || 'R$ 300-500'
+        };
+        
+        const missao = gerarMissao(analise, contexto_aplicado, proximaMissao);
+        
+        const missaoHTML = `
+            <div class="mission-container" id="missionContainer">
+                <div class="mission-card">
+                    <div class="mission-badge">🎯 MISSÃO ${proximaMissao + 1} de 3</div>
+                    <h2 class="mission-title">${missao.titulo}</h2>
+                    <div class="mission-details">
+                        <div class="detail-row"><strong>Alvo:</strong> ${missao.alvo}</div>
+                        <div class="detail-row"><strong>Uso:</strong> ${missao.uso}</div>
+                        <div class="detail-row"><strong>Clima:</strong> ${missao.clima}</div>
+                        <div class="detail-row"><strong>Faixa ideal:</strong> ${missao.faixa_preco}</div>
+                    </div>
+                    <div class="mission-why">
+                        <strong>Por quê?</strong><br>
+                        ${missao.justificativa}
+                    </div>
+                    <div class="mission-progress">
+                        ✅ Você está <strong>${missao.compras_faltantes} ${missao.compras_faltantes === 1 ? 'compra' : 'compras'}</strong> de ter uma coleção redonda
+                    </div>
+                    <div class="mission-actions">
+                        <button class="btn-mission-primary" onclick="mostrarCandidatos()">
+                            🎁 Ver ${recomendacoes.length} candidatos
+                        </button>
+                        <button class="btn-mission-secondary" onclick="gerarNovaMissao()">
+                            🔄 Quero outra missão
+                        </button>
+                    </div>
+                </div>
+                <div class="candidates-card" id="candidatesCard">
+                    <h3 style="color: #d4af37; margin-bottom: 20px; font-size: 1.5em;">
+                        🎁 Candidatos para sua Missão
+                    </h3>
+                    ${recomendacoes.map((rec, i) => `
+                        <div class="candidate-item">
+                            <div class="candidate-name">${i + 1}. ${rec.nome}</div>
+                            <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
+                            <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
+                            <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        
+        resultContainer.innerHTML = missaoHTML;
+    }
 }
 
 // ===================================
