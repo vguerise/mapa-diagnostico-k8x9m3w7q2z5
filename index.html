@@ -908,6 +908,9 @@
         <!-- Conteúdo Principal -->
         <main class="main-content">
             
+            <!-- Barra de Nível + Nome FIXA (aparece em todas as abas) -->
+            <div id="nivel-fixo-container" style="margin-bottom: 30px;"></div>
+            
             <!-- Seção: Perfil -->
             <section id="perfil" class="content-section active">
                 <div class="container">
@@ -917,6 +920,16 @@
                     </header>
 
                     <div class="profile-form">
+                        <div class="form-group">
+                            <label class="form-label" for="nome">👋 Como você quer ser chamado?</label>
+                            <input 
+                                type="text" 
+                                id="nome" 
+                                class="form-input" 
+                                placeholder="Seu nome ou apelido"
+                            >
+                        </div>
+
                         <div class="form-group">
                             <label class="form-label" for="clima">🌡️ Qual o clima da sua cidade?</label>
                             <select id="clima" class="form-select">
@@ -975,9 +988,6 @@
                         <h1>🎯 Minha Coleção</h1>
                         <p class="subtitle">Adicione seus perfumes e visualize o radar da sua coleção</p>
                     </header>
-
-                    <!-- Barra de Nível (gerada dinamicamente) -->
-                    <div id="nivel-container"></div>
 
                     <!-- Input de Perfume -->
                     <div class="perfume-input-container">
@@ -1088,8 +1098,26 @@ document.querySelectorAll('.nav-item').forEach(item => {
         // Adiciona active na aba e seção clicada
         item.classList.add('active');
         document.getElementById(section).classList.add('active');
+        
+        // Se entrou na aba Missão, carrega análise em cache (se existir)
+        if (section === 'missao') {
+            carregarAnaliseCache();
+        }
     });
 });
+
+// Função para carregar análise em cache ao abrir a aba Missão
+function carregarAnaliseCache() {
+    const ultimaAnalise = JSON.parse(localStorage.getItem('ultimaAnalise') || '{}');
+    const colecaoAtualString = JSON.stringify(minhaColecao.sort());
+    const resultContainer = document.getElementById('result-container');
+    
+    // Se tem análise salva E a coleção não mudou
+    if (ultimaAnalise.colecao === colecaoAtualString && ultimaAnalise.resultado) {
+        console.log('📦 Carregando análise em cache');
+        resultContainer.innerHTML = ultimaAnalise.resultado;
+    }
+}
 
 // ===================================
 // PERFIL
@@ -1098,6 +1126,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
 function carregarPerfil() {
     const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
     
+    if (perfil.nome) document.getElementById('nome').value = perfil.nome;
     if (perfil.clima) document.getElementById('clima').value = perfil.clima;
     if (perfil.ambiente) document.getElementById('ambiente').value = perfil.ambiente;
     if (perfil.idade) document.getElementById('idade').value = perfil.idade;
@@ -1106,6 +1135,7 @@ function carregarPerfil() {
 
 function salvarPerfil() {
     const perfil = {
+        nome: document.getElementById('nome').value,
         clima: document.getElementById('clima').value,
         ambiente: document.getElementById('ambiente').value,
         idade: document.getElementById('idade').value,
@@ -1113,6 +1143,9 @@ function salvarPerfil() {
     };
     
     localStorage.setItem('perfilUsuario', JSON.stringify(perfil));
+    
+    // Atualiza barra de nível com nome
+    atualizarNivelDOM();
     
     // Mostra mensagem de sucesso
     const message = document.getElementById('profile-saved-message');
@@ -1291,8 +1324,18 @@ async function analisarColecao() {
     }
     
     const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
-    
     const resultContainer = document.getElementById('result-container');
+    
+    // Verifica se já tem análise salva e se a coleção não mudou
+    const ultimaAnalise = JSON.parse(localStorage.getItem('ultimaAnalise') || '{}');
+    const colecaoAtualString = JSON.stringify(minhaColecao.sort());
+    
+    if (ultimaAnalise.colecao === colecaoAtualString && ultimaAnalise.resultado) {
+        console.log('✅ Usando análise em cache');
+        resultContainer.innerHTML = ultimaAnalise.resultado;
+        return;
+    }
+    
     resultContainer.innerHTML = '<div class="loading">🔍 Analisando sua coleção...</div>';
     
     try {
@@ -1317,7 +1360,7 @@ ANÁLISE SOLICITADA:
 8. EVITE perfumes mainstream hypados (>20k reviews)
 `;
         
-        const response = await fetch('https://vguerise.github.io/api/perfumista', {
+        const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ diagnostico })
@@ -1353,6 +1396,13 @@ ANÁLISE SOLICITADA:
         }
         
         html += '</div>';
+        
+        // Salva análise no cache
+        localStorage.setItem('ultimaAnalise', JSON.stringify({
+            colecao: colecaoAtualString,
+            resultado: html,
+            timestamp: Date.now()
+        }));
         
         resultContainer.innerHTML = html;
         
@@ -1392,7 +1442,7 @@ async function enviarPergunta() {
     adicionarMensagemChat('assistant', '🔍 Analisando...');
     
     try {
-        const response = await fetch('https://vguerise.github.io/api/perfumista', {
+        const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1646,16 +1696,30 @@ function identificarFamiliaLocal(nome) {
 function renderizarBarraNivel(nivel) {
     if (!nivel) return '';
     
+    const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
+    const nomeUsuario = perfil.nome || 'Coleccionador';
+    
     return `
         <div style="
             background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
             border: 2px solid ${nivel.cor};
             border-radius: 15px;
             padding: 20px;
-            margin: 20px auto;
+            margin: 0 auto 20px auto;
             max-width: 1400px;
             animation: fadeIn 0.5s ease-out;
         ">
+            <!-- Nome do Usuário -->
+            <div style="
+                color: #d4af37;
+                font-size: 1.5em;
+                font-weight: 700;
+                margin-bottom: 15px;
+                text-align: center;
+            ">
+                👋 Olá, ${nomeUsuario}!
+            </div>
+            
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
                 <div>
                     <div style="color: ${nivel.cor}; font-size: 1.3em; font-weight: 700; margin-bottom: 4px;">
@@ -1709,7 +1773,7 @@ function renderizarBarraNivel(nivel) {
 
 function atualizarNivelDOM() {
     const nivel = calcularNivelAtual();
-    const container = document.getElementById('nivel-container');
+    const container = document.getElementById('nivel-fixo-container');
     
     if (!container) return;
     
@@ -1717,7 +1781,37 @@ function atualizarNivelDOM() {
         container.innerHTML = renderizarBarraNivel(nivel);
         container.style.display = 'block';
     } else {
-        container.style.display = 'none';
+        // Se não tem nível, mostra só o nome
+        const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
+        const nomeUsuario = perfil.nome || 'Coleccionador';
+        
+        container.innerHTML = `
+            <div style="
+                background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
+                border: 2px solid rgba(212, 175, 55, 0.3);
+                border-radius: 15px;
+                padding: 20px;
+                margin: 0 auto 20px auto;
+                max-width: 1400px;
+                text-align: center;
+            ">
+                <div style="
+                    color: #d4af37;
+                    font-size: 1.5em;
+                    font-weight: 700;
+                ">
+                    👋 Olá, ${nomeUsuario}!
+                </div>
+                <div style="
+                    color: #999;
+                    font-size: 0.95em;
+                    margin-top: 8px;
+                ">
+                    Adicione perfumes à sua coleção para começar sua jornada
+                </div>
+            </div>
+        `;
+        container.style.display = 'block';
     }
 }
 
