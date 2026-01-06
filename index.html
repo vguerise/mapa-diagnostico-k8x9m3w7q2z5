@@ -1413,13 +1413,13 @@
                         </div>
                     </div>
 
-                    <!-- Botão Atualizar Coleção -->
+                    <!-- Botão Analisar Coleção -->
                     <div style="text-align: center; margin: 30px 0;">
-                        <button class="analyze-button" onclick="atualizarColecao()">
-                            🔄 Atualizar Coleção
+                        <button class="analyze-button" onclick="analisarColecao()">
+                            🔍 Analisa minha Coleção
                         </button>
                         <p style="color: #999; font-size: 0.9em; margin-top: 10px;">
-                            Clique para atualizar o radar e sincronizar sua coleção
+                            Classifica seus perfumes via IA e atualiza o radar
                         </p>
                     </div>
 
@@ -1448,18 +1448,14 @@
                         <p class="subtitle">Complete sua jornada e alcance a coleção perfeita</p>
                     </header>
 
-                    <!-- Botão para iniciar análise -->
-                    <div style="text-align: center; margin-bottom: 30px;">
-                        <button class="analyze-button" onclick="analisarColecao()">
-                            🔍 Analisa minha Coleção
-                        </button>
-                        <p style="color: #999; font-size: 0.9em; margin-top: 10px;">
-                            Clique para receber sua missão personalizada com IA
-                        </p>
-                    </div>
-
                     <!-- Resultado da Análise -->
-                    <div id="result-container"></div>
+                    <div id="result-container">
+                        <div style="text-align: center; padding: 60px 20px; color: #999;">
+                            <div style="font-size: 3em; margin-bottom: 20px;">🎯</div>
+                            <h3 style="color: #d4af37; margin-bottom: 15px;">Nenhuma missão ainda</h3>
+                            <p>Vá na aba <strong>Coleção</strong> e clique em<br><strong>"Analisa minha Coleção"</strong> para gerar sua missão!</p>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -1986,52 +1982,7 @@ function renderizarRadarChart(familias, valores, analise) {
     `).join('');
 }
 
-// ===================================
-// ATUALIZAR COLEÇÃO (RADAR)
-// ===================================
-
-function atualizarColecao() {
-    if (minhaColecao.length === 0) {
-        alert('Adicione perfumes à sua coleção primeiro!');
-        return;
-    }
-    
-    // Mostra mensagem explicando que precisa ir na aba Missão
-    const toast = document.createElement('div');
-    toast.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: linear-gradient(135deg, #4caf50, #66bb6a);
-        color: white;
-        padding: 20px 30px;
-        border-radius: 12px;
-        box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
-        z-index: 10000;
-        font-weight: 600;
-        animation: fadeIn 0.3s ease-out;
-        max-width: 350px;
-        line-height: 1.5;
-    `;
-    toast.innerHTML = `
-        <div style="font-size: 1.1em; margin-bottom: 8px;">✅ Perfumes salvos!</div>
-        <div style="font-size: 0.9em; opacity: 0.9;">
-            Vá na aba <strong>Missão</strong> e clique em<br>"Analisa minha Coleção" para atualizar o radar
-        </div>
-    `;
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.style.transition = 'opacity 0.5s';
-        toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 500);
-    }, 4000);
-    
-    // Track evento
-    trackEvent('colecao_atualizada', {
-        total_perfumes: minhaColecao.length
-    });
-}
+// Função atualizarColecao removida - agora usamos apenas analisarColecao
 
 // ===================================
 // MISSÃO (ANÁLISE)
@@ -2044,33 +1995,62 @@ async function analisarColecao() {
     }
     
     const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
-    const resultContainer = document.getElementById('result-container');
     
-    // Verifica se já tem análise salva e se a coleção não mudou
+    // Mostra loading FIXO (modal)
+    const loadingModal = document.createElement('div');
+    loadingModal.id = 'loading-modal';
+    loadingModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+    loadingModal.innerHTML = `
+        <div style="
+            background: rgba(26, 26, 26, 0.98);
+            color: white;
+            padding: 50px 70px;
+            border-radius: 20px;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            border: 2px solid rgba(212, 175, 55, 0.3);
+        ">
+            <div class="analyzing-spinner" style="margin: 0 auto 25px;"></div>
+            <div style="font-size: 1.4em; font-weight: 700; color: #d4af37; margin-bottom: 12px;">
+                🔍 Analisando sua coleção
+            </div>
+            <div style="color: #999; font-size: 1em; line-height: 1.6;">
+                Classificando perfumes via Fragantica...<br>
+                Isso pode levar alguns segundos
+            </div>
+        </div>
+    `;
+    document.body.appendChild(loadingModal);
+    
+    // Verifica cache
     const ultimaAnalise = JSON.parse(localStorage.getItem('ultimaAnalise') || '{}');
     const colecaoAtualString = JSON.stringify(minhaColecao.sort());
     
     if (ultimaAnalise.colecao === colecaoAtualString && ultimaAnalise.dados) {
         console.log('✅ Usando análise em cache');
-        renderizarMissaoGameficada(ultimaAnalise.dados);
+        loadingModal.remove();
+        
+        // Atualiza radar
+        atualizarRadarComAPI(ultimaAnalise.dados.analise_colecao);
+        
+        // Toast + muda aba
+        mostrarToastSucesso();
+        setTimeout(() => mudarAba('missao'), 1500);
         return;
     }
     
-    resultContainer.innerHTML = `
-        <div class="analyzing-animation">
-            <div class="analyzing-spinner"></div>
-            <div class="analyzing-text">🔍 Analisando sua coleção<span class="loading-dots"></span></div>
-            <div class="analyzing-subtext">
-                Nossa IA está examinando cada perfume e identificando<br>
-                as melhores oportunidades para sua coleção
-            </div>
-        </div>
-    `;
-    
     try {
-        // Primeiro pega classificação local
-        const classificacaoLocal = analisarColecaoLocal(minhaColecao);
-        
         const diagnostico = `
 PERFIL DO USUÁRIO:
 Clima: ${perfil.clima || 'Temperado'}
@@ -2133,52 +2113,103 @@ Analise e retorne análise detalhada + recomendações.
         
         const data = await response.json();
         
-        // Se API retornou análise de famílias, usa ela. Senão, usa local
+        // Remove loading
+        loadingModal.remove();
+        
+        // Se API não retornou classificação, mostra erro
         if (!data.analise_colecao || !data.analise_colecao.perfumes_por_familia) {
             console.log('⚠️ API não retornou análise de famílias');
-            resultContainer.innerHTML = `
-                <div class="result-container">
-                    <div class="result-title">⚠️ Erro na Análise</div>
-                    <div class="result-text">A API não retornou classificação dos perfumes. Tente novamente.</div>
-                </div>
-            `;
+            alert('❌ Erro: A API não conseguiu classificar os perfumes. Tente novamente.');
             return;
         }
         
         console.log('✅ Usando classificação validada pela API');
         
-        // Salva classificações validadas para uso futuro
+        // Salva classificações
         localStorage.setItem('classificacoesValidadas', JSON.stringify(data.analise_colecao.perfumes_por_familia));
         
-        // ATUALIZA O RADAR com dados da API
+        // ATUALIZA RADAR COM API
         atualizarRadarComAPI(data.analise_colecao);
         
-        // Salva análise no cache com dados completos
+        // Salva cache
         localStorage.setItem('ultimaAnalise', JSON.stringify({
             colecao: colecaoAtualString,
             dados: data,
             timestamp: Date.now()
         }));
         
-        // Salva dados globalmente para rotação de missões
+        // Salva globalmente
         window.dadosAnaliseAtual = data;
         window.missaoAtualIndex = 0;
         
-        // 📊 TRACKING: Análise completa com coleção e nível
+        // Tracking
         const nivelAtual = calcularNivelAtual();
         trackCollection(minhaColecao, data.analise_colecao);
         trackAnalysis(data.analise_colecao, nivelAtual, data.recomendacoes);
         
+        // Renderiza missão
+        const resultContainer = document.getElementById('result-container');
         renderizarMissaoGameficada(data);
+        
+        // Toast + muda aba
+        mostrarToastSucesso();
+        setTimeout(() => mudarAba('missao'), 1500);
         
     } catch (error) {
         console.error('Erro:', error);
-        resultContainer.innerHTML = `
-            <div class="result-container">
-                <div class="result-title">❌ Erro na Análise</div>
-                <div class="result-text">Não foi possível analisar sua coleção. Tente novamente.</div>
-            </div>
-        `;
+        document.getElementById('loading-modal')?.remove();
+        alert('❌ Erro ao analisar coleção. Tente novamente.');
+    }
+}
+
+function mostrarToastSucesso() {
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #4caf50, #66bb6a);
+        color: white;
+        padding: 20px 30px;
+        border-radius: 12px;
+        box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
+        z-index: 10001;
+        font-weight: 600;
+        animation: fadeIn 0.3s ease-out;
+    `;
+    toast.innerHTML = `
+        <div style="font-size: 1.1em; margin-bottom: 5px;">✅ Coleção analisada!</div>
+        <div style="font-size: 0.9em; opacity: 0.95;">Abrindo sua missão...</div>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.transition = 'opacity 0.5s';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 500);
+    }, 2000);
+}
+
+function mudarAba(abaId) {
+    // Remove active de todas
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    document.querySelectorAll('.content-section').forEach(section => {
+        section.classList.remove('active');
+    });
+    
+    // Ativa aba específica
+    const navItem = Array.from(document.querySelectorAll('.nav-item')).find(
+        item => item.getAttribute('data-section') === abaId
+    );
+    if (navItem) {
+        navItem.classList.add('active');
+    }
+    
+    const section = document.getElementById(abaId);
+    if (section) {
+        section.classList.add('active');
     }
 }
 
@@ -2379,6 +2410,11 @@ function calcularNivelAtual() {
 }
 
 // Analisa coleção localmente (classificação instantânea)
+// ===================================
+// CLASSIFICAÇÃO LOCAL (DESABILITADA - USA APENAS API AGORA)
+// ===================================
+
+/*
 function analisarColecaoLocal(perfumes) {
     const familias = {};
     
@@ -2409,6 +2445,7 @@ function analisarColecaoLocal(perfumes) {
         familia_dominante: dominante
     };
 }
+*/
 
 async function identificarFamiliaFragrantica(nomePerfume) {
     try {
@@ -2472,6 +2509,7 @@ async function identificarFamiliaFragrantica(nomePerfume) {
 }
 
 // Mantém função local como backup
+/*
 function identificarFamiliaLocal(nome) {
     nome = nome.toLowerCase();
     
@@ -2635,6 +2673,7 @@ function identificarFamiliaLocal(nome) {
     console.log(`🔍 ${nome} → ${familiaVencedora} (score: ${maxScore}) [LOCAL]`);
     return familiaVencedora;
 }
+*/
 
 function renderizarBarraNivel(nivel) {
     if (!nivel) return '';
