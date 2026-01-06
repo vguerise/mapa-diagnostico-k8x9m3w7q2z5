@@ -789,214 +789,9 @@
 }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<style id="app-shell-css">
-  /* App shell (added) - tries hard not to fight your existing theme */
-  :root{
-    --app-accent: #d4af37;
-    --app-sidebar-w: 280px;
-    --app-sidebar-bg: rgba(0,0,0,.35);
-    --app-border: rgba(255,255,255,.10);
-  }
-
-  body{ /* keep your body styling; only ensure it can host the shell */
-    min-height: 100vh;
-  }
-
-  .app-shell{
-    display:flex;
-    min-height: 100vh;
-    width: 100%;
-  }
-
-  .app-sidebar{
-    width: var(--app-sidebar-w);
-    border-right: 1px solid var(--app-border);
-    background: var(--app-sidebar-bg);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    padding: 16px 14px;
-    box-sizing: border-box;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    overflow: auto;
-  }
-
-  .app-brand{
-    display:flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 6px 8px 14px;
-    border-bottom: 1px solid var(--app-border);
-    margin-bottom: 12px;
-  }
-  .app-brand .title{
-    font-weight: 800;
-    letter-spacing: .2px;
-    font-size: 16px;
-    line-height: 1.2;
-  }
-  .app-brand .subtitle{
-    font-size: 12px;
-    opacity: .8;
-  }
-
-  .app-nav{
-    display:flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 6px;
-  }
-
-  .app-nav button{
-    appearance:none;
-    border: 1px solid var(--app-border);
-    background: rgba(255,255,255,.04);
-    color: inherit;
-    text-align:left;
-    padding: 10px 12px;
-    border-radius: 12px;
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    justify-content: space-between;
-    gap: 10px;
-    font-size: 14px;
-    transition: transform .08s ease, background .15s ease, border-color .15s ease;
-  }
-  .app-nav button:hover{
-    background: rgba(255,255,255,.07);
-    border-color: rgba(255,255,255,.16);
-  }
-  .app-nav button:active{ transform: translateY(1px); }
-
-  .app-nav button.active{
-    border-color: color-mix(in srgb, var(--app-accent) 55%, rgba(255,255,255,.12));
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--app-accent) 25%, transparent);
-    background: color-mix(in srgb, var(--app-accent) 10%, rgba(255,255,255,.05));
-  }
-
-  .app-pill{
-    font-size: 11px;
-    padding: 4px 8px;
-    border-radius: 999px;
-    border: 1px solid var(--app-border);
-    opacity: .85;
-  }
-
-  .app-main{
-    flex:1;
-    min-width: 0;
-    padding: 18px;
-    box-sizing: border-box;
-  }
-
-  .app-topbar{
-    display:none;
-    align-items:center;
-    justify-content: space-between;
-    gap: 10px;
-    position: sticky;
-    top: 0;
-    z-index: 40;
-    margin: -18px -18px 14px;
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--app-border);
-    background: rgba(0,0,0,.35);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-  }
-  .app-topbar .hamb{
-    border: 1px solid var(--app-border);
-    background: rgba(255,255,255,.05);
-    color: inherit;
-    border-radius: 12px;
-    padding: 10px 12px;
-    cursor: pointer;
-    font-size: 14px;
-  }
-  .app-topbar .hamb:hover{ background: rgba(255,255,255,.08); }
-
-  /* Tabs */
-  .app-tab{ display:none; }
-  .app-tab.active{ display:block; }
-
-  /* Mobile */
-  @media (max-width: 920px){
-    .app-shell{ display:block; }
-    .app-topbar{ display:flex; }
-    .app-sidebar{
-      position: fixed;
-      left: 0;
-      top: 0;
-      height: 100vh;
-      z-index: 60;
-      transform: translateX(-105%);
-      transition: transform .18s ease;
-      box-shadow: 12px 0 30px rgba(0,0,0,.35);
-    }
-    .app-sidebar.open{ transform: translateX(0); }
-    .app-main{ padding-top: 16px; }
-    .app-overlay{
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.45);
-      z-index: 50;
-      display:none;
-    }
-    .app-overlay.show{ display:block; }
-  }
-</style>
-
 </head>
 <body>
-
-<div class="app-shell" id="appShell">
-  <div class="app-overlay" id="appOverlay" onclick="AppTabs.closeSidebar()"></div>
-
-  <aside class="app-sidebar" id="appSidebar" aria-label="Navegação">
-    <div class="app-brand">
-      <div class="title">Mapa de Perfumes</div>
-      <div class="subtitle">Navegue por abas • estilo app</div>
-    </div>
-
-    <nav class="app-nav">
-      <button type="button" class="active" data-tab="perfil" onclick="AppTabs.show('perfil')">
-        <span>Perfil</span> <span class="app-pill">Contexto</span>
-      </button>
-      <button type="button" data-tab="colecao" onclick="AppTabs.show('colecao')">
-        <span>Coleção</span> <span class="app-pill">Radar</span>
-      </button>
-      <button type="button" data-tab="missao" onclick="AppTabs.show('missao')">
-        <span>Missão</span> <span class="app-pill">Game</span>
-      </button>
-      <button type="button" data-tab="sugestoes" onclick="AppTabs.show('sugestoes')">
-        <span>Sugestões</span> <span class="app-pill">Comprar</span>
-      </button>
-    </nav>
-  </aside>
-
-  <main class="app-main" id="appMain">
-    <div class="app-topbar">
-      <button class="hamb" type="button" onclick="AppTabs.toggleSidebar()">☰ Menu</button>
-      <div style="font-weight:700;">Mapa de Perfumes</div>
-      <div style="width:64px;"></div>
-    </div>
-
-    <!-- PERFIL (placeholder visual; vamos mover os blocos reais depois) -->
-    <section class="app-tab active" id="tab-perfil">
-      <h2 style="margin-top:0;">Perfil</h2>
-      <p style="opacity:.85;max-width:70ch;">
-        Aqui vai o <strong>Contexto Pessoal</strong> (travado por padrão) com botão <strong>Editar</strong>.
-        Por enquanto, deixei como placeholder — no próximo ajuste a gente move os campos reais do seu layout pra cá,
-        mantendo 100% da estética.
-      </p>
-    </section>
-
-    <!-- COLEÇÃO (seu app atual inteiro, sem quebrar nada) -->
-    <section class="app-tab" id="tab-colecao">
-      <div id="authGate" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:999999; color:#fff; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
+<div id="authGate" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:999999; color:#fff; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
   <div style="max-width:420px; margin:7vh auto; background:#111; border:1px solid #2a2a2a; border-radius:14px; padding:18px;">
     <h2 style="margin:0 0 8px; font-size:20px;">Entrar</h2>
     <p style="margin:0 0 16px; color:#cfcfcf; font-size:14px; line-height:1.4;">
@@ -1793,8 +1588,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // Montar diagnóstico
             const diagnostico = `
 COLEÇÃO COMPLETA:
-${perfumes.map((p, i) => `${i + 1}. ${p}`).join('
-')}
+${perfumes.map((p, i) => `${i + 1}. ${p}`).join('\n')}
 
 CONTEXTO:
 - Clima: ${clima === 'quente' ? '🌡️ Quente' : clima === 'frio' ? '❄️ Frio' : '🌤️ Temperado'}
@@ -2146,9 +1940,7 @@ ${recomendacoes.map((rec, i) => `*${i + 1}. ${rec.nome}*
 🌿 Família: ${rec.familia}
 💰 Preço: ${rec.faixa_preco}
 📝 Por quê: ${rec.por_que}
-⏰ Quando: ${rec.quando_usar}`).join('
-
-')}
+⏰ Quando: ${rec.quando_usar}`).join('\n\n')}
 
 ---
 ✨ Gerado em: mapadeperfumes.com.br`;
@@ -2173,9 +1965,7 @@ ${recomendacoes.map((rec, i) => `*${i + 1}. ${rec.nome}*
 🌿 Família: ${rec.familia}
 💰 Preço: ${rec.faixa_preco}
 📝 Por quê: ${rec.por_que}
-⏰ Quando: ${rec.quando_usar}`).join('
-
-')}
+⏰ Quando: ${rec.quando_usar}`).join('\n\n')}
 
 ---
 ✨ Gerado em: mapadeperfumes.com.br`;
@@ -2369,7 +2159,7 @@ ${recomendacoes.map((rec, i) => `*${i + 1}. ${rec.nome}*
                 
                 recomendacoesHtml += `
                     <!-- Botão WhatsApp -->
-                    <button onclick='enviarParaWhatsAppAnalise(${JSON.stringify(recomendacoes).replace(/'/g, "\'")})' style="
+                    <button onclick='enviarParaWhatsAppAnalise(${JSON.stringify(recomendacoes).replace(/'/g, "\\'")})' style="
                         width: 100%;
                         margin-top: 20px;
                         padding: 15px;
@@ -2736,9 +2526,7 @@ ${recomendacoes.map((rec, i) => `*${i + 1}. ${rec.nome}*
 
         // Limpar toda a coleção
         function limparColecao() {
-            if (!confirm('⚠️ ATENÇÃO: Isso irá remover TODOS os perfumes da sua coleção!
-
-Tem certeza?')) {
+            if (!confirm('⚠️ ATENÇÃO: Isso irá remover TODOS os perfumes da sua coleção!\n\nTem certeza?')) {
                 return;
             }
             
@@ -3108,7 +2896,7 @@ function renderizarMissaoGameficada(data) {
                 `).join('')}
                 
                 <!-- Botão WhatsApp -->
-                <button onclick='enviarParaWhatsAppAnalise(${JSON.stringify(recomendacoes).replace(/'/g, "\'")})'  style="
+                <button onclick='enviarParaWhatsAppAnalise(${JSON.stringify(recomendacoes).replace(/'/g, "\\'")})'  style="
                     width: 100%;
                     margin-top: 20px;
                     padding: 15px;
@@ -3550,7 +3338,7 @@ function renderizarMissaoGameficada(data, missaoIndex = 0) {
                 `).join('')}
                 
                 <!-- Botão WhatsApp -->
-                <button onclick='enviarParaWhatsAppAnalise(${JSON.stringify(recomendacoes).replace(/'/g, "\'")})'  style="
+                <button onclick='enviarParaWhatsAppAnalise(${JSON.stringify(recomendacoes).replace(/'/g, "\\'")})'  style="
                     width: 100%;
                     margin-top: 20px;
                     padding: 15px;
@@ -3899,62 +3687,6 @@ setInterval(() => {
     }
 }, 500); // Verifica a cada 0.5s (mas só redesenha se mudou)
     </script>
-    </section>
-
-    <!-- MISSÃO (placeholder visual; depois movemos o bloco real) -->
-    <section class="app-tab" id="tab-missao">
-      <h2 style="margin-top:0;">Missão</h2>
-      <p style="opacity:.85;max-width:70ch;">
-        Aqui vai o bloco da <strong>Missão Atual</strong> (resultado gamificado). No próximo passo, eu extraio e movo
-        o seu componente real pra esta aba.
-      </p>
-    </section>
-
-    <!-- SUGESTÕES (placeholder visual; depois movemos o bloco real) -->
-    <section class="app-tab" id="tab-sugestoes">
-      <h2 style="margin-top:0;">Sugestões</h2>
-      <p style="opacity:.85;max-width:70ch;">
-        Aqui vai a lista de sugestões e o acesso ao Perfumista. No próximo passo, eu realoco os blocos reais pra cá.
-      </p>
-    </section>
-  </main>
-</div>
-
-
-<script id="app-shell-js">
-  const AppTabs = {
-    show(tabName){
-      const tabs = ["perfil","colecao","missao","sugestoes"];
-      tabs.forEach(n=>{
-        const el = document.getElementById(`tab-${n}`);
-        if(el) el.classList.toggle("active", n === tabName);
-      });
-      document.querySelectorAll(".app-nav button").forEach(btn=>{
-        btn.classList.toggle("active", btn.dataset.tab === tabName);
-      });
-      // On mobile, close sidebar after selection
-      AppTabs.closeSidebar();
-      // Scroll to top of main content
-      try { document.getElementById("appMain")?.scrollTo?.({top:0, behavior:"smooth"}); } catch(e){}
-    },
-    toggleSidebar(){
-      const sb = document.getElementById("appSidebar");
-      const ov = document.getElementById("appOverlay");
-      if(!sb || !ov) return;
-      const open = !sb.classList.contains("open");
-      sb.classList.toggle("open", open);
-      ov.classList.toggle("show", open);
-    },
-    closeSidebar(){
-      const sb = document.getElementById("appSidebar");
-      const ov = document.getElementById("appOverlay");
-      sb?.classList.remove("open");
-      ov?.classList.remove("show");
-    }
-  };
-  // expose global
-  window.AppTabs = AppTabs;
-</script>
 
 </body>
 </html>
