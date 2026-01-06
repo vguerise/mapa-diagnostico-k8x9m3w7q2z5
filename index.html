@@ -1440,8 +1440,8 @@
                                 <canvas id="radarChart"></canvas>
                             </div>
 
-                            <!-- Grid de Famílias -->
-                            <div class="balance-grid" id="familias-grid"></div>
+                            <!-- Análise Gamificada -->
+                            <div id="analise-gamificada" style="margin-top: 30px;"></div>
                         </div>
                     </div>
                 </div>
@@ -1920,6 +1920,94 @@ function atualizarRadarComAPI(analiseAPI) {
     console.log('📊 Valores para radar:', valores);
     
     renderizarRadarChart(familias, valores, analiseAPI);
+    
+    // Renderiza análise gamificada
+    renderizarAnaliseGameficada(analiseAPI);
+}
+
+function renderizarAnaliseGameficada(analise) {
+    const container = document.getElementById('analise-gamificada');
+    if (!container) return;
+    
+    const nivel = analise.nivel || {};
+    const equilibrio = analise.equilibrio || {};
+    const dominante = analise.familia_dominante || {};
+    const top3_faltando = analise.top3_faltando || [];
+    
+    const html = `
+        <!-- Nível do Usuário -->
+        <div style="
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
+            border: 2px solid ${nivel.emoji === '🎯' ? '#4caf50' : nivel.emoji === '⚠️' ? '#ff9800' : '#d4af37'};
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+        ">
+            <div style="text-align: center; margin-bottom: 15px;">
+                <div style="font-size: 3em;">${nivel.emoji || '🎯'}</div>
+                <div style="font-size: 1.5em; font-weight: 700; color: #d4af37; margin-top: 10px;">
+                    ${nivel.titulo || 'INICIANTE'}
+                </div>
+            </div>
+            <div style="color: #ccc; text-align: center; line-height: 1.6;">
+                ${nivel.descricao || 'Continue adicionando perfumes à sua coleção!'}
+            </div>
+        </div>
+        
+        <!-- Status de Equilíbrio -->
+        <div style="
+            background: linear-gradient(135deg, ${
+                equilibrio.status === 'equilibrada' ? 'rgba(76, 175, 80, 0.15)' :
+                equilibrio.status === 'leve_desequilibrio' ? 'rgba(255, 152, 0, 0.15)' :
+                'rgba(255, 68, 68, 0.15)'
+            }, rgba(0, 0, 0, 0.1));
+            border: 2px solid ${
+                equilibrio.status === 'equilibrada' ? '#4caf50' :
+                equilibrio.status === 'leve_desequilibrio' ? '#ff9800' :
+                '#ff4444'
+            };
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+        ">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                <div style="font-size: 2.5em;">${equilibrio.emoji || '✅'}</div>
+                <div>
+                    <div style="font-size: 1.3em; font-weight: 700; color: #d4af37;">
+                        ${equilibrio.status === 'equilibrada' ? '✅ Coleção Equilibrada' :
+                          equilibrio.status === 'leve_desequilibrio' ? '⚠️ Leve Desequilíbrio' :
+                          '🚨 Coleção Desbalanceada'}
+                    </div>
+                    <div style="color: #999; font-size: 0.9em; margin-top: 5px;">
+                        Família dominante: ${dominante.nome || 'N/A'} (${dominante.porcentagem || 0}%)
+                    </div>
+                </div>
+            </div>
+            <div style="color: #ccc; line-height: 1.6;">
+                ${equilibrio.mensagem || 'Continue diversificando sua coleção!'}
+            </div>
+        </div>
+        
+        <!-- Famílias que Faltam -->
+        ${top3_faltando.length > 0 ? `
+        <div style="
+            background: linear-gradient(135deg, rgba(100, 181, 246, 0.15), rgba(100, 181, 246, 0.05));
+            border: 2px solid #64b5f6;
+            border-radius: 15px;
+            padding: 25px;
+        ">
+            <div style="font-size: 1.3em; font-weight: 700; color: #64b5f6; margin-bottom: 15px;">
+                🎯 Próximas Metas
+            </div>
+            <div style="color: #ccc; line-height: 1.8;">
+                Expanda sua coleção nestas famílias:<br>
+                ${top3_faltando.map((fam, i) => `<strong style="color: #d4af37;">${i + 1}. ${fam}</strong>`).join('<br>')}
+            </div>
+        </div>
+        ` : ''}
+    `;
+    
+    container.innerHTML = html;
 }
 
 function renderizarRadarChart(familias, valores, analise) {
@@ -2068,6 +2156,9 @@ async function analisarColecao() {
     `;
     
     try {
+        const blacklist = JSON.parse(localStorage.getItem('perfumesBlacklist') || '[]');
+        const naoSugerir = minhaColecao.concat(blacklist);
+        
         const diagnostico = `
 PERFIL DO USUÁRIO:
 Clima: ${perfil.clima || 'Temperado'}
@@ -2077,6 +2168,9 @@ Orçamento: ${perfil.orcamento || 'R$ 300-500'}
 
 COLEÇÃO ATUAL (${minhaColecao.length} perfumes):
 ${minhaColecao.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+
+⚠️ NUNCA SUGERIR (usuário já tem OU não gostou):
+${naoSugerir.join(', ')}
 
 ⚠️ PERFUMES JÁ SUGERIDOS ANTES (NÃO REPITA):
 ${window.perfumesJaSugeridos && window.perfumesJaSugeridos.length > 0 ? window.perfumesJaSugeridos.join(', ') : 'Nenhum ainda'}
@@ -2308,7 +2402,7 @@ async function trocarSugestaoIndividual(indice) {
             familiaAlvo = getFamiliaComMenosPerfumes(analise.perfumes_por_familia);
         }
         
-        // Pega perfumes já sugeridos para não repetir
+        // Pega perfumes já sugeridos + blacklist para não repetir
         const sugestoesAtuais = [];
         for (let i = 0; i < 3; i++) {
             const cardAtual = document.getElementById(`candidato-${i}`);
@@ -2317,6 +2411,10 @@ async function trocarSugestaoIndividual(indice) {
                 if (nome) sugestoesAtuais.push(nome);
             }
         }
+        
+        // Adiciona blacklist de perfumes que o usuário não gostou
+        const blacklist = JSON.parse(localStorage.getItem('perfumesBlacklist') || '[]');
+        const naoSugerir = minhaColecao.concat(sugestoesAtuais).concat(window.perfumesJaSugeridos || []).concat(blacklist);
         
         const prompt = `
 PERFIL DO USUÁRIO:
@@ -2328,13 +2426,16 @@ Orçamento: ${perfil.orcamento || 'R$ 300-500'}
 COLEÇÃO ATUAL (${minhaColecao.length} perfumes):
 ${minhaColecao.map((p, i) => `${i + 1}. ${p}`).join('\n')}
 
+⚠️ NÃO SUGERIR (usuário já tem OU não gostou):
+${naoSugerir.join(', ')}
+
 ===========================================================
 🎯 MISSÃO: Sugerir 1 ÚNICO perfume
 ===========================================================
 
 REGRAS CRÍTICAS:
 1️⃣ Deve ser da família: ${familiaAlvo}
-2️⃣ NÃO sugerir: ${minhaColecao.concat(sugestoesAtuais).join(', ')}
+2️⃣ NÃO sugerir NENHUM da lista acima
 3️⃣ Marca DIFERENTE das outras sugestões
 
 ===========================================================
@@ -2379,25 +2480,44 @@ Retorne APENAS 1 perfume com: nome, família, faixa_preco, por_que, quando_usar
             <div class="candidate-family">🌿 ${novaSugestao.familia} • 💰 ${novaSugestao.faixa_preco}</div>
             <div class="candidate-why"><strong>Por quê:</strong> ${novaSugestao.por_que}</div>
             <div class="candidate-when"><strong>Quando usar:</strong> ${novaSugestao.quando_usar}</div>
-            <button 
-                onclick="trocarSugestaoIndividual(${indice})"
-                style="
-                    margin-top: 12px;
-                    padding: 8px 16px;
-                    background: rgba(212, 175, 55, 0.1);
-                    border: 1px solid rgba(212, 175, 55, 0.3);
-                    border-radius: 8px;
-                    color: #d4af37;
-                    font-size: 0.9em;
-                    cursor: pointer;
-                    transition: all 0.3s;
-                    width: 100%;
-                "
-                onmouseover="this.style.background='rgba(212, 175, 55, 0.2)'"
-                onmouseout="this.style.background='rgba(212, 175, 55, 0.1)'"
-            >
-                🔄 Trocar esta sugestão
-            </button>
+            <div style="display: flex; gap: 8px; margin-top: 12px;">
+                <button 
+                    onclick="trocarSugestaoIndividual(${indice})"
+                    style="
+                        flex: 1;
+                        padding: 8px 16px;
+                        background: rgba(212, 175, 55, 0.1);
+                        border: 1px solid rgba(212, 175, 55, 0.3);
+                        border-radius: 8px;
+                        color: #d4af37;
+                        font-size: 0.9em;
+                        cursor: pointer;
+                        transition: all 0.3s;
+                    "
+                    onmouseover="this.style.background='rgba(212, 175, 55, 0.2)'"
+                    onmouseout="this.style.background='rgba(212, 175, 55, 0.1)'"
+                >
+                    🔄 Trocar esta
+                </button>
+                <button 
+                    onclick="naoGostoDesta('${novaSugestao.nome.replace(/'/g, "\\'")}', ${indice})"
+                    style="
+                        flex: 1;
+                        padding: 8px 16px;
+                        background: rgba(255, 68, 68, 0.1);
+                        border: 1px solid rgba(255, 68, 68, 0.3);
+                        border-radius: 8px;
+                        color: #ff4444;
+                        font-size: 0.9em;
+                        cursor: pointer;
+                        transition: all 0.3s;
+                    "
+                    onmouseover="this.style.background='rgba(255, 68, 68, 0.2)'"
+                    onmouseout="this.style.background='rgba(255, 68, 68, 0.1)'"
+                >
+                    👎 Não gosto
+                </button>
+            </div>
         `;
         
         console.log(`✅ Sugestão ${indice + 1} trocada:`, novaSugestao.nome);
@@ -2407,6 +2527,26 @@ Retorne APENAS 1 perfume com: nome, família, faixa_preco, por_que, quando_usar
         card.innerHTML = conteudoOriginal;
         alert('❌ Erro ao trocar sugestão. Tente novamente.');
     }
+}
+
+function naoGostoDesta(nomePerfume, indice) {
+    // Adiciona à blacklist
+    let blacklist = JSON.parse(localStorage.getItem('perfumesBlacklist') || '[]');
+    if (!blacklist.includes(nomePerfume)) {
+        blacklist.push(nomePerfume);
+        localStorage.setItem('perfumesBlacklist', JSON.stringify(blacklist));
+        console.log('🚫 Adicionado à blacklist:', nomePerfume);
+        console.log('📋 Blacklist atual:', blacklist);
+    }
+    
+    // Remove da lista de sugeridos para não contar como "já mostrado"
+    if (window.perfumesJaSugeridos) {
+        window.perfumesJaSugeridos = window.perfumesJaSugeridos.filter(p => p !== nomePerfume);
+    }
+    
+    // Troca automaticamente por outro
+    mostrarToast('👎 Entendi!', `${nomePerfume} não será mais sugerido`, 'success');
+    trocarSugestaoIndividual(indice);
 }
 
 // ===================================
@@ -3142,25 +3282,44 @@ function renderizarMissaoGameficada(data) {
                             <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
                             <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
                             <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
-                            <button 
-                                onclick="trocarSugestaoIndividual(${i})"
-                                style="
-                                    margin-top: 12px;
-                                    padding: 8px 16px;
-                                    background: rgba(212, 175, 55, 0.1);
-                                    border: 1px solid rgba(212, 175, 55, 0.3);
-                                    border-radius: 8px;
-                                    color: #d4af37;
-                                    font-size: 0.9em;
-                                    cursor: pointer;
-                                    transition: all 0.3s;
-                                    width: 100%;
-                                "
-                                onmouseover="this.style.background='rgba(212, 175, 55, 0.2)'"
-                                onmouseout="this.style.background='rgba(212, 175, 55, 0.1)'"
-                            >
-                                🔄 Trocar esta sugestão
-                            </button>
+                            <div style="display: flex; gap: 8px; margin-top: 12px;">
+                                <button 
+                                    onclick="trocarSugestaoIndividual(${i})"
+                                    style="
+                                        flex: 1;
+                                        padding: 8px 16px;
+                                        background: rgba(212, 175, 55, 0.1);
+                                        border: 1px solid rgba(212, 175, 55, 0.3);
+                                        border-radius: 8px;
+                                        color: #d4af37;
+                                        font-size: 0.9em;
+                                        cursor: pointer;
+                                        transition: all 0.3s;
+                                    "
+                                    onmouseover="this.style.background='rgba(212, 175, 55, 0.2)'"
+                                    onmouseout="this.style.background='rgba(212, 175, 55, 0.1)'"
+                                >
+                                    🔄 Trocar esta
+                                </button>
+                                <button 
+                                    onclick="naoGostoDesta('${rec.nome.replace(/'/g, "\\'")}', ${i})"
+                                    style="
+                                        flex: 1;
+                                        padding: 8px 16px;
+                                        background: rgba(255, 68, 68, 0.1);
+                                        border: 1px solid rgba(255, 68, 68, 0.3);
+                                        border-radius: 8px;
+                                        color: #ff4444;
+                                        font-size: 0.9em;
+                                        cursor: pointer;
+                                        transition: all 0.3s;
+                                    "
+                                    onmouseover="this.style.background='rgba(255, 68, 68, 0.2)'"
+                                    onmouseout="this.style.background='rgba(255, 68, 68, 0.1)'"
+                                >
+                                    👎 Não gosto
+                                </button>
+                            </div>
                         </div>
                     `).join('')}
                 </div>
