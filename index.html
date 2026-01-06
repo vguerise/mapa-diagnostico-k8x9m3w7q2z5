@@ -1388,6 +1388,11 @@
                                 🌱 Estou começando! Me dá umas dicas!
                             </button>
                         </div>
+                        <div style="text-align: center; margin-top: 10px;">
+                            <button onclick="limparCache()" style="background: transparent; border: 1px solid rgba(212, 175, 55, 0.3); color: #999; padding: 8px 16px; border-radius: 8px; font-size: 0.85em; cursor: pointer; transition: all 0.3s;">
+                                🔄 Forçar Nova Análise
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Dropdown da Lista de Perfumes -->
@@ -1979,9 +1984,13 @@ async function analisarColecao() {
     // Verifica cache
     const ultimaAnalise = JSON.parse(localStorage.getItem('ultimaAnalise') || '{}');
     const colecaoAtualString = JSON.stringify(minhaColecao.sort());
+    const perfilAtualString = JSON.stringify(perfil);
     
-    if (ultimaAnalise.colecao === colecaoAtualString && ultimaAnalise.dados) {
-        console.log('✅ Usando análise em cache');
+    // Usa cache APENAS se coleção E perfil não mudaram
+    if (ultimaAnalise.colecao === colecaoAtualString && 
+        ultimaAnalise.perfil === perfilAtualString && 
+        ultimaAnalise.dados) {
+        console.log('✅ Usando análise em cache (coleção e perfil iguais)');
         
         // Atualiza radar
         atualizarRadarComAPI(ultimaAnalise.dados.analise_colecao);
@@ -1996,6 +2005,10 @@ async function analisarColecao() {
         // Toast
         mostrarToast('✅ Análise carregada!', 'Vá na aba Missão para ver suas sugestões', 'success');
         return;
+    }
+    
+    if (ultimaAnalise.perfil !== perfilAtualString) {
+        console.log('🔄 Perfil mudou! Forçando nova análise...');
     }
     
     console.log('🔄 Iniciando nova análise via API...');
@@ -2128,9 +2141,10 @@ Analise e retorne análise detalhada + recomendações.
         // ATUALIZA RADAR
         atualizarRadarComAPI(data.analise_colecao);
         
-        // Salva cache
+        // Salva cache COM PERFIL
         localStorage.setItem('ultimaAnalise', JSON.stringify({
             colecao: colecaoAtualString,
+            perfil: perfilAtualString,
             dados: data,
             timestamp: Date.now()
         }));
@@ -2206,6 +2220,12 @@ function adicionarGlowMissao() {
             abaMissao.removeEventListener('click', removeGlow);
         }, { once: true });
     }
+}
+
+function limparCache() {
+    localStorage.removeItem('ultimaAnalise');
+    console.log('🗑️ Cache limpo! Próxima análise será nova.');
+    alert('✅ Cache limpo! Clique em "Analisar" para gerar nova análise.');
 }
 
 // ===================================
@@ -3157,12 +3177,27 @@ Você DEVE sugerir EXATAMENTE 3 perfumes onde:
 
 ===========================================================
 
+===========================================================
+💰 ORÇAMENTO - RESPEITE RIGOROSAMENTE! 💰
+===========================================================
+
+O usuário definiu orçamento de: ${perfil.orcamento || 'R$ 300-500'}
+
+REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
+- Se orçamento é "R$ 300-500" → Sugira APENAS perfumes de R$ 250-600
+- Se orçamento é "R$ 500-800" → Sugira APENAS perfumes de R$ 400-900
+- Se orçamento é "R$ 800-1500" → Sugira APENAS perfumes de R$ 700-1700
+- Se orçamento é "Acima de R$ 1500" → Pode sugerir qualquer preço alto
+
+NUNCA QUEBRE ESTA REGRA!
+
+===========================================================
+
 REGRAS ADICIONAIS:
 4️⃣ NÃO sugerir perfumes que o usuário já tem
 5️⃣ NÃO repetir perfumes dos conjuntos anteriores
-6️⃣ Considere o orçamento: ${perfil.orcamento || 'R$ 300-500'}
-7️⃣ PRIORIZE perfumes de nicho acessível (<5k reviews Fragantica)
-8️⃣ EVITE perfumes mainstream hypados (>20k reviews)
+6️⃣ PRIORIZE perfumes de nicho acessível (<5k reviews Fragantica)
+7️⃣ EVITE perfumes mainstream hypados (>20k reviews)
 
 RESPONDA COM 3 PERFUMES DE MARCAS TOTALMENTE DIFERENTES!
 `;
@@ -3301,10 +3336,26 @@ ${minhaColecao.map((p, i) => `${i + 1}. ${p}`).join('\n')}
 MISSÃO ESPECÍFICA:
 Sugira EXATAMENTE 3 perfumes APENAS da família: ${familiaAlvo}
 
+===========================================================
+💰 ORÇAMENTO - RESPEITE RIGOROSAMENTE! 💰
+===========================================================
+
+O usuário definiu orçamento de: ${perfil.orcamento || 'R$ 300-500'}
+
+REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
+- Se orçamento é "R$ 300-500" → Sugira APENAS perfumes de R$ 250-600
+- Se orçamento é "R$ 500-800" → Sugira APENAS perfumes de R$ 400-900
+- Se orçamento é "R$ 800-1500" → Sugira APENAS perfumes de R$ 700-1700
+- Se orçamento é "Acima de R$ 1500" → Pode sugerir qualquer preço alto
+
+NUNCA QUEBRE ESTA REGRA!
+
+===========================================================
+
 REGRAS CRÍTICAS:
 1. TODOS os 3 perfumes devem ser da família ${familiaAlvo}
-2. NÃO sugira perfumes que o usuário já tem
-3. Considere clima, ambiente e orçamento do usuário
+2. CADA perfume deve ser de uma MARCA DIFERENTE
+3. NÃO sugira perfumes que o usuário já tem
 4. PRIORIZE perfumes de nicho acessível (<5k reviews Fragantica)
 5. EVITE perfumes mainstream hypados (>20k reviews)
 
