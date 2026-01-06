@@ -2065,15 +2065,7 @@ function renderizarRadarChart(familias, valores, analise) {
         }
     });
     
-    // Atualiza grid de famílias
-    const familiasGrid = document.getElementById('familias-grid');
-    familiasGrid.innerHTML = familias.map((fam, index) => `
-        <div class="balance-item">
-            <div class="balance-item-emoji">${fam.split(' ')[0]}</div>
-            <div class="balance-item-name">${fam.split(' ').slice(1).join(' ')}</div>
-            <div class="balance-item-count">${valores[index]}</div>
-        </div>
-    `).join('');
+    // Grid de famílias foi substituído por análise gamificada
 }
 
 // Função atualizarColecao removida - agora usamos apenas analisarColecao
