@@ -1487,8 +1487,145 @@
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
+// ===================================
+// CONFIGURAÇÃO SUPABASE (TRACKING)
+// ===================================
+
+const SUPABASE_URL = 'https://frivahuiffxrxzcjrlom.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZyaXZhaHVpZmZ4cnh6Y2pybG9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzgxMTAsImV4cCI6MjA4MzA1NDExMH0.9cIQs8qhctqZsiNlh4hOVHCjOBMR7UBFpBXiVST6iL4';
+
+// Inicializa Supabase
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const trackingEnabled = true;
+console.log('✅ Tracking Supabase ativado');
+
+// Gera ou recupera ID anônimo do usuário
+function getAnonymousUserId() {
+    let userId = localStorage.getItem('anonymousUserId');
+    if (!userId) {
+        userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('anonymousUserId', userId);
+        console.log('🆔 Novo ID anônimo gerado:', userId);
+    }
+    return userId;
+}
+
+const anonymousUserId = getAnonymousUserId();
+
+// ===================================
+// FUNÇÕES DE TRACKING
+// ===================================
+
+async function trackEvent(eventType, eventData = {}) {
+    if (!trackingEnabled) return;
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from('user_events')
+            .insert([{
+                user_anonymous_id: anonymousUserId,
+                event_type: eventType,
+                event_data: eventData
+            }]);
+        
+        if (error) {
+            console.error('❌ Erro ao trackear evento:', error);
+        } else {
+            console.log('📊 Evento trackeado:', eventType);
+        }
+    } catch (err) {
+        console.error('❌ Erro no tracking:', err);
+    }
+}
+
+async function trackProfile(perfil) {
+    if (!trackingEnabled) return;
+    
+    try {
+        // Remove nome antes de salvar (LGPD compliant)
+        const { nome, ...perfilSemNome } = perfil;
+        
+        // Tenta fazer upsert (insert ou update)
+        const { data, error } = await supabaseClient
+            .from('user_profiles')
+            .upsert([{
+                user_anonymous_id: anonymousUserId,
+                ...perfilSemNome,
+                updated_at: new Date().toISOString()
+            }], {
+                onConflict: 'user_anonymous_id'
+            });
+        
+        if (error) {
+            console.error('❌ Erro ao salvar perfil:', error);
+        } else {
+            console.log('✅ Perfil salvo no Supabase (sem nome)');
+            trackEvent('perfil_atualizado', { campos: Object.keys(perfilSemNome) });
+        }
+    } catch (err) {
+        console.error('❌ Erro ao salvar perfil:', err);
+    }
+}
+
+async function trackCollection(colecao, analise) {
+    if (!trackingEnabled) return;
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from('user_collections')
+            .insert([{
+                user_anonymous_id: anonymousUserId,
+                perfumes: colecao,
+                total_perfumes: colecao.length,
+                familias_distribuicao: analise.perfumes_por_familia,
+                familia_dominante: analise.familia_dominante.nome
+            }]);
+        
+        if (error) {
+            console.error('❌ Erro ao salvar coleção:', error);
+        } else {
+            console.log('✅ Coleção salva no Supabase');
+        }
+    } catch (err) {
+        console.error('❌ Erro ao salvar coleção:', err);
+    }
+}
+
+async function trackAnalysis(analiseData, nivel, recomendacoes) {
+    if (!trackingEnabled) return;
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from('user_analyses')
+            .insert([{
+                user_anonymous_id: anonymousUserId,
+                perfumes_analisados: minhaColecao,
+                familias_lacunas: analiseData.top3_faltando || [],
+                recomendacoes: recomendacoes || [],
+                nivel_usuario: nivel ? nivel.nome : null,
+                pontos_gamificacao: nivel ? nivel.pontos : 0
+            }]);
+        
+        if (error) {
+            console.error('❌ Erro ao salvar análise:', error);
+        } else {
+            console.log('✅ Análise salva no Supabase');
+            trackEvent('analise_completa', {
+                total_perfumes: minhaColecao.length,
+                nivel: nivel ? nivel.nome : null,
+                pontos: nivel ? nivel.pontos : 0
+            });
+        }
+    } catch (err) {
+        console.error('❌ Erro ao salvar análise:', err);
+    }
+}
+
 // ===================================
 // NAVEGAÇÃO ENTRE ABAS
 // ===================================
@@ -1556,6 +1693,9 @@ function salvarPerfil() {
     
     localStorage.setItem('perfilUsuario', JSON.stringify(perfil));
     
+    // 📊 TRACKING: Salva perfil no Supabase (sem nome)
+    trackProfile(perfil);
+    
     // Atualiza barra de nível com nome
     atualizarNivelDOM();
     
@@ -1599,6 +1739,12 @@ function adicionarPerfume() {
     
     localStorage.setItem('minhaColecao', JSON.stringify(minhaColecao));
     
+    // 📊 TRACKING: Perfume adicionado
+    trackEvent('perfume_adicionado', {
+        perfume: nome,
+        total_colecao: minhaColecao.length
+    });
+    
     input.value = '';
     renderizarLista();
     atualizarRadar();
@@ -1629,8 +1775,16 @@ function capitalizarPerfume(texto) {
 }
 
 function removerPerfume(index) {
+    const perfumeRemovido = minhaColecao[index];
     minhaColecao.splice(index, 1);
     localStorage.setItem('minhaColecao', JSON.stringify(minhaColecao));
+    
+    // 📊 TRACKING: Perfume removido
+    trackEvent('perfume_removido', {
+        perfume: perfumeRemovido,
+        total_colecao: minhaColecao.length
+    });
+    
     renderizarLista();
     atualizarRadar();
     atualizarNivelDOM();
@@ -1875,6 +2029,12 @@ Analise minha coleção completa e retorne análise detalhada + recomendações.
         // Salva dados globalmente para rotação de missões
         window.dadosAnaliseAtual = data;
         window.missaoAtualIndex = 0;
+        
+        // 📊 TRACKING: Análise completa com coleção e nível
+        const analiseLocal = analisarColecaoLocal(minhaColecao);
+        const nivelAtual = calcularNivelAtual();
+        trackCollection(minhaColecao, analiseLocal);
+        trackAnalysis(data.analise_colecao || analiseLocal, nivelAtual, data.recomendacoes);
         
         renderizarMissaoGameficada(data);
         
