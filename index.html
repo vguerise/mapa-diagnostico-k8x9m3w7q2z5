@@ -550,6 +550,69 @@
             color: #d4af37;
             font-size: 1.2em;
             padding: 40px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.7;
+                transform: scale(1.05);
+            }
+        }
+        
+        .loading-dots::after {
+            content: '';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+        
+        .analyzing-animation {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            padding: 40px;
+            background: rgba(212, 175, 55, 0.05);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 15px;
+            margin: 20px auto;
+            max-width: 600px;
+        }
+        
+        .analyzing-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(212, 175, 55, 0.2);
+            border-top: 4px solid #d4af37;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .analyzing-text {
+            color: #d4af37;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+        
+        .analyzing-subtext {
+            color: #999;
+            font-size: 0.95em;
+            text-align: center;
         }
 
         .radar-container {
@@ -1177,8 +1240,8 @@
                     <span class="nav-item-text">Missão</span>
                 </div>
                 <div class="nav-item" data-section="sugestoes">
-                    <span class="nav-item-icon">💡</span>
-                    <span class="nav-item-text">Sugestões</span>
+                    <span class="nav-item-icon">🧪</span>
+                    <span class="nav-item-text">O Perfumista</span>
                 </div>
             </nav>
         </aside>
@@ -1287,8 +1350,33 @@
                         </div>
                     </div>
 
-                    <!-- Lista de Perfumes -->
-                    <div id="perfume-list" class="perfume-list"></div>
+                    <!-- Dropdown da Lista de Perfumes -->
+                    <div style="max-width: 800px; margin: 0 auto 30px auto;">
+                        <button 
+                            id="toggle-list-button"
+                            onclick="toggleListaPerfumes()"
+                            style="
+                                width: 100%;
+                                padding: 15px 20px;
+                                background: rgba(212, 175, 55, 0.1);
+                                border: 2px solid rgba(212, 175, 55, 0.3);
+                                border-radius: 10px;
+                                color: #d4af37;
+                                font-size: 1em;
+                                font-weight: 600;
+                                cursor: pointer;
+                                transition: all 0.3s ease;
+                                display: flex;
+                                align-items: center;
+                                justify-content: space-between;
+                            "
+                        >
+                            <span>📋 Minha Lista (<span id="perfume-count">0</span> perfumes)</span>
+                            <span id="toggle-icon">▼</span>
+                        </button>
+                        
+                        <div id="perfume-list" class="perfume-list" style="display: none; margin-top: 10px;"></div>
+                    </div>
 
                     <!-- Radar de Coleção -->
                     <div class="balance-section">
@@ -1317,7 +1405,7 @@
 
                     <div style="text-align: center; margin-bottom: 30px;">
                         <button class="analyze-button" onclick="analisarColecao()">
-                            🔍 Analisar Coleção com IA
+                            🔍 Analisa minha Coleção
                         </button>
                     </div>
 
@@ -1494,9 +1582,15 @@ function limparColecao() {
 
 function renderizarLista() {
     const container = document.getElementById('perfume-list');
+    const countSpan = document.getElementById('perfume-count');
+    
+    // Atualiza contador
+    if (countSpan) {
+        countSpan.textContent = minhaColecao.length;
+    }
     
     if (minhaColecao.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: #999; padding: 40px;">Nenhum perfume adicionado ainda</p>';
+        container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">Nenhum perfume adicionado ainda</p>';
         return;
     }
     
@@ -1506,6 +1600,24 @@ function renderizarLista() {
             <button class="remove-button" onclick="removerPerfume(${index})">🗑️ Remover</button>
         </div>
     `).join('');
+}
+
+function toggleListaPerfumes() {
+    const lista = document.getElementById('perfume-list');
+    const icon = document.getElementById('toggle-icon');
+    const button = document.getElementById('toggle-list-button');
+    
+    if (lista.style.display === 'none') {
+        lista.style.display = 'block';
+        icon.textContent = '▲';
+        button.style.borderBottomLeftRadius = '0';
+        button.style.borderBottomRightRadius = '0';
+    } else {
+        lista.style.display = 'none';
+        icon.textContent = '▼';
+        button.style.borderBottomLeftRadius = '10px';
+        button.style.borderBottomRightRadius = '10px';
+    }
 }
 
 function atualizarRadar() {
@@ -1624,7 +1736,16 @@ async function analisarColecao() {
         return;
     }
     
-    resultContainer.innerHTML = '<div class="loading">🔍 Analisando sua coleção...</div>';
+    resultContainer.innerHTML = `
+        <div class="analyzing-animation">
+            <div class="analyzing-spinner"></div>
+            <div class="analyzing-text">🔍 Analisando sua coleção<span class="loading-dots"></span></div>
+            <div class="analyzing-subtext">
+                Nossa IA está examinando cada perfume e identificando<br>
+                as melhores oportunidades para sua coleção
+            </div>
+        </div>
+    `;
     
     try {
         const diagnostico = `
@@ -1962,7 +2083,7 @@ function renderizarBarraNivel(nivel) {
     if (!nivel) return '';
     
     const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
-    const nomeUsuario = perfil.nome || 'Coleccionador';
+    const nomeUsuario = perfil.nome || 'Colecionador';
     
     return `
         <div style="
@@ -2048,7 +2169,7 @@ function atualizarNivelDOM() {
     } else {
         // Se não tem nível, mostra só o nome
         const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
-        const nomeUsuario = perfil.nome || 'Coleccionador';
+        const nomeUsuario = perfil.nome || 'Colecionador';
         
         container.innerHTML = `
             <div style="
@@ -2320,7 +2441,16 @@ async function iniciarColecaoDoZero() {
     document.querySelector('.nav-item[data-section="sugestoes"]').click();
     
     const chatMessages = document.getElementById('chat-messages');
-    chatMessages.innerHTML = '<div class="loading">🌱 Criando sua coleção inicial...</div>';
+    chatMessages.innerHTML = `
+        <div class="analyzing-animation">
+            <div class="analyzing-spinner"></div>
+            <div class="analyzing-text">🌱 Criando sua coleção inicial<span class="loading-dots"></span></div>
+            <div class="analyzing-subtext">
+                Analisando seu perfil e selecionando os<br>
+                3 perfumes essenciais para começar
+            </div>
+        </div>
+    `;
     
     try {
         const contextoInicio = `
