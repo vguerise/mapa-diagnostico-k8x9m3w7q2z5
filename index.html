@@ -1577,12 +1577,15 @@ let radarChart = null;
 
 function adicionarPerfume() {
     const input = document.getElementById('perfume-input');
-    const nome = input.value.trim();
+    let nome = input.value.trim();
     
     if (!nome) {
         alert('Digite o nome do perfume');
         return;
     }
+    
+    // Capitaliza primeira letra de cada palavra
+    nome = capitalizarPerfume(nome);
     
     if (minhaColecao.includes(nome)) {
         alert('Este perfume já está na sua coleção');
@@ -1590,12 +1593,39 @@ function adicionarPerfume() {
     }
     
     minhaColecao.push(nome);
+    
+    // Ordena alfabeticamente
+    minhaColecao.sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+    
     localStorage.setItem('minhaColecao', JSON.stringify(minhaColecao));
     
     input.value = '';
     renderizarLista();
     atualizarRadar();
     atualizarNivelDOM();
+}
+
+function capitalizarPerfume(texto) {
+    // Palavras que não devem ser capitalizadas (exceto se forem a primeira palavra)
+    const excecoes = ['de', 'da', 'do', 'das', 'dos', 'e', 'pour', 'by', 'le', 'la', 'for'];
+    
+    return texto.toLowerCase()
+        .split(' ')
+        .map((palavra, index) => {
+            // Primeira palavra sempre capitaliza
+            if (index === 0) {
+                return palavra.charAt(0).toUpperCase() + palavra.slice(1);
+            }
+            
+            // Palavras de exceção não capitalizam (a menos que seja primeira)
+            if (excecoes.includes(palavra)) {
+                return palavra;
+            }
+            
+            // Resto capitaliza
+            return palavra.charAt(0).toUpperCase() + palavra.slice(1);
+        })
+        .join(' ');
 }
 
 function removerPerfume(index) {
@@ -1789,6 +1819,9 @@ async function analisarColecao() {
     `;
     
     try {
+        // Primeiro pega classificação local
+        const classificacaoLocal = analisarColecaoLocal(minhaColecao);
+        
         const diagnostico = `
 PERFIL DO USUÁRIO:
 Clima: ${perfil.clima || 'Temperado'}
@@ -1799,15 +1832,17 @@ Orçamento: ${perfil.orcamento || 'R$ 300-500'}
 COLEÇÃO ATUAL (${minhaColecao.length} perfumes):
 ${minhaColecao.map((p, i) => `${i + 1}. ${p}`).join('\n')}
 
-ANÁLISE SOLICITADA:
-1. Identifique a família olfativa de cada perfume
-2. Conte quantos perfumes há em cada família
-3. Identifique famílias vazias (sem perfumes)
-4. Calcule o percentual da família dominante
+INSTRUÇÕES CRÍTICAS:
+1. Para CADA perfume, identifique sua família olfativa REAL (pesquise no Fragantica se necessário)
+2. As famílias possíveis são: Fresco/Cítrico, Aromático/Verde, Doce/Gourmand, Amadeirado, Especiado/Oriental, Aquático, Talco/Fougère, Floral, Frutado
+3. Conte quantos perfumes há em cada família (baseado na classificação REAL, não em suposições)
+4. Identifique as 3 famílias com MENOS perfumes (ou vazias)
 5. Sugira 3 perfumes que preencham as MAIORES LACUNAS da coleção
 6. Considere clima, ambiente e orçamento do usuário
 7. PRIORIZE perfumes de nicho acessível (<5k reviews Fragantica)
 8. EVITE perfumes mainstream hypados (>20k reviews)
+
+IMPORTANTE: A classificação por família precisa ser PRECISA. Se não conhecer um perfume, pesquise ou use o nome e marca como pista.
 
 Analise minha coleção completa e retorne análise detalhada + recomendações.
 `;
@@ -1819,6 +1854,16 @@ Analise minha coleção completa e retorne análise detalhada + recomendações.
         });
         
         const data = await response.json();
+        
+        // Se API retornou análise de famílias, usa ela. Senão, usa local
+        if (!data.analise_colecao || !data.analise_colecao.perfumes_por_familia) {
+            console.log('⚠️ API não retornou análise de famílias, usando classificação local');
+            data.analise_colecao = classificacaoLocal;
+        } else {
+            console.log('✅ Usando classificação validada pela API');
+            // Salva classificações validadas para uso futuro
+            localStorage.setItem('classificacoesValidadas', JSON.stringify(data.analise_colecao.perfumes_por_familia));
+        }
         
         // Salva análise no cache com dados completos
         localStorage.setItem('ultimaAnalise', JSON.stringify({
@@ -2040,6 +2085,7 @@ function calcularNivelAtual() {
     return nivel;
 }
 
+// Analisa coleção localmente (classificação instantânea)
 function analisarColecaoLocal(perfumes) {
     const familias = {};
     
@@ -2071,53 +2117,230 @@ function analisarColecaoLocal(perfumes) {
     };
 }
 
+async function identificarFamiliaFragrantica(nomePerfume) {
+    try {
+        // Monta URL de busca do Fragantica
+        const searchQuery = encodeURIComponent(nomePerfume);
+        const fraganticaSearchURL = `https://www.fragrantica.com/search/`;
+        
+        // Tenta buscar via web search tool (se disponível)
+        console.log(`🔍 Buscando ${nomePerfume} no Fragantica...`);
+        
+        // Como não temos acesso direto ao Fragantica aqui, vamos usar a API
+        // para fazer uma busca inteligente que retorne a família
+        const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                pergunta: `Qual a família olfativa principal do perfume "${nomePerfume}"? Responda APENAS com uma das opções: Fresco/Cítrico, Aromático/Verde, Doce/Gourmand, Amadeirado, Especiado/Oriental, Aquático, Talco/Fougère, Floral, ou Frutado. Responda apenas o nome da família, sem explicações.`
+            })
+        });
+        
+        const data = await response.json();
+        const resposta = data.resposta || '';
+        
+        // Mapeia resposta para família com emoji
+        const familiaMap = {
+            'fresco': '🍋 Fresco/Cítrico',
+            'citrico': '🍋 Fresco/Cítrico',
+            'aromatico': '🌳 Aromático/Verde',
+            'verde': '🌳 Aromático/Verde',
+            'doce': '🍯 Doce/Gourmand',
+            'gourmand': '🍯 Doce/Gourmand',
+            'amadeirado': '🪵 Amadeirado',
+            'especiado': '🌶️ Especiado/Oriental',
+            'oriental': '🌶️ Especiado/Oriental',
+            'aquatico': '💧 Aquático',
+            'aquático': '💧 Aquático',
+            'talco': '🧼 Talco/Fougère',
+            'fougere': '🧼 Talco/Fougère',
+            'fougère': '🧼 Talco/Fougère',
+            'floral': '🌸 Floral',
+            'frutado': '🍇 Frutado'
+        };
+        
+        const respostaLower = resposta.toLowerCase();
+        for (const [key, familia] of Object.entries(familiaMap)) {
+            if (respostaLower.includes(key)) {
+                console.log(`✅ ${nomePerfume} → ${familia} (via API)`);
+                return familia;
+            }
+        }
+        
+        // Fallback para sistema local se API falhar
+        console.log(`⚠️ API não retornou família clara, usando sistema local`);
+        return identificarFamiliaLocal(nomePerfume);
+        
+    } catch (error) {
+        console.error('❌ Erro ao buscar no Fragantica:', error);
+        // Fallback para sistema local
+        return identificarFamiliaLocal(nomePerfume);
+    }
+}
+
+// Mantém função local como backup
 function identificarFamiliaLocal(nome) {
     nome = nome.toLowerCase();
     
-    // Cítricos/Frescos
-    if (nome.includes('acqua') || nome.includes('light blue') || nome.includes('versace pour') || 
-        nome.includes('ck one') || nome.includes('agua') || nome.includes('azarro')) {
-        return '🍋 Fresco/Cítrico';
+    // Sistema de pontuação para cada família
+    let scores = {
+        '🍋 Fresco/Cítrico': 0,
+        '🌳 Aromático/Verde': 0,
+        '🍯 Doce/Gourmand': 0,
+        '🪵 Amadeirado': 0,
+        '🌶️ Especiado/Oriental': 0,
+        '💧 Aquático': 0,
+        '🧼 Talco/Fougère': 0,
+        '🌸 Floral': 0,
+        '🍇 Frutado': 0
+    };
+    
+    // FRESCO/CÍTRICO - palavras-chave
+    const frescoKeywords = [
+        'acqua', 'agua', 'light blue', 'citrus', 'citron', 'limão', 'bergamot', 
+        'bergamota', 'lemon', 'orange', 'laranja', 'grapefruit', 'mandarin', 
+        'tangerine', 'cologne', 'colonia', 'fresh', 'fresco', 'azzaro', 'chrome',
+        'ck one', 'ck be', 'eternity', 'escape'
+    ];
+    
+    // AROMÁTICO/VERDE - palavras-chave
+    const aromaticoKeywords = [
+        'sauvage', 'bleu', 'blue', 'polo', 'green', 'verde', 'lavanda', 'lavender',
+        'sage', 'salvia', 'mint', 'menta', 'basil', 'manjericão', 'herbal',
+        'aromatic', 'aromatico', 'dior homme', 'allure homme', 'prada homme',
+        'armani', 'givenchy', 'sport', 'esporte'
+    ];
+    
+    // DOCE/GOURMAND - palavras-chave
+    const doceKeywords = [
+        'one million', '1 million', 'ultra male', 'wanted', 'scandal', '212 vip',
+        'vanilla', 'baunilha', 'caramel', 'caramelo', 'chocolate', 'tonka',
+        'praline', 'honey', 'mel', 'sweet', 'doce', 'candy', 'good girl',
+        'bombshell', 'pink sugar', 'angel', 'la vie est belle'
+    ];
+    
+    // AMADEIRADO - palavras-chave
+    const amadeiradoKeywords = [
+        'terre', 'wood', 'oud', 'aoud', 'cedro', 'cedar', 'sandalwood', 'sandalo',
+        'vetiver', 'patchouli', 'individuel', 'encre noire', 'tobacco', 'tabaco',
+        'leather', 'couro', 'suede', 'iris', 'homme intense', 'tuscan leather',
+        'terre d', 'voyage', 'antaeus'
+    ];
+    
+    // ESPECIADO/ORIENTAL - palavras-chave
+    const especiadoKeywords = [
+        'spice', 'spicebomb', 'eros', 'noir', 'black', 'intense', 'extreme',
+        'cardamom', 'cardamomo', 'pepper', 'pimenta', 'cinnamon', 'canela',
+        'clove', 'cravo', 'nutmeg', 'noz moscada', 'oriental', 'ambre', 'amber',
+        'âmbar', 'opium', 'obsession', 'interlude', 'jubilation'
+    ];
+    
+    // AQUÁTICO - palavras-chave
+    const aquaticoKeywords = [
+        'invictus', 'aqua', 'ocean', 'oceano', 'sea', 'mar', 'marine', 'marinho',
+        'cool water', 'davidoff', 'nautica', 'voyage', 'azz', 'azzaro',
+        'light blue intense', 'dylan blue', 'y eau fraiche', 'legend spirit'
+    ];
+    
+    // TALCO/FOUGÈRE - palavras-chave
+    const talcoKeywords = [
+        'royal', 'malbec', 'kouros', 'heritage', 'pasha', 'bvlgari pour homme',
+        'fahrenheit', 'habit rouge', 'brut', 'old spice', 'joop', 'grey flannel',
+        'drakkar', 'azzaro pour homme', 'pino silvestre', 'silvestre'
+    ];
+    
+    // FLORAL - palavras-chave
+    const floralKeywords = [
+        'rose', 'rosa', 'jasmine', 'jasmim', 'lily', 'lirio', 'violet', 'violeta',
+        'iris', 'geranium', 'geranio', 'neroli', 'ylang', 'magnolia', 'peony',
+        'peonia', 'flowerbomb', 'amor amor', 'la nuit tresor'
+    ];
+    
+    // FRUTADO - palavras-chave
+    const frutadoKeywords = [
+        'apple', 'maça', 'pear', 'pera', 'peach', 'pessego', 'plum', 'ameixa',
+        'berry', 'mirtilo', 'blackberry', 'raspberry', 'morango', 'strawberry',
+        'cherry', 'cereja', 'pineapple', 'abacaxi', 'mango', 'manga', 'melon',
+        'melancia', 'watermelon', 'passion fruit', 'maracuja'
+    ];
+    
+    // Conta pontos para cada família
+    frescoKeywords.forEach(kw => { if (nome.includes(kw)) scores['🍋 Fresco/Cítrico'] += 2; });
+    aromaticoKeywords.forEach(kw => { if (nome.includes(kw)) scores['🌳 Aromático/Verde'] += 2; });
+    doceKeywords.forEach(kw => { if (nome.includes(kw)) scores['🍯 Doce/Gourmand'] += 2; });
+    amadeiradoKeywords.forEach(kw => { if (nome.includes(kw)) scores['🪵 Amadeirado'] += 2; });
+    especiadoKeywords.forEach(kw => { if (nome.includes(kw)) scores['🌶️ Especiado/Oriental'] += 2; });
+    aquaticoKeywords.forEach(kw => { if (nome.includes(kw)) scores['💧 Aquático'] += 2; });
+    talcoKeywords.forEach(kw => { if (nome.includes(kw)) scores['🧼 Talco/Fougère'] += 2; });
+    floralKeywords.forEach(kw => { if (nome.includes(kw)) scores['🌸 Floral'] += 2; });
+    frutadoKeywords.forEach(kw => { if (nome.includes(kw)) scores['🍇 Frutado'] += 2; });
+    
+    // Padrões específicos de marcas (ajuste fino)
+    if (nome.includes('dior')) {
+        if (nome.includes('sauvage')) scores['🌳 Aromático/Verde'] += 3;
+        else if (nome.includes('homme intense')) scores['🪵 Amadeirado'] += 3;
+        else if (nome.includes('fahrenheit')) scores['🧼 Talco/Fougère'] += 3;
     }
     
-    // Aromáticos
-    if (nome.includes('sauvage') || nome.includes('bleu') || nome.includes('polo') || 
-        nome.includes('prada') || nome.includes('armani') || nome.includes('dior homme')) {
-        return '🌳 Aromático/Verde';
+    if (nome.includes('chanel')) {
+        if (nome.includes('bleu')) scores['🌳 Aromático/Verde'] += 3;
+        else if (nome.includes('allure homme sport')) scores['🍋 Fresco/Cítrico'] += 3;
     }
     
-    // Doces/Gourmand
-    if (nome.includes('one million') || nome.includes('ultra male') || nome.includes('wanted') || 
-        nome.includes('good girl') || nome.includes('scandal') || nome.includes('212 vip')) {
-        return '🍯 Doce/Gourmand';
+    if (nome.includes('versace')) {
+        if (nome.includes('eros')) scores['🌶️ Especiado/Oriental'] += 3;
+        else if (nome.includes('dylan blue')) scores['💧 Aquático'] += 3;
+        else if (nome.includes('pour homme')) scores['🍋 Fresco/Cítrico'] += 3;
     }
     
-    // Amadeirados
-    if (nome.includes('terre') || nome.includes('individuel') || nome.includes('oud') || 
-        nome.includes('wood') || nome.includes('cedro') || nome.includes('sandalwood')) {
-        return '🪵 Amadeirado';
+    if (nome.includes('paco rabanne')) {
+        if (nome.includes('invictus')) scores['💧 Aquático'] += 3;
+        else if (nome.includes('1 million') || nome.includes('one million')) scores['🍯 Doce/Gourmand'] += 3;
     }
     
-    // Aquáticos
-    if (nome.includes('invictus') || nome.includes('azz') || nome.includes('nautica') || 
-        nome.includes('davidoff') || nome.includes('cool water')) {
-        return '💧 Aquático';
+    if (nome.includes('ysl') || nome.includes('saint laurent')) {
+        if (nome.includes('y ')) scores['🌳 Aromático/Verde'] += 3;
+        else if (nome.includes('la nuit')) scores['🌶️ Especiado/Oriental'] += 3;
     }
     
-    // Especiados
-    if (nome.includes('spice') || nome.includes('eros') || nome.includes('noir') || 
-        nome.includes('intense') || nome.includes('extreme')) {
-        return '🌶️ Especiado/Oriental';
+    if (nome.includes('armani')) {
+        if (nome.includes('acqua di gio')) scores['💧 Aquático'] += 3;
+        else if (nome.includes('code')) scores['🌶️ Especiado/Oriental'] += 3;
     }
     
-    // Talco/Fougère
-    if (nome.includes('royal') || nome.includes('malbec') || nome.includes('kouros') || 
-        nome.includes('heritage')) {
-        return '🧼 Talco/Fougère';
+    if (nome.includes('jean paul gaultier')) {
+        if (nome.includes('le male') || nome.includes('ultra male')) scores['🍯 Doce/Gourmand'] += 3;
     }
     
-    // Default
-    return '🌳 Aromático/Verde';
+    // Encontra a família com maior pontuação
+    let maxScore = 0;
+    let familiaVencedora = '🌳 Aromático/Verde'; // default mais neutro
+    
+    for (const [familia, score] of Object.entries(scores)) {
+        if (score > maxScore) {
+            maxScore = score;
+            familiaVencedora = familia;
+        }
+    }
+    
+    // Se nenhum padrão bateu (score 0), tenta inferir por palavras comuns
+    if (maxScore === 0) {
+        // Perfumes com "homme" geralmente são aromáticos
+        if (nome.includes('homme') || nome.includes('man') || nome.includes('men')) {
+            return '🌳 Aromático/Verde';
+        }
+        // Perfumes com "eau" ou "summer" geralmente são frescos
+        if (nome.includes('eau fraiche') || nome.includes('summer') || nome.includes('soleil')) {
+            return '🍋 Fresco/Cítrico';
+        }
+        // Perfumes com "nuit" ou "night" geralmente são orientais
+        if (nome.includes('nuit') || nome.includes('night') || nome.includes('midnight')) {
+            return '🌶️ Especiado/Oriental';
+        }
+    }
+    
+    console.log(`🔍 ${nome} → ${familiaVencedora} (score: ${maxScore}) [LOCAL]`);
+    return familiaVencedora;
 }
 
 function renderizarBarraNivel(nivel) {
