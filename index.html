@@ -1413,11 +1413,14 @@
                         </div>
                     </div>
 
-                    <!-- Botão Analisar Coleção -->
+                    <!-- Botão Atualizar Coleção -->
                     <div style="text-align: center; margin: 30px 0;">
-                        <button class="analyze-button" onclick="analisarColecao()">
-                            🔍 Analisa minha Coleção
+                        <button class="analyze-button" onclick="atualizarColecao()">
+                            🔄 Atualizar Coleção
                         </button>
+                        <p style="color: #999; font-size: 0.9em; margin-top: 10px;">
+                            Clique para atualizar o radar e sincronizar sua coleção
+                        </p>
                     </div>
 
                     <!-- Radar de Coleção -->
@@ -1444,6 +1447,16 @@
                         <h1>🏆 Sua Missão</h1>
                         <p class="subtitle">Complete sua jornada e alcance a coleção perfeita</p>
                     </header>
+
+                    <!-- Botão para iniciar análise -->
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <button class="analyze-button" onclick="analisarColecao()">
+                            🔍 Analisa minha Coleção
+                        </button>
+                        <p style="color: #999; font-size: 0.9em; margin-top: 10px;">
+                            Clique para receber sua missão personalizada com IA
+                        </p>
+                    </div>
 
                     <!-- Resultado da Análise -->
                     <div id="result-container"></div>
@@ -1747,7 +1760,7 @@ function adicionarPerfume() {
     
     input.value = '';
     renderizarLista();
-    atualizarRadar();
+    // Radar NÃO atualiza mais aqui - só com botão "Atualizar Coleção"
     atualizarNivelDOM();
 }
 
@@ -1786,7 +1799,7 @@ function removerPerfume(index) {
     });
     
     renderizarLista();
-    atualizarRadar();
+    // Radar NÃO atualiza mais aqui - só com botão "Atualizar Coleção"
     atualizarNivelDOM();
 }
 
@@ -1936,6 +1949,49 @@ function atualizarRadar() {
             <div class="balance-item-count">${valores[index]}</div>
         </div>
     `).join('');
+}
+
+// ===================================
+// ATUALIZAR COLEÇÃO (RADAR)
+// ===================================
+
+function atualizarColecao() {
+    if (minhaColecao.length === 0) {
+        alert('Adicione perfumes à sua coleção primeiro!');
+        return;
+    }
+    
+    // Atualiza o radar com classificação local temporária
+    atualizarRadar();
+    
+    // Mostra mensagem de sucesso
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #4caf50, #66bb6a);
+        color: white;
+        padding: 15px 25px;
+        border-radius: 10px;
+        box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
+        z-index: 10000;
+        font-weight: 600;
+        animation: fadeIn 0.3s ease-out;
+    `;
+    toast.textContent = '✅ Coleção atualizada!';
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.transition = 'opacity 0.5s';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 500);
+    }, 2000);
+    
+    // Track evento
+    trackEvent('colecao_atualizada', {
+        total_perfumes: minhaColecao.length
+    });
 }
 
 // ===================================
@@ -2692,17 +2748,52 @@ function renderizarMissaoGameficada(data) {
             
             <!-- Card de Candidatos (oculto inicialmente) -->
             <div class="candidates-card" id="candidatesCard">
-                <h3 style="color: #d4af37; margin-bottom: 20px; font-size: 1.5em;">
-                    🎁 Candidatos Perfeitos para sua Missão
-                </h3>
-                ${recomendacoes.map((rec, i) => `
-                    <div class="candidate-item">
-                        <div class="candidate-name">${i + 1}. ${rec.nome}</div>
-                        <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
-                        <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
-                        <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
-                    </div>
-                `).join('')}
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                    <h3 style="color: #d4af37; font-size: 1.5em; margin: 0;">
+                        🎁 Conjunto <span id="conjuntoAtual">1</span> de 3
+                    </h3>
+                    <button 
+                        class="btn-mission-secondary" 
+                        onclick="gerarNovasSugestoes()"
+                        style="flex: initial; min-width: auto; padding: 12px 20px; font-size: 0.95em;"
+                    >
+                        🔄 Novas Sugestões
+                    </button>
+                </div>
+                
+                <div id="sugestoesContainer">
+                    ${recomendacoes.map((rec, i) => `
+                        <div class="candidate-item">
+                            <div class="candidate-name">${i + 1}. ${rec.nome}</div>
+                            <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
+                            <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
+                            <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <!-- Botão WhatsApp -->
+                <button 
+                    onclick='enviarSugestoesWhatsApp(${JSON.stringify(recomendacoes).replace(/'/g, "\\'")})'
+                    style="
+                        width: 100%;
+                        margin-top: 25px;
+                        padding: 16px;
+                        background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+                        border: none;
+                        border-radius: 12px;
+                        color: white;
+                        font-size: 1.1em;
+                        font-weight: 700;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        box-shadow: 0 5px 20px rgba(37, 211, 102, 0.3);
+                    " 
+                    onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 30px rgba(37, 211, 102, 0.5)'"
+                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 5px 20px rgba(37, 211, 102, 0.3)'"
+                >
+                    📱 Enviar pro meu WhatsApp
+                </button>
             </div>
         </div>
     `;
@@ -2824,12 +2915,142 @@ function mostrarCandidatos() {
     const card = document.getElementById('candidatesCard');
     card.classList.add('show');
     
+    // Inicializa contador de conjuntos
+    if (!window.conjuntoSugestaoAtual) {
+        window.conjuntoSugestaoAtual = 1;
+    }
+    
     setTimeout(() => {
         card.scrollIntoView({
             behavior: 'smooth',
             block: 'start'
         });
     }, 100);
+}
+
+function enviarSugestoesWhatsApp(sugestoes) {
+    let mensagem = '🎯 *Minha Missão - Mapa de Perfumes*\n\n';
+    mensagem += '*Perfumes Recomendados:*\n\n';
+    
+    sugestoes.forEach((sug, i) => {
+        mensagem += `${i + 1}. *${sug.nome}*\n`;
+        mensagem += `   🌿 ${sug.familia}\n`;
+        mensagem += `   💰 ${sug.faixa_preco}\n`;
+        mensagem += `   📝 ${sug.por_que}\n`;
+        mensagem += `   ⏰ ${sug.quando_usar}\n\n`;
+    });
+    
+    mensagem += '---\n';
+    mensagem += '💡 Gerado por mapadeperfumes.com.br';
+    
+    const whatsappURL = `https://wa.me/?text=${encodeURIComponent(mensagem)}`;
+    window.open(whatsappURL, '_blank');
+    
+    // Track evento
+    trackEvent('whatsapp_compartilhado', {
+        total_sugestoes: sugestoes.length
+    });
+}
+
+async function gerarNovasSugestoes() {
+    const dadosAnalise = window.dadosAnaliseAtual;
+    
+    if (!dadosAnalise) {
+        alert('❌ Erro: faça uma análise primeiro.');
+        return;
+    }
+    
+    // Incrementa contador (1 → 2 → 3 → 1...)
+    window.conjuntoSugestaoAtual = ((window.conjuntoSugestaoAtual || 1) % 3) + 1;
+    
+    const conjuntoAtual = window.conjuntoSugestaoAtual;
+    document.getElementById('conjuntoAtual').textContent = conjuntoAtual;
+    
+    console.log(`🔄 Gerando conjunto ${conjuntoAtual} de sugestões`);
+    
+    // Mostra loading
+    const container = document.getElementById('sugestoesContainer');
+    container.innerHTML = '<div class="loading">🔍 Buscando novas sugestões<span class="loading-dots"></span></div>';
+    
+    try {
+        const analise = dadosAnalise.analise_colecao || dadosAnalise.analise;
+        const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
+        const missaoIndex = window.missaoAtualIndex || 0;
+        
+        // Pega família alvo
+        const top3_faltando = analise.top3_faltando || [];
+        let familiaAlvo;
+        if (top3_faltando.length > missaoIndex) {
+            familiaAlvo = top3_faltando[missaoIndex];
+        } else {
+            familiaAlvo = getFamiliaComMenosPerfumes(analise.perfumes_por_familia);
+        }
+        
+        // Monta prompt com REGRA DE MARCAS DIFERENTES
+        const promptNovasSugestoes = `
+PERFIL DO USUÁRIO:
+Clima: ${perfil.clima || 'Temperado'}
+Ambiente: ${perfil.ambiente || 'Ambos'}
+Idade: ${perfil.idade || '25-35'} anos
+Orçamento: ${perfil.orcamento || 'R$ 300-500'}
+
+COLEÇÃO ATUAL (${minhaColecao.length} perfumes):
+${minhaColecao.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+
+MISSÃO: Sugerir EXATAMENTE 3 perfumes da família ${familiaAlvo}
+
+REGRAS CRÍTICAS PARA ESTE CONJUNTO ${conjuntoAtual}:
+1. TODOS os 3 perfumes devem ser da família ${familiaAlvo}
+2. CADA perfume deve ser de uma MARCA DIFERENTE (3 marcas diferentes!)
+3. NÃO sugerir perfumes que o usuário já tem
+4. NÃO repetir perfumes dos conjuntos anteriores
+5. Considere clima, ambiente e orçamento
+6. PRIORIZE perfumes de nicho acessível (<5k reviews Fragantica)
+7. EVITE perfumes mainstream hypados (>20k reviews)
+
+IMPORTANTE: As 3 sugestões devem ter MARCAS TOTALMENTE DIFERENTES entre si!
+Exemplo CORRETO: Dior, Versace, Paco Rabanne
+Exemplo ERRADO: Dior Sauvage, Dior Homme, Dior Fahrenheit
+`;
+        
+        // Chama API
+        const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                diagnostico: promptNovasSugestoes
+            })
+        });
+        
+        const data = await response.json();
+        const novasSugestoes = data.recomendacoes || [];
+        
+        if (novasSugestoes.length === 0) {
+            container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">Não foi possível gerar novas sugestões. Tente novamente.</p>';
+            return;
+        }
+        
+        // Atualiza UI com novas sugestões
+        container.innerHTML = novasSugestoes.map((rec, i) => `
+            <div class="candidate-item">
+                <div class="candidate-name">${i + 1}. ${rec.nome}</div>
+                <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
+                <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
+                <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
+            </div>
+        `).join('');
+        
+        // Track evento
+        trackEvent('novas_sugestoes_geradas', {
+            conjunto: conjuntoAtual,
+            familia: familiaAlvo,
+            total_sugestoes: novasSugestoes.length
+        });
+        
+    } catch (error) {
+        console.error('Erro ao gerar novas sugestões:', error);
+        container.innerHTML = '<p style="color: #ff6666; text-align: center; padding: 20px;">❌ Erro ao gerar sugestões. Tente novamente.</p>';
+    }
 }
 
 async function gerarNovaMissao() {
