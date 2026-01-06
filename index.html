@@ -1381,11 +1381,11 @@
                             <button class="add-button" onclick="adicionarPerfume()" style="flex: 1; min-width: 150px;">
                                 ➕ Adicionar
                             </button>
-                            <button class="start-collection-button" onclick="iniciarColecaoDoZero()" style="flex: 1; min-width: 150px; margin: 0; padding: 12px 30px; font-size: 1em;">
-                                🌱 Começando!
-                            </button>
                             <button class="analyze-button" onclick="analisarColecao()" style="flex: 1; min-width: 150px; margin: 0; padding: 12px 30px; font-size: 1em;">
                                 🔍 Analisar
+                            </button>
+                            <button class="start-collection-button" onclick="iniciarColecaoDoZero()" style="flex: 1; min-width: 200px; margin: 0; padding: 12px 30px; font-size: 1em; background: linear-gradient(135deg, #d4af37, #f4c542); color: #1a1a1a; font-weight: 700;">
+                                🌱 Estou começando! Me dá umas dicas!
                             </button>
                         </div>
                     </div>
@@ -1965,10 +1965,14 @@ function renderizarRadarChart(familias, valores, analise) {
 // ===================================
 
 async function analisarColecao() {
+    console.log('🚀 analisarColecao() CHAMADA!');
+    
     if (minhaColecao.length === 0) {
         alert('Adicione perfumes à sua coleção primeiro!');
         return;
     }
+    
+    console.log('✅ Coleção tem', minhaColecao.length, 'perfumes');
     
     const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
     
@@ -1993,6 +1997,8 @@ async function analisarColecao() {
         mostrarToast('✅ Análise carregada!', 'Vá na aba Missão para ver suas sugestões', 'success');
         return;
     }
+    
+    console.log('🔄 Iniciando nova análise via API...');
     
     // Mostra loading NO RADAR (não modal que bloqueia tudo)
     const radarContainer = document.querySelector('.radar-container');
@@ -2092,13 +2098,19 @@ IMPORTANTE: Classificação PRECISA + 3 MARCAS DIFERENTES + RESPEITAR ORÇAMENTO
 Analise e retorne análise detalhada + recomendações.
 `;
         
+        console.log('📡 Chamando API Perfumista...');
+        
         const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ diagnostico })
         });
         
+        console.log('📥 Resposta recebida:', response.status);
+        
         const data = await response.json();
+        
+        console.log('📦 Dados parseados:', data);
         
         // Se API não retornou classificação
         if (!data.analise_colecao || !data.analise_colecao.perfumes_por_familia) {
