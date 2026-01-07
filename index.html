@@ -2467,18 +2467,46 @@ IMPORTANTE: Classificação PRECISA + 3 MARCAS DIFERENTES + RESPEITAR ORÇAMENTO
 📦 FORMATO DE RESPOSTA OBRIGATÓRIO
 ===========================================================
 
-Para CADA perfume sugerido, você DEVE retornar o campo "concentracao" no JSON:
+Você DEVE retornar um JSON com este formato EXATO:
 
 {
-  "nome": "Dior Sauvage",
-  "concentracao": "EDT",
-  "familia": "Aromático/Verde",
-  "faixa_preco": "R$ 400-600",
-  "por_que": "...",
-  "quando_usar": "..."
+  "analise_colecao": {
+    "perfumes_por_familia": {...},
+    "familia_dominante": "...",
+    "top3_faltando": [...]
+  },
+  "recomendacoes": [
+    {
+      "nome": "Dior Sauvage",
+      "concentracao": "EDT",
+      "familia": "Aromático/Verde",
+      "faixa_preco": "R$ 400-600",
+      "por_que": "Complementa sua coleção com frescor",
+      "quando_usar": "Dia a dia, trabalho"
+    },
+    {
+      "nome": "Creed Aventus",
+      "concentracao": "EDP",
+      "familia": "Frutado",
+      "faixa_preco": "R$ 1.200-1.600",
+      "por_que": "Adiciona sofisticação",
+      "quando_usar": "Eventos, noite"
+    },
+    {
+      "nome": "Tom Ford Oud Wood",
+      "concentracao": "Parfum",
+      "familia": "Amadeirado",
+      "faixa_preco": "R$ 1.400-1.800",
+      "por_que": "Perfume de assinatura único",
+      "quando_usar": "Noite, inverno"
+    }
+  ]
 }
 
-⚠️ OBRIGATÓRIO: Sempre inclua o campo "concentracao" (EDT, EDP, Parfum ou Elixir)
+⚠️⚠️⚠️ CRÍTICO: O campo "concentracao" é OBRIGATÓRIO em TODAS as 3 recomendações!
+Valores aceitos: "EDT", "EDP", "Parfum", "Elixir"
+
+Se você esquecer o campo "concentracao", o sistema VAI QUEBRAR!
 
 Analise e retorne análise detalhada + recomendações COM CONCENTRAÇÃO.
 `;
@@ -4533,21 +4561,46 @@ function salvarRadarNoStorage(dados) {
 
 function carregarRadarDoStorage() {
     const radarSalvo = localStorage.getItem('radarSalvo');
-    if (!radarSalvo) return null;
-    
-    const { dados, timestamp, colecao } = JSON.parse(radarSalvo);
-    
-    // Verifica se coleção mudou
-    const colecaoAtual = JSON.stringify(minhaColecao.sort());
-    const colecaoSalva = JSON.stringify(colecao.sort());
-    
-    if (colecaoAtual !== colecaoSalva) {
-        console.log('❌ Coleção mudou, radar inválido');
+    if (!radarSalvo) {
+        console.log('❌ Nenhum radar salvo');
         return null;
     }
     
-    console.log('✅ Radar carregado do localStorage');
-    return dados;
+    try {
+        const { dados, timestamp, colecao } = JSON.parse(radarSalvo);
+        
+        if (!dados || !colecao) {
+            console.log('❌ Radar salvo inválido');
+            return null;
+        }
+        
+        // Normaliza coleções para comparação (suporta string e objeto)
+        const normalizarColecao = (col) => {
+            return col.map(p => {
+                const nome = typeof p === 'string' ? p : p.nome;
+                return nome.toLowerCase();
+            }).sort();
+        };
+        
+        const colecaoAtualNorm = normalizarColecao(minhaColecao);
+        const colecaoSalvaNorm = normalizarColecao(colecao);
+        
+        const colecaoAtual = JSON.stringify(colecaoAtualNorm);
+        const colecaoSalvaStr = JSON.stringify(colecaoSalvaNorm);
+        
+        if (colecaoAtual !== colecaoSalvaStr) {
+            console.log('❌ Coleção mudou, radar inválido');
+            console.log('  Atual:', colecaoAtualNorm);
+            console.log('  Salva:', colecaoSalvaNorm);
+            return null;
+        }
+        
+        console.log('✅ Radar carregado do localStorage');
+        return dados;
+    } catch (error) {
+        console.error('❌ Erro ao carregar radar:', error);
+        return null;
+    }
 }
 
 // Carrega dados ao iniciar
@@ -4556,10 +4609,23 @@ renderizarLista();
 
 // Tenta carregar radar salvo
 const radarSalvo = carregarRadarDoStorage();
+console.log('🎯 Inicializando radar...');
+console.log('  Radar salvo?', radarSalvo ? 'SIM' : 'NÃO');
+console.log('  Coleção atual:', minhaColecao.length, 'perfumes');
+
 if (radarSalvo) {
+    console.log('📊 Renderizando radar salvo');
     atualizarRadarComAPI(radarSalvo);
+} else if (minhaColecao.length > 0) {
+    console.log('⚠️ Sem radar salvo, mas tem perfumes. Mostrando radar vazio.');
+    // Mostra radar vazio para estimular análise
+    atualizarRadarComAPI({
+        perfumes_por_familia: {},
+        familia_dominante: null,
+        top3_faltando: []
+    });
 } else {
-    atualizarRadar();
+    console.log('ℹ️ Sem perfumes na coleção');
 }
 
 atualizarNivelDOM();
