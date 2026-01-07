@@ -1887,20 +1887,18 @@ function adicionarPerfume() {
     
     input.value = '';
     renderizarLista();
-    // Radar NÃO atualiza mais aqui - só com botão "Atualizar Coleção"
     atualizarNivelDOM();
     
-    // 🔓 INVALIDA análise antiga (permite analisar de novo)
+    // 🔓 INVALIDA análise antiga e regenera automaticamente
     localStorage.removeItem('ultimaColecaoAnalisada');
     localStorage.removeItem('ultimaAnalise');
-    console.log('🔓 Análise invalidada - radar precisa ser regenerado');
+    console.log('🔓 Análise invalidada - regenerando automaticamente...');
     
-    // Limpa radar visualmente (mostra vazio)
-    if (window.radarChart) {
-        window.radarChart.destroy();
-        window.radarChart = null;
-        console.log('🗑️ Radar destruído - clique em Analisar para gerar novo');
-    }
+    // 🔄 REGENERA análise automaticamente
+    setTimeout(() => {
+        console.log('🔄 Auto-regenerando análise após adicionar perfume...');
+        analisarColecao();
+    }, 500);
     
     // Atualiza contadores visuais
     if (window.atualizarContadores) {
@@ -1943,20 +1941,18 @@ function removerPerfume(index) {
     });
     
     renderizarLista();
-    // Radar NÃO atualiza mais aqui - só com botão "Atualizar Coleção"
     atualizarNivelDOM();
     
-    // 🔓 INVALIDA análise antiga (permite analisar de novo)
+    // 🔓 INVALIDA análise antiga e regenera
     localStorage.removeItem('ultimaColecaoAnalisada');
     localStorage.removeItem('ultimaAnalise');
-    console.log('🔓 Análise invalidada - radar precisa ser regenerado');
+    console.log('🔓 Análise invalidada - regenerando automaticamente...');
     
-    // Limpa radar visualmente
-    if (window.radarChart) {
-        window.radarChart.destroy();
-        window.radarChart = null;
-        console.log('🗑️ Radar destruído - clique em Analisar para gerar novo');
-    }
+    // 🔄 REGENERA análise automaticamente
+    setTimeout(() => {
+        console.log('🔄 Auto-regenerando análise após remover perfume...');
+        analisarColecao();
+    }, 500);
     
     // Atualiza contadores visuais
     if (window.atualizarContadores) {
@@ -1974,7 +1970,7 @@ function limparColecao() {
         localStorage.removeItem('ultimaAnalise');
         console.log('🔓 Análise invalidada - coleção limpa');
         
-        // Limpa radar
+        // Limpa radar (sem regenerar, pois não há perfumes)
         if (window.radarChart) {
             window.radarChart.destroy();
             window.radarChart = null;
