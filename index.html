@@ -1889,16 +1889,20 @@ function adicionarPerfume() {
     renderizarLista();
     atualizarNivelDOM();
     
-    // 🔓 INVALIDA análise antiga e regenera automaticamente
+    // 🔓 INVALIDA cache - força nova análise
+    if (window.cacheInteligente) {
+        window.cacheInteligente.invalidarAnalise();
+        console.log('🗑️ Cache invalidado - nova análise necessária');
+    }
     localStorage.removeItem('ultimaColecaoAnalisada');
     localStorage.removeItem('ultimaAnalise');
-    console.log('🔓 Análise invalidada - regenerando automaticamente...');
     
-    // 🔄 REGENERA análise automaticamente
-    setTimeout(() => {
-        console.log('🔄 Auto-regenerando análise após adicionar perfume...');
-        analisarColecao();
-    }, 500);
+    // ✨ Adiciona GLOW no botão Analisar
+    const btnAnalisar = document.getElementById('btn-analisar');
+    if (btnAnalisar && !btnAnalisar.style.animation) {
+        btnAnalisar.style.animation = 'missionPulse 1.5s ease-in-out infinite';
+        console.log('✨ Botão Analisar piscando - coleção mudou!');
+    }
     
     // Atualiza contadores visuais
     if (window.atualizarContadores) {
@@ -1943,16 +1947,19 @@ function removerPerfume(index) {
     renderizarLista();
     atualizarNivelDOM();
     
-    // 🔓 INVALIDA análise antiga e regenera
+    // 🔓 INVALIDA cache
+    if (window.cacheInteligente) {
+        window.cacheInteligente.invalidarAnalise();
+    }
     localStorage.removeItem('ultimaColecaoAnalisada');
     localStorage.removeItem('ultimaAnalise');
-    console.log('🔓 Análise invalidada - regenerando automaticamente...');
     
-    // 🔄 REGENERA análise automaticamente
-    setTimeout(() => {
-        console.log('🔄 Auto-regenerando análise após remover perfume...');
-        analisarColecao();
-    }, 500);
+    // ✨ Glow no botão Analisar
+    const btnAnalisar = document.getElementById('btn-analisar');
+    if (btnAnalisar && !btnAnalisar.style.animation) {
+        btnAnalisar.style.animation = 'missionPulse 1.5s ease-in-out infinite';
+        console.log('✨ Botão Analisar piscando - coleção mudou!');
+    }
     
     // Atualiza contadores visuais
     if (window.atualizarContadores) {
@@ -2039,6 +2046,19 @@ function atualizarRadar() {
 }
 
 function atualizarRadarComAPI(analiseAPI) {
+    // Se não recebeu parâmetro, tenta carregar do localStorage
+    if (!analiseAPI) {
+        console.log('📦 Nenhum parâmetro recebido, carregando do localStorage...');
+        const ultimaAnalise = JSON.parse(localStorage.getItem('ultimaAnalise') || '{}');
+        if (ultimaAnalise.dados && ultimaAnalise.dados.analise_colecao) {
+            analiseAPI = ultimaAnalise.dados.analise_colecao;
+            console.log('✅ Análise carregada do localStorage');
+        } else {
+            console.log('❌ Sem análise salva no localStorage');
+            return;
+        }
+    }
+    
     console.log('📊 Atualizando radar com classificação da API');
     console.log('📦 Dados recebidos:', analiseAPI);
     
@@ -2288,6 +2308,15 @@ function renderizarRadarChart(familias, valores, analise, tentativa = 0) {
 async function analisarColecao() {
     console.log('🚀 analisarColecao() CHAMADA!');
     
+    // ✨ PARA animação do botão
+    const btnAnalisar = document.getElementById('btn-analisar');
+    if (btnAnalisar) {
+        btnAnalisar.style.animation = '';
+        btnAnalisar.style.background = '';
+        btnAnalisar.style.boxShadow = '';
+        console.log('🛑 Animação do botão parada');
+    }
+    
     if (minhaColecao.length === 0) {
         alert('Adicione perfumes à sua coleção primeiro!');
         return;
@@ -2305,17 +2334,11 @@ async function analisarColecao() {
         console.log(`✅ Rate Limit OK: ${check.restante} análises restantes este mês`);
     }
     
-    // 💾 CACHE: Verifica se coleção mudou desde última análise
-    const colecaoAtual = minhaColecao.sort().join('|');
-    const ultimaColecaoAnalisada = localStorage.getItem('ultimaColecaoAnalisada');
-    
-    if (ultimaColecaoAnalisada && ultimaColecaoAnalisada === colecaoAtual) {
-        // Coleção não mudou!
-        alert('📊 Análise Atualizada!\n\nSua coleção não mudou desde a última análise.\n\n✅ Para analisar novamente:\n• Adicione novos perfumes, OU\n• Remova perfumes existentes');
-        return;
+    // 🗑️ LIMPA CACHE ao clicar em Analisar (força nova análise)
+    if (window.cacheInteligente) {
+        window.cacheInteligente.invalidarAnalise();
+        console.log('🗑️ Cache de análise invalidado - forçando nova análise');
     }
-    
-    console.log('✅ Coleção mudou! Analisando...');
     
     console.log('✅ Coleção tem', minhaColecao.length, 'perfumes');
     
