@@ -2123,11 +2123,7 @@ async function analisarColecao() {
     
     if (ultimaColecaoAnalisada && ultimaColecaoAnalisada === colecaoAtual) {
         // Coleção não mudou!
-        mostrarToast(
-            '📊 Análise Atualizada',
-            'Sua coleção não mudou desde a última análise. Adicione ou remova perfumes para analisar novamente.',
-            'info'
-        );
+        alert('📊 Análise atualizada!\n\nSua coleção não mudou desde a última análise.\n\n✅ Para analisar novamente:\n• Adicione novos perfumes, OU\n• Remova perfumes existentes');
         return;
     }
     
@@ -4606,6 +4602,19 @@ document.addEventListener('DOMContentLoaded', function() {
         <span class="nav-item-icon">📚</span>
         <span class="nav-item-text">FAQ</span>
     `;
+    
+    // Adiciona evento de click (IMPORTANTE!)
+    faqNavItem.addEventListener('click', () => {
+        // Remove active de todas as abas e seções
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+        
+        // Ativa FAQ
+        faqNavItem.classList.add('active');
+        document.getElementById('faq-section').style.display = 'block';
+        
+        console.log('✅ Aba FAQ aberta');
+    });
     
     // Adiciona no final do menu
     sidebarNav.appendChild(faqNavItem);
