@@ -2017,6 +2017,16 @@ function renderizarRadarChart(familias, valores, analise) {
     
     if (!ctx) {
         console.error('❌ Canvas radarChart não encontrado!');
+        console.log('🔍 Tentando mudar para aba Coleção...');
+        
+        // Força mudança para aba Coleção
+        const abaColecao = document.querySelector('.nav-item[data-section="colecao"]');
+        if (abaColecao) {
+            abaColecao.click();
+        }
+        
+        // Tenta novamente após 500ms
+        setTimeout(() => renderizarRadarChart(familias, valores, analise), 500);
         return;
     }
     
@@ -2025,7 +2035,7 @@ function renderizarRadarChart(familias, valores, analise) {
         radarChart.destroy();
     }
     
-    // Aguarda canvas estar visível (se usuário está em outra aba)
+    // Aguarda canvas estar visível
     setTimeout(() => {
         try {
             // Cria novo chart
@@ -2077,7 +2087,7 @@ function renderizarRadarChart(familias, valores, analise) {
         } catch (error) {
             console.error('❌ Erro ao criar radar chart:', error);
         }
-    }, 100); // Aguarda 100ms para garantir que canvas está visível
+    }, 300); // Aguarda 300ms para garantir que canvas está visível
     
     // Grid de famílias foi substituído por análise gamificada
 }
@@ -2256,15 +2266,17 @@ Sugira EXATAMENTE 3 perfumes onde:
 O usuário definiu orçamento de: ${perfil.orcamento || 'R$ 300-500'}
 
 REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
-- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 450-600
-- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900
-- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700
+- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 300-500 (toda a faixa média)
+- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900 (topo)
+- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700 (topo)
 - Se orçamento é "Acima de R$ 1500" → Sugira perfumes premium acima de R$ 1500
 
-⚠️ IMPORTANTE: Sempre PRIORIZE perfumes no TOPO da faixa (mais próximo do máximo).
-⚠️ NUNCA sugira perfumes ABAIXO do mínimo da faixa!
+⚠️ R$ 300-500: ACEITE toda a faixa (inclui nacionais e importados acessíveis)
+⚠️ R$ 500+: PRIORIZE o TOPO da faixa!
+⚠️ NUNCA sugira abaixo do mínimo!
 
 EXEMPLOS:
+- Orçamento "R$ 300-500" → ✅ O Boticário Malbec (R$ 280), Phebo Vetiver (R$ 350), Hugo Boss (R$ 450)
 - Orçamento "R$ 800-1500" → ✅ Creed Aventus (R$ 1400), Tom Ford Oud Wood (R$ 1600)
 - Orçamento "R$ 800-1500" → ❌ Mont Blanc Legend (R$ 350) - MUITO ABAIXO!
 
@@ -2503,13 +2515,13 @@ REGRAS CRÍTICAS:
 O usuário definiu orçamento de: ${perfil.orcamento || 'R$ 300-500'}
 
 REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
-- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 450-600
-- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900
-- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700
+- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 300-500 (toda a faixa média)
+- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900 (topo)
+- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700 (topo)
 - Se orçamento é "Acima de R$ 1500" → Sugira perfumes premium acima de R$ 1500
 
-⚠️ SEMPRE PRIORIZE O TOPO DA FAIXA!
-⚠️ NUNCA sugira abaixo do mínimo!
+⚠️ R$ 300-500: ACEITE toda a faixa (nacionais e importados OK)
+⚠️ R$ 500+: PRIORIZE o TOPO!
 
 ===========================================================
 
@@ -3600,15 +3612,16 @@ Você DEVE sugerir EXATAMENTE 3 perfumes onde:
 O usuário definiu orçamento de: ${perfil.orcamento || 'R$ 300-500'}
 
 REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
-- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 450-600
-- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900
-- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700
+- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 300-500 (toda a faixa média)
+- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900 (topo)
+- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700 (topo)
 - Se orçamento é "Acima de R$ 1500" → Sugira perfumes premium acima de R$ 1500
 
-⚠️ SEMPRE PRIORIZE O TOPO DA FAIXA (mais próximo do máximo)!
-⚠️ NUNCA sugira perfumes ABAIXO do mínimo!
+⚠️ R$ 300-500: ACEITE toda a faixa (nacionais e importados OK)
+⚠️ R$ 500+: PRIORIZE o TOPO!
 
 EXEMPLOS:
+- Orçamento "R$ 300-500" → ✅ O Boticário Malbec (R$ 280), Phebo (R$ 350), Hugo Boss (R$ 450)
 - Orçamento "R$ 800-1500" → ✅ Creed Aventus (R$ 1400), Tom Ford (R$ 1600)
 - Orçamento "R$ 800-1500" → ❌ Mont Blanc (R$ 350) - MUITO ABAIXO!
 
@@ -3778,13 +3791,13 @@ CRITÉRIOS PARA HIDDEN GEMS:
 O usuário definiu orçamento de: ${perfil.orcamento || 'R$ 300-500'}
 
 REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
-- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 450-600
-- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900
-- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700
+- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 300-500 (toda a faixa média)
+- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900 (topo)
+- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700 (topo)
 - Se orçamento é "Acima de R$ 1500" → Sugira perfumes premium acima de R$ 1500
 
-⚠️ SEMPRE PRIORIZE O TOPO DA FAIXA!
-⚠️ NUNCA sugira abaixo do mínimo!
+⚠️ R$ 300-500: ACEITE toda a faixa (nacionais e importados OK)
+⚠️ R$ 500+: PRIORIZE o TOPO!
 
 ===========================================================
 
@@ -3792,7 +3805,7 @@ REGRAS:
 1. TODOS os 3 devem ser da família ${familiaAlvo}
 2. CADA perfume de MARCA DIFERENTE
 3. Foco em marcas de nicho/independentes
-4. Respeitar orçamento (TOPO da faixa)
+4. Respeitar orçamento
 5. Alta qualidade comprovada
 
 Retorne 3 hidden gems incríveis!
@@ -3913,13 +3926,13 @@ Sugira EXATAMENTE 3 perfumes APENAS da família: ${familiaAlvo}
 O usuário definiu orçamento de: ${perfil.orcamento || 'R$ 300-500'}
 
 REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
-- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 450-600
-- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900
-- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700
+- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 300-500 (toda a faixa média)
+- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900 (topo)
+- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700 (topo)
 - Se orçamento é "Acima de R$ 1500" → Sugira perfumes premium acima de R$ 1500
 
-⚠️ SEMPRE PRIORIZE O TOPO DA FAIXA (mais próximo do máximo)!
-⚠️ NUNCA sugira perfumes ABAIXO do mínimo!
+⚠️ R$ 300-500: ACEITE toda a faixa (nacionais e importados OK)
+⚠️ R$ 500+: PRIORIZE o TOPO!
 
 ===========================================================
 
@@ -4142,13 +4155,43 @@ MEU CONTEXTO:
 - Faixa etária: ${perfil.idade}
 - Orçamento: ${perfil.orcamento}
 
-OBJETIVO:
-Sugira 3 perfumes ESSENCIAIS para começar minha coleção, cobrindo as funções básicas:
+===========================================================
+🎯 OBJETIVO: 3 PERFUMES ESSENCIAIS PARA COMEÇAR
+===========================================================
+
+Sugira 3 perfumes que cobrem as funções básicas:
 1. DIA/TRABALHO - Versátil, discreto, profissional
-2. NOITE/SOCIAL - Marcante, sofisticado, sexy
+2. NOITE/SOCIAL - Marcante, sofisticado, sexy  
 3. VERSÁTIL - Funciona em várias ocasiões
 
-Considere minha idade e orçamento. Priorize nichos acessíveis.
+===========================================================
+💰 ORÇAMENTO - RESPEITE RIGOROSAMENTE! 💰
+===========================================================
+
+O usuário definiu orçamento de: ${perfil.orcamento}
+
+REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
+- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 300-500 (toda a faixa média)
+- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900 (topo)
+- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700 (topo)
+- Se orçamento é "Acima de R$ 1500" → Sugira perfumes premium acima de R$ 1500
+
+⚠️ R$ 300-500: ACEITE toda a faixa (nacionais e importados OK)
+⚠️ R$ 500+: PRIORIZE o TOPO!
+
+===========================================================
+🎨 VARIEDADE DE MARCAS
+===========================================================
+
+PRIORIZE perfumes CONHECIDOS e ACESSÍVEIS para iniciantes:
+✅ Dior, Versace, Paco Rabanne, Calvin Klein, Hugo Boss
+✅ Armani, YSL, Carolina Herrera, Dolce & Gabbana
+✅ O Boticário, Natura, Phebo (nacionais OK para faixa baixa)
+
+NÃO sugira apenas nicho/hidden gems para iniciantes!
+Iniciantes precisam de clássicos confiáveis e fáceis de achar.
+
+IMPORTANTE: 3 marcas DIFERENTES + dentro do orçamento + adequados ao clima!
         `.trim();
         
         const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
