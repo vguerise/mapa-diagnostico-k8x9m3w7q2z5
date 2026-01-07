@@ -1324,6 +1324,19 @@
                                 placeholder="Seu nome ou apelido"
                             >
                         </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="email">📧 Seu email (opcional)</label>
+                            <input 
+                                type="email" 
+                                id="email" 
+                                class="form-input" 
+                                placeholder="seu@email.com"
+                            >
+                            <small style="color: #999; font-size: 0.85em; display: block; margin-top: 5px;">
+                                Usado apenas para identificação do perfil
+                            </small>
+                        </div>
 
                         <div class="form-group">
                             <label class="form-label" for="clima">🌡️ Qual o clima da sua cidade?</label>
@@ -1386,18 +1399,31 @@
 
                     <!-- Input de Perfume -->
                     <div class="perfume-input-container">
-                        <div style="display: flex; gap: 10px; align-items: stretch;">
+                        <!-- Nome do Perfume -->
+                        <div style="margin-bottom: 15px;">
+                            <label for="perfume-input" style="display: block; color: #d4af37; font-weight: 600; margin-bottom: 8px; font-size: 0.95em;">
+                                📝 Nome do Perfume
+                            </label>
                             <input 
                                 type="text" 
                                 id="perfume-input" 
                                 class="perfume-input" 
                                 placeholder="Digite o nome do perfume (ex: Sauvage, Eros, Invictus...)"
                                 onkeypress="if(event.key === 'Enter') adicionarPerfume()"
-                                style="flex: 1;"
+                                style="width: 100%;"
                             >
+                        </div>
+                        
+                        <!-- Concentração -->
+                        <div style="margin-bottom: 20px;">
+                            <label for="concentracao-select" style="display: block; color: #d4af37; font-weight: 600; margin-bottom: 8px; font-size: 0.95em;">
+                                💧 Concentração
+                            </label>
                             <select 
                                 id="concentracao-select" 
+                                class="perfume-input"
                                 style="
+                                    width: 100%;
                                     padding: 12px 15px;
                                     background: #2a2a2a;
                                     border: 1px solid #444;
@@ -1405,12 +1431,11 @@
                                     color: #fff;
                                     font-size: 1em;
                                     cursor: pointer;
-                                    min-width: 120px;
                                 "
                             >
-                                <option value="EDT">EDT</option>
-                                <option value="EDP" selected>EDP</option>
-                                <option value="Parfum">Parfum</option>
+                                <option value="EDT">EDT (Eau de Toilette)</option>
+                                <option value="EDP" selected>EDP (Eau de Parfum)</option>
+                                <option value="Parfum">Parfum (Extrait)</option>
                                 <option value="Elixir">Elixir</option>
                             </select>
                         </div>
@@ -1806,6 +1831,12 @@ function carregarPerfil() {
     if (perfil.ambiente) document.getElementById('ambiente').value = perfil.ambiente;
     if (perfil.idade) document.getElementById('idade').value = perfil.idade;
     if (perfil.orcamento) document.getElementById('orcamento').value = perfil.orcamento;
+    
+    // Carrega email
+    const email = localStorage.getItem('userEmail');
+    if (email) {
+        document.getElementById('email').value = email;
+    }
 }
 
 function salvarPerfil() {
@@ -1816,6 +1847,13 @@ function salvarPerfil() {
         idade: document.getElementById('idade').value,
         orcamento: document.getElementById('orcamento').value
     };
+    
+    // Salva email separadamente (para rate limiting VIP)
+    const email = document.getElementById('email').value.trim();
+    if (email) {
+        localStorage.setItem('userEmail', email.toLowerCase());
+        console.log('📧 Email salvo:', email);
+    }
     
     localStorage.setItem('perfilUsuario', JSON.stringify(perfil));
     
@@ -2222,16 +2260,25 @@ function renderizarRadarChart(familias, valores, analise, tentativa = 0) {
         
         // Força mudança para aba Coleção
         const abaColecao = document.querySelector('.nav-item[data-section="colecao"]');
-        if (abaColecao) {
+        if (abaColecao && !abaColecao.classList.contains('active')) {
             abaColecao.click();
+            console.log('👆 Clicou na aba Coleção');
         }
         
-        // Tenta novamente após 500ms
-        setTimeout(() => renderizarRadarChart(familias, valores, analise, tentativa + 1), 500);
+        // Tenta novamente após 800ms (mais tempo para renderizar)
+        setTimeout(() => renderizarRadarChart(familias, valores, analise, tentativa + 1), 800);
         return;
     }
     
-    console.log('✅ Canvas encontrado! Renderizando radar...');
+    // Verifica se canvas está visível
+    const isVisible = ctx.offsetParent !== null;
+    if (!isVisible && tentativa < 3) {
+        console.log(`⚠️ Canvas existe mas não está visível. Tentativa ${tentativa + 1}/3`);
+        setTimeout(() => renderizarRadarChart(familias, valores, analise, tentativa + 1), 800);
+        return;
+    }
+    
+    console.log('✅ Canvas encontrado e visível! Renderizando radar...');
     radarRenderizando = true;
     
     // Destrói chart anterior se existir
@@ -2239,7 +2286,7 @@ function renderizarRadarChart(familias, valores, analise, tentativa = 0) {
         radarChart.destroy();
     }
     
-    // Aguarda canvas estar visível
+    // Aguarda canvas estar completamente renderizado
     setTimeout(() => {
         try {
             // Cria novo chart
