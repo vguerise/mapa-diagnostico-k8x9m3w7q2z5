@@ -2258,10 +2258,19 @@ EXEMPLOS:
 
 REGRAS ADICIONAIS:
 4️⃣ Considere clima e ambiente do usuário
-5️⃣ PRIORIZE perfumes de nicho acessível (<5k reviews Fragantica)
-6️⃣ EVITE perfumes mainstream hypados (>20k reviews)
+5️⃣ VARIEDADE DE MARCAS: Misture marcas conhecidas (Dior, Chanel, YSL, Versace) com nicho acessível (Montblanc, Mancera, Lattafa)
+6️⃣ NÃO foque apenas em hidden gems - inclua best-sellers também
+7️⃣ EVITE repetir perfumes já sugeridos: ${window.perfumesJaSugeridos && window.perfumesJaSugeridos.length > 0 ? window.perfumesJaSugeridos.join(', ') : 'nenhum ainda'}
 
-IMPORTANTE: Classificação PRECISA + 3 MARCAS DIFERENTES + RESPEITAR ORÇAMENTO!
+EXEMPLOS DE BOA VARIEDADE:
+✅ Dior Sauvage (mainstream), Mancera Cedrat Boise (nicho), Montblanc Explorer (intermediário)
+✅ Bleu de Chanel (conhecido), Lattafa Khamrah (nicho), Paco Rabanne Invictus (popular)
+
+❌ EVITE sugestões só de marcas obscuras:
+❌ Todas as 3 de marcas desconhecidas (Phebo, Lalique, Rochas sempre)
+❌ Repetir sempre os mesmos perfumes de nicho
+
+IMPORTANTE: Classificação PRECISA + 3 MARCAS DIFERENTES + RESPEITAR ORÇAMENTO + VARIEDADE!
 
 Analise e retorne análise detalhada + recomendações.
 `;
@@ -2480,16 +2489,17 @@ REGRAS CRÍTICAS:
 O usuário definiu orçamento de: ${perfil.orcamento || 'R$ 300-500'}
 
 REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
-- Se orçamento é "R$ 300-500" → Sugira APENAS perfumes de R$ 250-600
-- Se orçamento é "R$ 500-800" → Sugira APENAS perfumes de R$ 400-900
-- Se orçamento é "R$ 800-1500" → Sugira APENAS perfumes de R$ 700-1700
-- Se orçamento é "Acima de R$ 1500" → Pode sugerir qualquer preço alto
+- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 450-600
+- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900
+- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700
+- Se orçamento é "Acima de R$ 1500" → Sugira perfumes premium acima de R$ 1500
 
-PRIORIZE perfumes no TOPO da faixa (mais próximo do máximo).
-
-NUNCA QUEBRE ESTA REGRA!
+⚠️ SEMPRE PRIORIZE O TOPO DA FAIXA!
+⚠️ NUNCA sugira abaixo do mínimo!
 
 ===========================================================
+
+VARIEDADE: Misture marcas conhecidas com nicho. NÃO foque só em hidden gems.
 
 Retorne APENAS 1 perfume com: nome, família, faixa_preco, por_que, quando_usar
 `;
@@ -3619,22 +3629,31 @@ Você DEVE sugerir EXATAMENTE 3 perfumes onde:
 O usuário definiu orçamento de: ${perfil.orcamento || 'R$ 300-500'}
 
 REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
-- Se orçamento é "R$ 300-500" → Sugira APENAS perfumes de R$ 250-600
-- Se orçamento é "R$ 500-800" → Sugira APENAS perfumes de R$ 400-900
-- Se orçamento é "R$ 800-1500" → Sugira APENAS perfumes de R$ 700-1700
-- Se orçamento é "Acima de R$ 1500" → Pode sugerir qualquer preço alto
+- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 450-600
+- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900
+- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700
+- Se orçamento é "Acima de R$ 1500" → Sugira perfumes premium acima de R$ 1500
 
-NUNCA QUEBRE ESTA REGRA!
+⚠️ SEMPRE PRIORIZE O TOPO DA FAIXA (mais próximo do máximo)!
+⚠️ NUNCA sugira perfumes ABAIXO do mínimo!
+
+EXEMPLOS:
+- Orçamento "R$ 800-1500" → ✅ Creed Aventus (R$ 1400), Tom Ford (R$ 1600)
+- Orçamento "R$ 800-1500" → ❌ Mont Blanc (R$ 350) - MUITO ABAIXO!
 
 ===========================================================
 
 REGRAS ADICIONAIS:
 4️⃣ NÃO sugerir perfumes que o usuário já tem
-5️⃣ NÃO repetir perfumes dos conjuntos anteriores
-6️⃣ PRIORIZE perfumes de nicho acessível (<5k reviews Fragantica)
-7️⃣ EVITE perfumes mainstream hypados (>20k reviews)
+5️⃣ VARIEDADE: Misture marcas conhecidas com nicho acessível
+6️⃣ NÃO foque apenas em hidden gems - inclua best-sellers
+7️⃣ EVITE repetir: ${window.perfumesJaSugeridos && window.perfumesJaSugeridos.length > 0 ? window.perfumesJaSugeridos.join(', ') : 'nenhum'}
 
-RESPONDA COM 3 PERFUMES DE MARCAS TOTALMENTE DIFERENTES!
+EXEMPLOS DE VARIEDADE:
+✅ Dior + Mancera + Montblanc (mainstream + nicho + intermediário)
+❌ Phebo + Lalique + Rochas (só hidden gems)
+
+RESPONDA COM 3 PERFUMES DE MARCAS DIFERENTES COM BOA VARIEDADE!
 `;
         
         // Chama API
@@ -3790,12 +3809,13 @@ Sugira EXATAMENTE 3 perfumes APENAS da família: ${familiaAlvo}
 O usuário definiu orçamento de: ${perfil.orcamento || 'R$ 300-500'}
 
 REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
-- Se orçamento é "R$ 300-500" → Sugira APENAS perfumes de R$ 250-600
-- Se orçamento é "R$ 500-800" → Sugira APENAS perfumes de R$ 400-900
-- Se orçamento é "R$ 800-1500" → Sugira APENAS perfumes de R$ 700-1700
-- Se orçamento é "Acima de R$ 1500" → Pode sugerir qualquer preço alto
+- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 450-600
+- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900
+- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700
+- Se orçamento é "Acima de R$ 1500" → Sugira perfumes premium acima de R$ 1500
 
-NUNCA QUEBRE ESTA REGRA!
+⚠️ SEMPRE PRIORIZE O TOPO DA FAIXA (mais próximo do máximo)!
+⚠️ NUNCA sugira perfumes ABAIXO do mínimo!
 
 ===========================================================
 
@@ -3803,10 +3823,15 @@ REGRAS CRÍTICAS:
 1. TODOS os 3 perfumes devem ser da família ${familiaAlvo}
 2. CADA perfume deve ser de uma MARCA DIFERENTE
 3. NÃO sugira perfumes que o usuário já tem
-4. PRIORIZE perfumes de nicho acessível (<5k reviews Fragantica)
-5. EVITE perfumes mainstream hypados (>20k reviews)
+4. VARIEDADE: Misture marcas conhecidas com nicho acessível
+5. NÃO foque apenas em hidden gems - inclua best-sellers
+6. EVITE repetir: ${window.perfumesJaSugeridos && window.perfumesJaSugeridos.length > 0 ? window.perfumesJaSugeridos.slice(-10).join(', ') : 'nenhum'}
 
-IMPORTANTE: Esta é uma missão focada EXCLUSIVAMENTE em ${familiaAlvo}.
+EXEMPLOS DE VARIEDADE:
+✅ Dior + Mancera + Montblanc (mainstream + nicho + intermediário)
+❌ Só marcas desconhecidas (Phebo + Lalique + Rochas)
+
+IMPORTANTE: Missão focada em ${familiaAlvo} com BOA VARIEDADE DE MARCAS!
 `;
         
         // Chama API para novas sugestões
