@@ -161,9 +161,6 @@ class CacheInteligente {
     }
 }
 
-// Instância global
-window.cacheInteligente = new CacheInteligente();
-
 // ============================================
 // INTEGRAÇÃO COM FUNÇÕES EXISTENTES
 // ============================================
