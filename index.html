@@ -4176,7 +4176,27 @@ EXEMPLOS DE VARIEDADE:
 ✅ Dior + Mancera + Montblanc (mainstream + nicho + intermediário)
 ❌ Só marcas desconhecidas (Phebo + Lalique + Rochas)
 
-IMPORTANTE: Missão focada em ${familiaAlvo} com BOA VARIEDADE DE MARCAS!
+===========================================================
+📦 FORMATO JSON OBRIGATÓRIO
+===========================================================
+
+Retorne JSON com este formato EXATO:
+{
+  "recomendacoes": [
+    {
+      "nome": "Dior Sauvage",
+      "concentracao": "EDT",
+      "familia": "${familiaAlvo}",
+      "faixa_preco": "R$ 400-600",
+      "por_que": "...",
+      "quando_usar": "..."
+    }
+  ]
+}
+
+⚠️⚠️⚠️ O campo "concentracao" é OBRIGATÓRIO! (EDT/EDP/Parfum/Elixir)
+
+IMPORTANTE: Missão focada em ${familiaAlvo} com BOA VARIEDADE DE MARCAS + CONCENTRAÇÃO!
 `;
         
         // Chama API para novas sugestões
@@ -4241,23 +4261,20 @@ IMPORTANTE: Missão focada em ${familiaAlvo} com BOA VARIEDADE DE MARCAS!
                     </div>
                     
                     <div class="mission-actions">
-                        <button class="btn-mission-primary" onclick="mostrarCandidatos()">
-                            🎁 Ver ${novasRecomendacoes.length} candidatos perfeitos
-                        </button>
-                        <button class="btn-mission-secondary" onclick="gerarNovaMissao()">
+                        <button class="btn-mission-secondary" onclick="gerarNovaMissao()" style="width: 100%;">
                             🔄 Quero outra missão
                         </button>
                     </div>
                 </div>
                 
-                <!-- Card de Candidatos (oculto inicialmente) -->
-                <div class="candidates-card" id="candidatesCard">
+                <!-- Card de Candidatos (sempre visível) -->
+                <div class="candidates-card" style="display: block;">
                     <h3 style="color: #d4af37; margin-bottom: 20px; font-size: 1.5em;">
                         🎁 Candidatos Perfeitos para sua Missão
                     </h3>
                     ${novasRecomendacoes.map((rec, i) => `
                         <div class="candidate-item">
-                            <div class="candidate-name">${i + 1}. ${rec.nome}</div>
+                            <div class="candidate-name">${i + 1}. ${rec.nome}${rec.concentracao ? ' <span style="color: #d4af37;">(' + rec.concentracao + ')</span>' : ''}</div>
                             <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
                             <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
                             <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
@@ -4316,21 +4333,18 @@ IMPORTANTE: Missão focada em ${familiaAlvo} com BOA VARIEDADE DE MARCAS!
                         ✅ Você está <strong>${missao.compras_faltantes} ${missao.compras_faltantes === 1 ? 'compra' : 'compras'}</strong> de ter uma coleção redonda
                     </div>
                     <div class="mission-actions">
-                        <button class="btn-mission-primary" onclick="mostrarCandidatos()">
-                            🎁 Ver ${recomendacoes.length} candidatos
-                        </button>
-                        <button class="btn-mission-secondary" onclick="gerarNovaMissao()">
+                        <button class="btn-mission-secondary" onclick="gerarNovaMissao()" style="width: 100%;">
                             🔄 Quero outra missão
                         </button>
                     </div>
                 </div>
-                <div class="candidates-card" id="candidatesCard">
+                <div class="candidates-card" style="display: block;">
                     <h3 style="color: #d4af37; margin-bottom: 20px; font-size: 1.5em;">
                         🎁 Candidatos para sua Missão
                     </h3>
                     ${recomendacoes.map((rec, i) => `
                         <div class="candidate-item">
-                            <div class="candidate-name">${i + 1}. ${rec.nome}</div>
+                            <div class="candidate-name">${i + 1}. ${rec.nome}${rec.concentracao ? ' <span style="color: #d4af37;">(' + rec.concentracao + ')</span>' : ''}</div>
                             <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
                             <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
                             <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
@@ -4607,25 +4621,21 @@ function carregarRadarDoStorage() {
 carregarPerfil();
 renderizarLista();
 
-// Tenta carregar radar salvo
-const radarSalvo = carregarRadarDoStorage();
+// Tenta carregar análise salva (radar + missão)
+const ultimaAnalise = JSON.parse(localStorage.getItem('ultimaAnalise') || '{}');
 console.log('🎯 Inicializando radar...');
-console.log('  Radar salvo?', radarSalvo ? 'SIM' : 'NÃO');
+console.log('  Análise salva?', ultimaAnalise.dados ? 'SIM' : 'NÃO');
 console.log('  Coleção atual:', minhaColecao.length, 'perfumes');
 
-if (radarSalvo) {
-    console.log('📊 Renderizando radar salvo');
-    atualizarRadarComAPI(radarSalvo);
-} else if (minhaColecao.length > 0) {
-    console.log('⚠️ Sem radar salvo, mas tem perfumes. Mostrando radar vazio.');
-    // Mostra radar vazio para estimular análise
-    atualizarRadarComAPI({
-        perfumes_por_familia: {},
-        familia_dominante: null,
-        top3_faltando: []
-    });
+if (ultimaAnalise.dados && ultimaAnalise.dados.analise_colecao) {
+    console.log('📊 Carregando análise salva');
+    // Carrega radar
+    atualizarRadarComAPI(ultimaAnalise.dados.analise_colecao);
+    // Carrega missão
+    window.dadosAnaliseAtual = ultimaAnalise.dados;
+    renderizarMissaoGameficada(ultimaAnalise.dados);
 } else {
-    console.log('ℹ️ Sem perfumes na coleção');
+    console.log('ℹ️ Sem análise salva. Clique em "Analisar" para gerar.');
 }
 
 atualizarNivelDOM();
