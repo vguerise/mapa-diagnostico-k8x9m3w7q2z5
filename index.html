@@ -1384,11 +1384,11 @@
                             <button class="add-button" onclick="adicionarPerfume()" style="flex: 1; min-width: 150px;">
                                 ➕ Adicionar
                             </button>
-                            <button class="analyze-button" onclick="analisarColecao()" style="flex: 1; min-width: 150px; margin: 0; padding: 12px 30px; font-size: 1em;">
-                                🔍 Analisar
+                            <button id="btn-analisar" class="analyze-button" onclick="analisarColecao()" style="flex: 1; min-width: 150px; margin: 0; padding: 12px 30px; font-size: 1em;">
+                                🔍 Analisar <span id="contador-analise">(8/8)</span>
                             </button>
-                            <button class="start-collection-button" onclick="iniciarColecaoDoZero()" style="flex: 1; min-width: 200px; margin: 0; padding: 12px 30px; font-size: 1em; background: linear-gradient(135deg, #d4af37, #f4c542); color: #1a1a1a; font-weight: 700;">
-                                🌱 Estou começando! Me dá umas dicas!
+                            <button id="btn-dicas" class="start-collection-button" onclick="iniciarColecaoDoZero()" style="flex: 1; min-width: 200px; margin: 0; padding: 12px 30px; font-size: 1em; background: linear-gradient(135deg, #d4af37, #f4c542); color: #1a1a1a; font-weight: 700;">
+                                🌱 Dicas Iniciante <span id="contador-dicas">(3/3)</span>
                             </button>
                         </div>
                     </div>
@@ -1489,9 +1489,87 @@
                                 onkeypress="if(event.key === 'Enter') enviarPergunta()"
                             >
                             <button id="chat-send-button" class="chat-send-button" onclick="enviarPergunta()">
-                                📤 Enviar
+                                📤 Enviar <span id="contador-chat">(12/12)</span>
                             </button>
                         </div>
+                        
+                        <!-- FAQ Dropdown -->
+                        <details style="margin-top: 20px; background: rgba(212, 175, 55, 0.05); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 8px; padding: 15px;">
+                            <summary style="cursor: pointer; font-weight: 600; color: #d4af37; font-size: 1.1em;">
+                                📚 Perguntas Frequentes (clique para expandir)
+                            </summary>
+                            <div style="margin-top: 15px; padding-left: 10px;">
+                                <details style="margin-bottom: 10px;">
+                                    <summary style="cursor: pointer; color: #fff; padding: 8px 0;">🌿 O que é família olfativa?</summary>
+                                    <p style="color: #ccc; padding-left: 20px; margin: 10px 0;">É a categoria que define o tipo de cheiro do perfume: cítrico, amadeirado, oriental, floral, etc. Ela diz quando, como e por que aquele perfume funciona.</p>
+                                </details>
+                                
+                                <details style="margin-bottom: 10px;">
+                                    <summary style="cursor: pointer; color: #fff; padding: 8px 0;">💧 EDT vs EDP vs Parfum</summary>
+                                    <div style="color: #ccc; padding-left: 20px; margin: 10px 0;">
+                                        <strong>EDT:</strong> mais leve, dura menos.<br>
+                                        <strong>EDP:</strong> mais concentrado, dura mais.<br>
+                                        <strong>Parfum:</strong> mais forte e caro, poucas borrifadas.
+                                    </div>
+                                </details>
+                                
+                                <details style="margin-bottom: 10px;">
+                                    <summary style="cursor: pointer; color: #fff; padding: 8px 0;">⏱️ Quanto tempo dura perfume?</summary>
+                                    <p style="color: #ccc; padding-left: 20px; margin: 10px 0;">Depende da concentração e da pele, em média <strong>6 a 12 horas</strong>.</p>
+                                </details>
+                                
+                                <details style="margin-bottom: 10px;">
+                                    <summary style="cursor: pointer; color: #fff; padding: 8px 0;">🎯 Como aplicar perfume?</summary>
+                                    <div style="color: #ccc; padding-left: 20px; margin: 10px 0;">
+                                        <strong>Onde:</strong> Pescoço, Pulsos, Peito<br>
+                                        <strong>Quantos:</strong><br>
+                                        • Dia: 2–3 EDT / 1–2 EDP<br>
+                                        • Noite: 4–5 EDT / 2–3 EDP<br>
+                                        <strong>💡 Dica:</strong> Não esfregar. Especialmente os punhos.
+                                    </div>
+                                </details>
+                                
+                                <details style="margin-bottom: 10px;">
+                                    <summary style="cursor: pointer; color: #fff; padding: 8px 0;">💵 Orçamento para iniciante?</summary>
+                                    <p style="color: #ccc; padding-left: 20px; margin: 10px 0;">Entre <strong>R$ 300 e R$ 1000</strong> já dá para montar uma coleção funcional.</p>
+                                </details>
+                                
+                                <details style="margin-bottom: 10px;">
+                                    <summary style="cursor: pointer; color: #fff; padding: 8px 0;">🔄 Clone vs original?</summary>
+                                    <p style="color: #ccc; padding-left: 20px; margin: 10px 0;">Clone copia cheiro. Original entrega <strong>qualidade, evolução e performance</strong>.</p>
+                                </details>
+                                
+                                <details style="margin-bottom: 10px;">
+                                    <summary style="cursor: pointer; color: #fff; padding: 8px 0;">📊 Quantos perfumes devo ter?</summary>
+                                    <p style="color: #ccc; padding-left: 20px; margin: 10px 0;"><strong>3 ou 4.</strong> Um para calor, um para frio, um para noite e um para trabalho. Isso cobre 95% das situações.</p>
+                                </details>
+                                
+                                <details style="margin-bottom: 10px;">
+                                    <summary style="cursor: pointer; color: #fff; padding: 8px 0;">💼 Perfume para trabalho?</summary>
+                                    <p style="color: #ccc; padding-left: 20px; margin: 10px 0;">Famílias <strong>frescas, aromáticas e cítricas</strong>.</p>
+                                </details>
+                                
+                                <details style="margin-bottom: 10px;">
+                                    <summary style="cursor: pointer; color: #fff; padding: 8px 0;">🌙 Perfume para noite?</summary>
+                                    <p style="color: #ccc; padding-left: 20px; margin: 10px 0;">Famílias <strong>orientais, amadeiradas e doces</strong>.</p>
+                                </details>
+                                
+                                <details style="margin-bottom: 10px;">
+                                    <summary style="cursor: pointer; color: #fff; padding: 8px 0;">☀️ Perfume para verão?</summary>
+                                    <p style="color: #ccc; padding-left: 20px; margin: 10px 0;">Cítricos, aquáticos e aromáticos.</p>
+                                </details>
+                                
+                                <details style="margin-bottom: 10px;">
+                                    <summary style="cursor: pointer; color: #fff; padding: 8px 0;">❄️ Perfume para inverno?</summary>
+                                    <p style="color: #ccc; padding-left: 20px; margin: 10px 0;">Amadeirados, especiados e orientais.</p>
+                                </details>
+                                
+                                <details style="margin-bottom: 10px;">
+                                    <summary style="cursor: pointer; color: #fff; padding: 8px 0;">✈️ Perfume importado vale?</summary>
+                                    <p style="color: #ccc; padding-left: 20px; margin: 10px 0;">Na maioria das vezes sim, <strong>mais qualidade e fixação</strong>.</p>
+                                </details>
+                            </div>
+                        </details>
                     </div>
                 </div>
             </section>
@@ -1767,6 +1845,11 @@ function adicionarPerfume() {
     // 🔓 INVALIDA análise antiga (permite analisar de novo)
     localStorage.removeItem('ultimaColecaoAnalisada');
     console.log('🔓 Análise invalidada - botão liberado');
+    
+    // Atualiza contadores visuais
+    if (window.atualizarContadores) {
+        setTimeout(() => atualizarContadores(), 100);
+    }
 }
 
 function capitalizarPerfume(texto) {
@@ -1810,6 +1893,11 @@ function removerPerfume(index) {
     // 🔓 INVALIDA análise antiga (permite analisar de novo)
     localStorage.removeItem('ultimaColecaoAnalisada');
     console.log('🔓 Análise invalidada - botão liberado');
+    
+    // Atualiza contadores visuais
+    if (window.atualizarContadores) {
+        setTimeout(() => atualizarContadores(), 100);
+    }
 }
 
 function limparColecao() {
@@ -2119,7 +2207,7 @@ async function analisarColecao() {
         const check = window.rateLimiter.podeExecutar('analise');
         
         if (!check.pode) {
-            alert(`🔒 Limite de Análises Atingido!\n\nVocê já usou suas ${window.rateLimiter.limits.basico.analise.max} análises este mês.\n\nPróximo reset: ${check.proximoReset.toLocaleDateString('pt-BR')}`);
+            mostrarPopupLimite('analise', window.rateLimiter.limits.basico.analise.max, check.proximoReset);
             return;
         }
         
@@ -2392,7 +2480,11 @@ Analise e retorne análise detalhada + recomendações.
             window.rateLimiter.registrarUso('analise');
             const status = window.rateLimiter.podeExecutar('analise');
             console.log(`📊 Rate Limit: ${status.restante} análises restantes este mês`);
+            atualizarContadores(); // Atualiza contador visual
         }
+        
+        // 💾 SALVA radar no localStorage
+        salvarRadarNoStorage(data.analise_colecao);
         
         // Tracking
         const nivelAtual = calcularNivelAtual();
@@ -2682,7 +2774,7 @@ async function enviarPergunta() {
         const check = window.rateLimiter.podeExecutar('chat');
         
         if (!check.pode) {
-            alert(`🔒 Limite de Perguntas Atingido!\n\nVocê já usou suas ${window.rateLimiter.limits.basico.chat.max} perguntas este mês.\n\nPróximo reset: ${check.proximoReset.toLocaleDateString('pt-BR')}`);
+            mostrarPopupLimite('chat', window.rateLimiter.limits.basico.chat.max, check.proximoReset);
             return;
         }
         
@@ -2789,6 +2881,7 @@ async function enviarPergunta() {
             window.rateLimiter.registrarUso('chat');
             const status = window.rateLimiter.podeExecutar('chat');
             console.log(`📊 Rate Limit: ${status.restante} perguntas restantes este mês`);
+            atualizarContadores(); // Atualiza contador visual
         }
         
     } catch (error) {
@@ -4198,7 +4291,7 @@ async function iniciarColecaoDoZero() {
         const check = window.rateLimiter.podeExecutar('dicas');
         
         if (!check.pode) {
-            alert(`🔒 Limite de Dicas Atingido!\n\nVocê já usou suas 3 dicas de novato (vitalício).\n\n💡 Use a aba "O Perfumista" para tirar dúvidas específicas!`);
+            mostrarPopupLimite('dicas', 3, check.proximoReset);
             return;
         }
         
@@ -4321,6 +4414,7 @@ IMPORTANTE: 3 marcas DIFERENTES + dentro do orçamento + adequados ao clima!
             window.rateLimiter.registrarUso('dicas');
             const status = window.rateLimiter.podeExecutar('dicas');
             console.log(`📊 Rate Limit: ${status.restante} dicas restantes (vitalício)`);
+            atualizarContadores(); // Atualiza contador visual
         }
         
     } catch (error) {
@@ -4340,11 +4434,96 @@ IMPORTANTE: 3 marcas DIFERENTES + dentro do orçamento + adequados ao clima!
 // INICIALIZAÇÃO
 // ===================================
 
+// ===================================
+// CONTADORES E POPUPS DE LIMITE
+// ===================================
+
+function atualizarContadores() {
+    if (!window.rateLimiter) return;
+    
+    // Análise
+    const checkAnalise = window.rateLimiter.podeExecutar('analise');
+    document.getElementById('contador-analise').textContent = `(${checkAnalise.restante}/8)`;
+    
+    // Chat
+    const checkChat = window.rateLimiter.podeExecutar('chat');
+    document.getElementById('contador-chat').textContent = `(${checkChat.restante}/12)`;
+    
+    // Dicas
+    const checkDicas = window.rateLimiter.podeExecutar('dicas');
+    document.getElementById('contador-dicas').textContent = `(${checkDicas.restante}/3)`;
+}
+
+function mostrarPopupLimite(tipo, limite, proximoReset) {
+    const titulos = {
+        'analise': 'Análises',
+        'chat': 'Perguntas',
+        'dicas': 'Dicas de Iniciante'
+    };
+    
+    const mensagens = {
+        'analise': `Você atingiu o limite de ${limite} análises por mês.`,
+        'chat': `Você atingiu o limite de ${limite} perguntas por mês.`,
+        'dicas': `Você atingiu o limite de ${limite} dicas (vitalício).`
+    };
+    
+    const resetTexto = tipo === 'dicas' 
+        ? 'Este limite não reseta.' 
+        : `Próximo reset: ${proximoReset.toLocaleDateString('pt-BR')}`;
+    
+    alert(`🔒 Limite de ${titulos[tipo]} Atingido!\n\n${mensagens[tipo]}\n\n${resetTexto}\n\n💡 Dica: Use a aba FAQ para dúvidas gerais!`);
+}
+
+// ===================================
+// SALVAR/CARREGAR RADAR E ANÁLISE
+// ===================================
+
+function salvarRadarNoStorage(dados) {
+    localStorage.setItem('radarSalvo', JSON.stringify({
+        dados: dados,
+        timestamp: Date.now(),
+        colecao: minhaColecao.slice() // Cópia da coleção atual
+    }));
+    console.log('💾 Radar salvo no localStorage');
+}
+
+function carregarRadarDoStorage() {
+    const radarSalvo = localStorage.getItem('radarSalvo');
+    if (!radarSalvo) return null;
+    
+    const { dados, timestamp, colecao } = JSON.parse(radarSalvo);
+    
+    // Verifica se coleção mudou
+    const colecaoAtual = JSON.stringify(minhaColecao.sort());
+    const colecaoSalva = JSON.stringify(colecao.sort());
+    
+    if (colecaoAtual !== colecaoSalva) {
+        console.log('❌ Coleção mudou, radar inválido');
+        return null;
+    }
+    
+    console.log('✅ Radar carregado do localStorage');
+    return dados;
+}
+
 // Carrega dados ao iniciar
 carregarPerfil();
 renderizarLista();
-atualizarRadar();
+
+// Tenta carregar radar salvo
+const radarSalvo = carregarRadarDoStorage();
+if (radarSalvo) {
+    atualizarRadarComAPI(radarSalvo);
+} else {
+    atualizarRadar();
+}
+
 atualizarNivelDOM();
+
+// Atualiza contadores quando rate limiter carregar
+setTimeout(() => {
+    atualizarContadores();
+}, 500);
 
 // Observer para mudanças no localStorage
 let ultimaColecao = localStorage.getItem('minhaColecao') || '[]';
@@ -4364,322 +4543,10 @@ setInterval(() => {
 <!-- ABA FAQ -->
 <!-- ============================================ -->
 
-<!-- 4. FAQ -->
-<section id="faq-section" class="content-section" style="display: none;">
-    <div style="max-width: 900px; margin: -30px auto 0; padding: 0;">
-        <div style="text-align: center; margin-bottom: 10px;">
-            <h2 style="color: #d4af37; font-size: 2em; margin: 0 0 5px 0;">📚 Perguntas Frequentes</h2>
-            <p style="color: #999; font-size: 1.1em; margin: 0;">
-                Respostas rápidas para as dúvidas mais comuns
-            </p>
-        </div>
-
-        <div class="faq-list">
-            
-            <!-- CONCEITOS -->
-            <div style="margin-bottom: 20px; margin-top: 10px;">
-                <h3 style="color: #d4af37; font-size: 1.3em; margin-bottom: 15px; padding-left: 10px; border-left: 3px solid #d4af37;">
-                    💡 Conceitos Básicos
-                </h3>
-
-                <details class="faq-item">
-                    <summary>🌿 O que é família olfativa?</summary>
-                    <div class="faq-answer">
-                        <p>É a categoria que define o tipo de cheiro do perfume: cítrico, amadeirado, oriental, floral, etc. Ela diz quando, como e por que aquele perfume funciona.</p>
-                    </div>
-                </details>
-
-                <details class="faq-item">
-                    <summary>💧 EDT vs EDP vs Parfum</summary>
-                    <div class="faq-answer">
-                        <ul>
-                            <li><strong>EDT:</strong> mais leve, dura menos.</li>
-                            <li><strong>EDP:</strong> mais concentrado, dura mais.</li>
-                            <li><strong>Parfum:</strong> mais forte e caro, poucas borrifadas.</li>
-                        </ul>
-                    </div>
-                </details>
-
-                <details class="faq-item">
-                    <summary>🔄 Diferença masculino/feminino?</summary>
-                    <div class="faq-answer">
-                        <p>Marketing. O que importa é a família olfativa.</p>
-                    </div>
-                </details>
-            </div>
-
-            <!-- USO PRÁTICO -->
-            <div style="margin-bottom: 30px;">
-                <h3 style="color: #d4af37; font-size: 1.3em; margin-bottom: 15px; padding-left: 10px; border-left: 3px solid #d4af37;">
-                    🎯 Uso Prático
-                </h3>
-
-                <details class="faq-item">
-                    <summary>⏱️ Quanto tempo dura perfume?</summary>
-                    <div class="faq-answer">
-                        <p>Depende da concentração e da pele, em média <strong>6 a 12 horas</strong>.</p>
-                    </div>
-                </details>
-
-                <details class="faq-item">
-                    <summary>🎯 Como aplicar perfume?</summary>
-                    <div class="faq-answer">
-                        <h4>Onde:</h4>
-                        <ul>
-                            <li>Pescoço</li>
-                            <li>Pulsos</li>
-                            <li>Peito</li>
-                        </ul>
-                        
-                        <h4>Quantos:</h4>
-                        <ul>
-                            <li><strong>Dia:</strong> 2–3 EDT / 1–2 EDP</li>
-                            <li><strong>Noite:</strong> 4–5 EDT / 2–3 EDP</li>
-                        </ul>
-                        
-                        <p><strong>💡 Dica:</strong> Não esfregar. Especialmente os punhos.</p>
-                    </div>
-                </details>
-
-                <details class="faq-item">
-                    <summary>🧪 Como testar perfume?</summary>
-                    <div class="faq-answer">
-                        <p>Sempre na pele. Espere <strong>20 minutos</strong> antes de decidir.</p>
-                    </div>
-                </details>
-
-                <details class="faq-item">
-                    <summary>⏳ Perfume vence?</summary>
-                    <div class="faq-answer">
-                        <p>Sim. Em média <strong>3 a 5 anos</strong> se não for bem armazenado.</p>
-                    </div>
-                </details>
-
-                <details class="faq-item">
-                    <summary>📦 Como guardar perfume?</summary>
-                    <div class="faq-answer">
-                        <p>Longe de <strong>luz, calor e umidade</strong>.</p>
-                    </div>
-                </details>
-            </div>
-
-            <!-- RECOMENDAÇÕES -->
-            <div style="margin-bottom: 30px;">
-                <h3 style="color: #d4af37; font-size: 1.3em; margin-bottom: 15px; padding-left: 10px; border-left: 3px solid #d4af37;">
-                    🎁 Recomendações
-                </h3>
-
-                <details class="faq-item">
-                    <summary>💼 Perfume para trabalho?</summary>
-                    <div class="faq-answer">
-                        <p>Famílias <strong>frescas, aromáticas e cítricas</strong>.</p>
-                    </div>
-                </details>
-
-                <details class="faq-item">
-                    <summary>🌙 Perfume para noite?</summary>
-                    <div class="faq-answer">
-                        <p>Famílias <strong>orientais, amadeiradas e doces</strong>.</p>
-                    </div>
-                </details>
-
-                <details class="faq-item">
-                    <summary>☀️ Perfume para verão?</summary>
-                    <div class="faq-answer">
-                        <p>Cítricos, aquáticos e aromáticos.</p>
-                    </div>
-                </details>
-
-                <details class="faq-item">
-                    <summary>❄️ Perfume para inverno?</summary>
-                    <div class="faq-answer">
-                        <p>Amadeirados, especiados e orientais.</p>
-                    </div>
-                </details>
-
-                <details class="faq-item">
-                    <summary>📊 Quantos perfumes devo ter?</summary>
-                    <div class="faq-answer">
-                        <p><strong>3 ou 4.</strong> Um para calor, um para frio, um para noite e um para trabalho. Isso cobre 95% das situações.</p>
-                    </div>
-                </details>
-            </div>
-
-            <!-- COMPRA -->
-            <div style="margin-bottom: 30px;">
-                <h3 style="color: #d4af37; font-size: 1.3em; margin-bottom: 15px; padding-left: 10px; border-left: 3px solid #d4af37;">
-                    💰 Compra e Investimento
-                </h3>
-
-                <details class="faq-item">
-                    <summary>💵 Orçamento para iniciante?</summary>
-                    <div class="faq-answer">
-                        <p>Entre <strong>R$ 300 e R$ 1000</strong> já dá para montar uma coleção funcional.</p>
-                    </div>
-                </details>
-
-                <details class="faq-item">
-                    <summary>🔄 Clone vs original?</summary>
-                    <div class="faq-answer">
-                        <p>Clone copia cheiro. Original entrega <strong>qualidade, evolução e performance</strong>.</p>
-                    </div>
-                </details>
-
-                <details class="faq-item">
-                    <summary>✈️ Perfume importado vale?</summary>
-                    <div class="faq-answer">
-                        <p>Na maioria das vezes sim, <strong>mais qualidade e fixação</strong>.</p>
-                    </div>
-                </details>
-            </div>
-        </div>
-
-        <!-- Footer da FAQ -->
-        <div class="faq-footer" style="margin-top: 40px; padding: 30px; background: rgba(212, 175, 55, 0.05); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 12px; text-align: center;">
-            <p style="color: #d4af37; font-size: 1.2em; font-weight: bold; margin-bottom: 10px;">
-                💬 Não encontrou sua dúvida?
-            </p>
-            <p style="color: #999; margin-bottom: 20px;">
-                Pergunte diretamente ao Perfumista!
-            </p>
-            <button onclick="document.querySelector('.nav-item[data-section=\\'sugestoes\\']').click()" style="background: linear-gradient(135deg, #d4af37, #f4d03f); color: #000; border: none; padding: 15px 40px; border-radius: 30px; font-size: 1.1em; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3); transition: all 0.3s;">
-                🤖 Perguntar ao Perfumista
-            </button>
-            <p style="color: #666; font-size: 0.9em; margin-top: 10px;" id="creditos-chat-faq">
-                12 perguntas restantes este mês
-            </p>
-        </div>
-    </div>
-</section>
-
-<style>
-/* FAQ Items */
-.faq-item {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    margin-bottom: 10px;
-    overflow: hidden;
-    transition: all 0.3s;
-}
-
-.faq-item:hover {
-    background: rgba(212, 175, 55, 0.05);
-    border-color: rgba(212, 175, 55, 0.3);
-}
-
-.faq-item summary {
-    padding: 15px 20px;
-    cursor: pointer;
-    font-size: 1.1em;
-    font-weight: 600;
-    color: #fff;
-    list-style: none;
-    display: flex;
-    align-items: center;
-    transition: all 0.3s;
-}
-
-.faq-item summary::-webkit-details-marker {
-    display: none;
-}
-
-.faq-item summary::before {
-    content: '▶';
-    margin-right: 12px;
-    color: #d4af37;
-    font-size: 0.8em;
-    transition: transform 0.3s;
-}
-
-.faq-item[open] summary::before {
-    transform: rotate(90deg);
-}
-
-.faq-item summary:hover {
-    color: #d4af37;
-}
-
-.faq-answer {
-    padding: 0 20px 20px 52px;
-    color: #ccc;
-    line-height: 1.6;
-    animation: fadeIn 0.3s;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.faq-answer h4 {
-    color: #d4af37;
-    font-size: 1.05em;
-    margin-top: 15px;
-    margin-bottom: 10px;
-}
-
-.faq-answer ul {
-    margin-left: 20px;
-    margin-bottom: 15px;
-}
-
-.faq-answer li {
-    margin-bottom: 8px;
-}
-
-.faq-answer strong {
-    color: #fff;
-}
-</style>
 
 <!-- Scripts de Otimização -->
 <script src="cache-inteligente.js"></script>
 <script src="rate-limiting-system.js"></script>
-
-<script>
-// Adicionar botão FAQ na navegação
-document.addEventListener('DOMContentLoaded', function() {
-    const sidebarNav = document.querySelector('.sidebar-nav');
-    
-    if (!sidebarNav) {
-        console.error('❌ Sidebar nav não encontrada!');
-        return;
-    }
-    
-    const faqNavItem = document.createElement('div');
-    faqNavItem.className = 'nav-item';
-    faqNavItem.setAttribute('data-section', 'faq');
-    faqNavItem.innerHTML = `
-        <span class="nav-item-icon">📚</span>
-        <span class="nav-item-text">FAQ</span>
-    `;
-    
-    // Adiciona evento de click (IMPORTANTE!)
-    faqNavItem.addEventListener('click', () => {
-        // Remove active de todas as abas e seções
-        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
-        
-        // Ativa FAQ
-        faqNavItem.classList.add('active');
-        document.getElementById('faq-section').style.display = 'block';
-        
-        console.log('✅ Aba FAQ aberta');
-    });
-    
-    // Adiciona no final do menu
-    sidebarNav.appendChild(faqNavItem);
-    
-    console.log('✅ Botão FAQ adicionado ao menu');
-});
-</script>
 
 </body>
 </html>
