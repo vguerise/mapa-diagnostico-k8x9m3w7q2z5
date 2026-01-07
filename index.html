@@ -1390,11 +1390,6 @@
                                 🌱 Estou começando! Me dá umas dicas!
                             </button>
                         </div>
-                        <div style="text-align: center; margin-top: 10px;">
-                            <button onclick="limparCache()" style="background: transparent; border: 1px solid rgba(212, 175, 55, 0.3); color: #999; padding: 8px 16px; border-radius: 8px; font-size: 0.85em; cursor: pointer; transition: all 0.3s;">
-                                🔄 Forçar Nova Análise
-                            </button>
-                        </div>
                     </div>
 
                     <!-- Dropdown da Lista de Perfumes -->
@@ -1767,6 +1762,10 @@ function adicionarPerfume() {
     renderizarLista();
     // Radar NÃO atualiza mais aqui - só com botão "Atualizar Coleção"
     atualizarNivelDOM();
+    
+    // 🔓 INVALIDA análise antiga (permite analisar de novo)
+    localStorage.removeItem('ultimaColecaoAnalisada');
+    console.log('🔓 Análise invalidada - botão liberado');
 }
 
 function capitalizarPerfume(texto) {
@@ -1806,12 +1805,20 @@ function removerPerfume(index) {
     renderizarLista();
     // Radar NÃO atualiza mais aqui - só com botão "Atualizar Coleção"
     atualizarNivelDOM();
+    
+    // 🔓 INVALIDA análise antiga (permite analisar de novo)
+    localStorage.removeItem('ultimaColecaoAnalisada');
+    console.log('🔓 Análise invalidada - botão liberado');
 }
 
 function limparColecao() {
     if (confirm('Deseja realmente limpar toda a coleção?')) {
         minhaColecao = [];
         localStorage.setItem('minhaColecao', JSON.stringify(minhaColecao));
+        
+        // 🔓 INVALIDA análise antiga
+        localStorage.removeItem('ultimaColecaoAnalisada');
+        
         renderizarLista();
         atualizarRadar();
         atualizarNivelDOM();
@@ -2106,6 +2113,22 @@ async function analisarColecao() {
         return;
     }
     
+    // 🔒 NOVA LÓGICA: Verifica se coleção mudou desde última análise
+    const colecaoAtual = minhaColecao.sort().join('|');
+    const ultimaColecaoAnalisada = localStorage.getItem('ultimaColecaoAnalisada');
+    
+    if (ultimaColecaoAnalisada && ultimaColecaoAnalisada === colecaoAtual) {
+        // Coleção não mudou!
+        mostrarToast(
+            '📊 Análise Atualizada',
+            'Sua coleção não mudou desde a última análise. Adicione ou remova perfumes para analisar novamente.',
+            'info'
+        );
+        return;
+    }
+    
+    console.log('✅ Coleção mudou! Analisando...');
+    
     console.log('✅ Coleção tem', minhaColecao.length, 'perfumes');
     
     const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
@@ -2349,6 +2372,11 @@ Analise e retorne análise detalhada + recomendações.
         // Salva globalmente
         window.dadosAnaliseAtual = data;
         window.missaoAtualIndex = 0;
+        
+        // 🔒 MARCA coleção como analisada
+        const colecaoAtual = minhaColecao.sort().join('|');
+        localStorage.setItem('ultimaColecaoAnalisada', colecaoAtual);
+        console.log('✅ Coleção marcada como analisada');
         
         // Tracking
         const nivelAtual = calcularNivelAtual();
