@@ -249,7 +249,11 @@ function adicionarPerfumeComInvalidacao(nome) {
     console.log('✅ Perfume adicionado. Cache invalidado.');
 }
 
+// ============================================
+// INICIALIZAÇÃO GLOBAL
+// ============================================
+window.cacheInteligente = new CacheInteligente();
+console.log('✅ Sistema de Cache carregado e INICIALIZADO!');
+
 // UI: Mostrar estatísticas no console
 console.log('📊 Cache Stats:', window.cacheInteligente.getEstatisticas());
-
-console.log('✅ Sistema de Cache carregado!');
