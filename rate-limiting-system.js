@@ -11,9 +11,26 @@ class RateLimiter {
                 dicas: { max: 3, periodo: 'vitalicio' }
             }
         };
+        
+        // 👑 LISTA VIP - Sem limites
+        this.emailsVIP = [
+            'vguerise@gmail.com'
+        ];
+    }
+    
+    isVIP() {
+        const emailSalvo = localStorage.getItem('userEmail');
+        if (!emailSalvo) return false;
+        
+        const emailNormalizado = emailSalvo.toLowerCase().trim();
+        return this.emailsVIP.includes(emailNormalizado);
     }
     
     getPlanoAtual() {
+        // Se é VIP, retorna plano especial
+        if (this.isVIP()) {
+            return 'vip';
+        }
         return 'basico';
     }
     
@@ -45,6 +62,16 @@ class RateLimiter {
     }
     
     podeExecutar(acao) {
+        // 👑 VIP = sem limites
+        if (this.isVIP()) {
+            console.log('👑 Usuário VIP - sem limites!');
+            return { 
+                pode: true, 
+                restante: 999,
+                proximoReset: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+            };
+        }
+        
         const plano = this.getPlanoAtual();
         const limite = this.limits[plano][acao];
         
