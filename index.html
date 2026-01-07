@@ -4592,19 +4592,25 @@ setInterval(() => {
 <script>
 // Adicionar botão FAQ na navegação
 document.addEventListener('DOMContentLoaded', function() {
-    const navItems = document.querySelector('.nav-items');
+    const sidebarNav = document.querySelector('.sidebar-nav');
+    
+    if (!sidebarNav) {
+        console.error('❌ Sidebar nav não encontrada!');
+        return;
+    }
     
     const faqNavItem = document.createElement('div');
     faqNavItem.className = 'nav-item';
     faqNavItem.setAttribute('data-section', 'faq');
     faqNavItem.innerHTML = `
-        <div class="nav-icon">📚</div>
-        <div class="nav-label">FAQ</div>
+        <span class="nav-item-icon">📚</span>
+        <span class="nav-item-text">FAQ</span>
     `;
     
-    // Insere antes do último item (Perfil)
-    const perfilItem = document.querySelector('.nav-item[data-section="perfil"]');
-    navItems.insertBefore(faqNavItem, perfilItem);
+    // Adiciona no final do menu
+    sidebarNav.appendChild(faqNavItem);
+    
+    console.log('✅ Botão FAQ adicionado ao menu');
 });
 </script>
 
