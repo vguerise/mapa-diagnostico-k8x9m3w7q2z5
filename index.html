@@ -1373,13 +1373,34 @@
 
                     <!-- Input de Perfume -->
                     <div class="perfume-input-container">
-                        <input 
-                            type="text" 
-                            id="perfume-input" 
-                            class="perfume-input" 
-                            placeholder="Digite o nome do perfume (ex: Sauvage, Eros, Invictus...)"
-                            onkeypress="if(event.key === 'Enter') adicionarPerfume()"
-                        >
+                        <div style="display: flex; gap: 10px; align-items: stretch;">
+                            <input 
+                                type="text" 
+                                id="perfume-input" 
+                                class="perfume-input" 
+                                placeholder="Digite o nome do perfume (ex: Sauvage, Eros, Invictus...)"
+                                onkeypress="if(event.key === 'Enter') adicionarPerfume()"
+                                style="flex: 1;"
+                            >
+                            <select 
+                                id="concentracao-select" 
+                                style="
+                                    padding: 12px 15px;
+                                    background: #2a2a2a;
+                                    border: 1px solid #444;
+                                    border-radius: 8px;
+                                    color: #fff;
+                                    font-size: 1em;
+                                    cursor: pointer;
+                                    min-width: 120px;
+                                "
+                            >
+                                <option value="EDT">EDT</option>
+                                <option value="EDP" selected>EDP</option>
+                                <option value="Parfum">Parfum</option>
+                                <option value="Elixir">Elixir</option>
+                            </select>
+                        </div>
                         <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
                             <button class="add-button" onclick="adicionarPerfume()" style="flex: 1; min-width: 150px;">
                                 ➕ Adicionar
@@ -1809,7 +1830,9 @@ let radarChart = null;
 
 function adicionarPerfume() {
     const input = document.getElementById('perfume-input');
+    const selectConcentracao = document.getElementById('concentracao-select');
     let nome = input.value.trim();
+    const concentracao = selectConcentracao.value;
     
     if (!nome) {
         alert('Digite o nome do perfume');
@@ -1819,15 +1842,26 @@ function adicionarPerfume() {
     // Capitaliza primeira letra de cada palavra
     nome = capitalizarPerfume(nome);
     
-    if (minhaColecao.includes(nome)) {
+    // Verifica se perfume já existe (mesmo nome, qualquer concentração)
+    const jaExiste = minhaColecao.some(p => {
+        const perfumeNome = typeof p === 'string' ? p : p.nome;
+        return perfumeNome === nome;
+    });
+    
+    if (jaExiste) {
         alert('Este perfume já está na sua coleção');
         return;
     }
     
-    minhaColecao.push(nome);
+    // Adiciona com concentração
+    minhaColecao.push({ nome, concentracao });
     
-    // Ordena alfabeticamente
-    minhaColecao.sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+    // Ordena alfabeticamente pelo nome
+    minhaColecao.sort((a, b) => {
+        const nomeA = typeof a === 'string' ? a : a.nome;
+        const nomeB = typeof b === 'string' ? b : b.nome;
+        return nomeA.localeCompare(nomeB, 'pt-BR', { sensitivity: 'base' });
+    });
     
     localStorage.setItem('minhaColecao', JSON.stringify(minhaColecao));
     
@@ -1928,12 +1962,18 @@ function renderizarLista() {
         return;
     }
     
-    container.innerHTML = minhaColecao.map((perfume, index) => `
-        <div class="perfume-item">
-            <span class="perfume-name">${perfume}</span>
-            <button class="remove-button" onclick="removerPerfume(${index})">🗑️ Remover</button>
-        </div>
-    `).join('');
+    container.innerHTML = minhaColecao.map((perfume, index) => {
+        // Compatibilidade: suporta tanto string quanto objeto
+        const nome = typeof perfume === 'string' ? perfume : perfume.nome;
+        const concentracao = typeof perfume === 'string' ? 'EDP' : perfume.concentracao;
+        
+        return `
+            <div class="perfume-item">
+                <span class="perfume-name">${nome} <span style="color: #d4af37; font-size: 0.85em;">(${concentracao})</span></span>
+                <button class="remove-button" onclick="removerPerfume(${index})">🗑️ Remover</button>
+            </div>
+        `;
+    }).join('');
 }
 
 function toggleListaPerfumes() {
@@ -2303,10 +2343,14 @@ Idade: ${perfil.idade || '25-35'} anos
 Orçamento: ${perfil.orcamento || 'R$ 300-500'}
 
 COLEÇÃO ATUAL (${minhaColecao.length} perfumes):
-${minhaColecao.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+${minhaColecao.map((p, i) => {
+    const nome = typeof p === 'string' ? p : p.nome;
+    const concentracao = typeof p === 'string' ? 'EDP' : p.concentracao;
+    return `${i + 1}. ${nome} (${concentracao})`;
+}).join('\n')}
 
 ⚠️ NUNCA SUGERIR (usuário já tem OU não gostou):
-${naoSugerir.join(', ')}
+${naoSugerir.map(p => typeof p === 'string' ? p : p.nome).join(', ')}
 
 ⚠️ PERFUMES JÁ SUGERIDOS ANTES (NÃO REPITA):
 ${window.perfumesJaSugeridos && window.perfumesJaSugeridos.length > 0 ? window.perfumesJaSugeridos.join(', ') : 'Nenhum ainda'}
@@ -2407,10 +2451,11 @@ REGRAS ADICIONAIS:
 5️⃣ VARIEDADE DE MARCAS: Misture marcas conhecidas (Dior, Chanel, YSL, Versace) com nicho acessível (Montblanc, Mancera, Lattafa)
 6️⃣ NÃO foque apenas em hidden gems - inclua best-sellers também
 7️⃣ EVITE repetir perfumes já sugeridos: ${window.perfumesJaSugeridos && window.perfumesJaSugeridos.length > 0 ? window.perfumesJaSugeridos.join(', ') : 'nenhum ainda'}
+8️⃣ **CONCENTRAÇÃO OBRIGATÓRIA**: Para CADA perfume sugerido, informe a concentração mais comum (EDT, EDP, Parfum ou Elixir). Exemplo: "Dior Sauvage EDT" ou "Creed Aventus EDP"
 
 EXEMPLOS DE BOA VARIEDADE:
-✅ Dior Sauvage (mainstream), Mancera Cedrat Boise (nicho), Montblanc Explorer (intermediário)
-✅ Bleu de Chanel (conhecido), Lattafa Khamrah (nicho), Paco Rabanne Invictus (popular)
+✅ Dior Sauvage EDT (mainstream), Mancera Cedrat Boise EDP (nicho), Montblanc Explorer EDP (intermediário)
+✅ Bleu de Chanel EDP (conhecido), Lattafa Khamrah EDP (nicho), Paco Rabanne Invictus EDT (popular)
 
 ❌ EVITE sugestões só de marcas obscuras:
 ❌ Todas as 3 de marcas desconhecidas (Phebo, Lalique, Rochas sempre)
@@ -2826,7 +2871,7 @@ async function enviarPergunta() {
             data.sugestoes.forEach(sug => {
                 resposta += `
                     <div class="suggestion-card">
-                        <div class="suggestion-name">${sug.nome}</div>
+                        <div class="suggestion-name">${sug.nome}${sug.concentracao ? ' <span style="color: #d4af37;">(' + sug.concentracao + ')</span>' : ''}</div>
                         <div class="suggestion-familia">${sug.familia}</div>
                         <div class="suggestion-preco">${sug.faixa_preco}</div>
                         <div class="suggestion-por-que">${sug.por_que}</div>
@@ -4390,7 +4435,7 @@ IMPORTANTE: 3 marcas DIFERENTES + dentro do orçamento + adequados ao clima!
             data.recomendacoes.forEach(sug => {
                 html += `
                     <div class="suggestion-card">
-                        <div class="suggestion-name">${sug.nome}</div>
+                        <div class="suggestion-name">${sug.nome}${sug.concentracao ? ' <span style="color: #d4af37;">(' + sug.concentracao + ')</span>' : ''}</div>
                         <div class="suggestion-familia">${sug.familia}</div>
                         <div class="suggestion-preco">${sug.faixa_preco}</div>
                         <div class="suggestion-por-que">${sug.por_que}</div>
