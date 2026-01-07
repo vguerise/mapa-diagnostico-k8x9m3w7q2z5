@@ -149,6 +149,19 @@
                 transform: scale(1.05);
             }
         }
+        
+        @keyframes missionPulse {
+            0%, 100% {
+                background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
+                box-shadow: none;
+                transform: scale(1);
+            }
+            50% {
+                background: linear-gradient(135deg, #d4af37, #f4c542);
+                box-shadow: 0 0 30px rgba(212, 175, 55, 0.8), inset 0 0 20px rgba(255, 215, 0, 0.3);
+                transform: scale(1.05);
+            }
+        }
 
         .container {
             max-width: 1400px;
@@ -2646,12 +2659,14 @@ function adicionarGlowMissao() {
     );
     
     if (abaMissao && !abaMissao.classList.contains('active')) {
-        abaMissao.style.animation = 'pulseGlow 2s ease-in-out infinite';
-        abaMissao.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.6)';
+        // Usa nova animação que pisca amarelo
+        abaMissao.style.animation = 'missionPulse 1.5s ease-in-out infinite';
+        abaMissao.style.transition = 'all 0.3s ease';
         
         // Remove glow quando clicar na aba
         abaMissao.addEventListener('click', function removeGlow() {
             abaMissao.style.animation = '';
+            abaMissao.style.background = '';
             abaMissao.style.boxShadow = '';
             abaMissao.removeEventListener('click', removeGlow);
         }, { once: true });
@@ -4159,8 +4174,11 @@ REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
 - Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700 (topo)
 - Se orçamento é "Acima de R$ 1500" → Sugira perfumes premium acima de R$ 1500
 
-⚠️ R$ 300-500: ACEITE toda a faixa (nacionais e importados OK)
-⚠️ R$ 500+: PRIORIZE o TOPO!
+⚠️⚠️⚠️ CRÍTICO: Se orçamento R$ 500+, pelo menos 2 dos 3 perfumes DEVEM estar no TOPO da faixa!
+
+EXEMPLOS:
+✅ R$ 800-1500: Creed Aventus (R$ 1.400), Tom Ford (R$ 1.600), Mancera (R$ 1.200)
+❌ R$ 800-1500: Dior Sauvage (R$ 450), Hugo Boss (R$ 400), Mont Blanc (R$ 350) - INACEITÁVEL!
 
 ===========================================================
 
