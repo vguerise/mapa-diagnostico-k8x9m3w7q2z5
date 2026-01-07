@@ -2001,7 +2001,7 @@ function toggleListaPerfumes() {
 
 function atualizarRadar() {
     // Função desabilitada - radar só atualiza via API agora
-    console.log('⚠️ atualizarRadar() desabilitada - use atualizarRadarComAPI()');
+    // console.log('⚠️ atualizarRadar() desabilitada - use atualizarRadarComAPI()');
 }
 
 function atualizarRadarComAPI(analiseAPI) {
@@ -2463,7 +2463,24 @@ EXEMPLOS DE BOA VARIEDADE:
 
 IMPORTANTE: Classificação PRECISA + 3 MARCAS DIFERENTES + RESPEITAR ORÇAMENTO + VARIEDADE!
 
-Analise e retorne análise detalhada + recomendações.
+===========================================================
+📦 FORMATO DE RESPOSTA OBRIGATÓRIO
+===========================================================
+
+Para CADA perfume sugerido, você DEVE retornar o campo "concentracao" no JSON:
+
+{
+  "nome": "Dior Sauvage",
+  "concentracao": "EDT",
+  "familia": "Aromático/Verde",
+  "faixa_preco": "R$ 400-600",
+  "por_que": "...",
+  "quando_usar": "..."
+}
+
+⚠️ OBRIGATÓRIO: Sempre inclua o campo "concentracao" (EDT, EDP, Parfum ou Elixir)
+
+Analise e retorne análise detalhada + recomendações COM CONCENTRAÇÃO.
 `;
         
         console.log('📡 Chamando API Perfumista...');
@@ -3527,17 +3544,14 @@ function renderizarMissaoGameficada(data, tituloCustomizado = null) {
                 </div>
                 
                 <div class="mission-actions">
-                    <button class="btn-mission-primary" onclick="mostrarCandidatos()">
-                        🎁 Ver ${recomendacoes.length} candidatos perfeitos
-                    </button>
-                    <button class="btn-mission-secondary" onclick="gerarNovaMissao()">
+                    <button class="btn-mission-secondary" onclick="gerarNovaMissao()" style="width: 100%;">
                         🔄 Quero outra missão
                     </button>
                 </div>
             </div>
             
-            <!-- Card de Candidatos (oculto inicialmente) -->
-            <div class="candidates-card" id="candidatesCard">
+            <!-- Card de Candidatos (sempre visível) -->
+            <div class="candidates-card" style="display: block;">
                 <h3 style="color: #d4af37; font-size: 1.5em; margin-bottom: 20px;">
                     🎁 Seus Candidatos Perfeitos
                 </h3>
@@ -3545,7 +3559,7 @@ function renderizarMissaoGameficada(data, tituloCustomizado = null) {
                 <div id="sugestoesContainer">
                     ${recomendacoes.map((rec, i) => `
                         <div class="candidate-item" id="candidato-${i}">
-                            <div class="candidate-name">${i + 1}. ${rec.nome}</div>
+                            <div class="candidate-name">${i + 1}. ${rec.nome}${rec.concentracao ? ' <span style="color: #d4af37;">(' + rec.concentracao + ')</span>' : ''}</div>
                             <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
                             <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
                             <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
@@ -3698,29 +3712,14 @@ function getFamiliaComMenosPerfumes(perfumesPorFamilia) {
     return minFamilia || '🪵 Amadeirado';
 }
 
-function mostrarCandidatos() {
-    const card = document.getElementById('candidatesCard');
-    card.classList.add('show');
-    
-    // Inicializa contador de conjuntos
-    if (!window.conjuntoSugestaoAtual) {
-        window.conjuntoSugestaoAtual = 1;
-    }
-    
-    setTimeout(() => {
-        card.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start'
-        });
-    }, 100);
-}
 
 function enviarSugestoesWhatsApp(sugestoes) {
     let mensagem = '🎯 *Minha Missão - Mapa de Perfumes*\n\n';
     mensagem += '*Perfumes Recomendados:*\n\n';
     
     sugestoes.forEach((sug, i) => {
-        mensagem += `${i + 1}. *${sug.nome}*\n`;
+        const concentracao = sug.concentracao ? ` (${sug.concentracao})` : '';
+        mensagem += `${i + 1}. *${sug.nome}${concentracao}*\n`;
         mensagem += `   🌿 ${sug.familia}\n`;
         mensagem += `   💰 ${sug.faixa_preco}\n`;
         mensagem += `   📝 ${sug.por_que}\n`;
