@@ -2117,13 +2117,25 @@ async function analisarColecao() {
         return;
     }
     
-    // 🔒 NOVA LÓGICA: Verifica se coleção mudou desde última análise
+    // 🔒 RATE LIMITING: Verifica se pode executar
+    if (window.rateLimiter) {
+        const check = window.rateLimiter.podeExecutar('analise');
+        
+        if (!check.pode) {
+            alert(`🔒 Limite de Análises Atingido!\n\nVocê já usou suas ${window.rateLimiter.limits.basico.analise.max} análises este mês.\n\nPróximo reset: ${check.proximoReset.toLocaleDateString('pt-BR')}`);
+            return;
+        }
+        
+        console.log(`✅ Rate Limit OK: ${check.restante} análises restantes este mês`);
+    }
+    
+    // 💾 CACHE: Verifica se coleção mudou desde última análise
     const colecaoAtual = minhaColecao.sort().join('|');
     const ultimaColecaoAnalisada = localStorage.getItem('ultimaColecaoAnalisada');
     
     if (ultimaColecaoAnalisada && ultimaColecaoAnalisada === colecaoAtual) {
         // Coleção não mudou!
-        alert('📊 Análise atualizada!\n\nSua coleção não mudou desde a última análise.\n\n✅ Para analisar novamente:\n• Adicione novos perfumes, OU\n• Remova perfumes existentes');
+        alert('📊 Análise Atualizada!\n\nSua coleção não mudou desde a última análise.\n\n✅ Para analisar novamente:\n• Adicione novos perfumes, OU\n• Remova perfumes existentes');
         return;
     }
     
@@ -2377,6 +2389,13 @@ Analise e retorne análise detalhada + recomendações.
         const colecaoAtual = minhaColecao.sort().join('|');
         localStorage.setItem('ultimaColecaoAnalisada', colecaoAtual);
         console.log('✅ Coleção marcada como analisada');
+        
+        // 📊 REGISTRA uso do Rate Limit
+        if (window.rateLimiter) {
+            window.rateLimiter.registrarUso('analise');
+            const status = window.rateLimiter.podeExecutar('analise');
+            console.log(`📊 Rate Limit: ${status.restante} análises restantes este mês`);
+        }
         
         // Tracking
         const nivelAtual = calcularNivelAtual();
@@ -2661,6 +2680,18 @@ async function enviarPergunta() {
         return;
     }
     
+    // 🔒 RATE LIMITING: Verifica se pode enviar
+    if (window.rateLimiter) {
+        const check = window.rateLimiter.podeExecutar('chat');
+        
+        if (!check.pode) {
+            alert(`🔒 Limite de Perguntas Atingido!\n\nVocê já usou suas ${window.rateLimiter.limits.basico.chat.max} perguntas este mês.\n\nPróximo reset: ${check.proximoReset.toLocaleDateString('pt-BR')}`);
+            return;
+        }
+        
+        console.log(`✅ Rate Limit OK: ${check.restante} perguntas restantes este mês`);
+    }
+    
     const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
     
     // Adiciona mensagem do usuário
@@ -2755,6 +2786,13 @@ async function enviarPergunta() {
         }
         
         adicionarMensagemChat('assistant', resposta);
+        
+        // 📊 REGISTRA uso do Rate Limit
+        if (window.rateLimiter) {
+            window.rateLimiter.registrarUso('chat');
+            const status = window.rateLimiter.podeExecutar('chat');
+            console.log(`📊 Rate Limit: ${status.restante} perguntas restantes este mês`);
+        }
         
     } catch (error) {
         console.error('Erro:', error);
@@ -4158,6 +4196,18 @@ async function iniciarColecaoDoZero() {
         return;
     }
     
+    // 🔒 RATE LIMITING: Verifica se pode usar (3 vezes VITALÍCIO)
+    if (window.rateLimiter) {
+        const check = window.rateLimiter.podeExecutar('dicas');
+        
+        if (!check.pode) {
+            alert(`🔒 Limite de Dicas Atingido!\n\nVocê já usou suas 3 dicas de novato (vitalício).\n\n💡 Use a aba "O Perfumista" para tirar dúvidas específicas!`);
+            return;
+        }
+        
+        console.log(`✅ Rate Limit OK: ${check.restante} dicas restantes (vitalício)`);
+    }
+    
     // Muda para aba sugestões
     document.querySelector('.nav-item[data-section="sugestoes"]').click();
     
@@ -4269,6 +4319,13 @@ IMPORTANTE: 3 marcas DIFERENTES + dentro do orçamento + adequados ao clima!
         chatMessages.innerHTML = html;
         chatMessages.scrollTop = chatMessages.scrollHeight;
         
+        // 📊 REGISTRA uso do Rate Limit (VITALÍCIO)
+        if (window.rateLimiter) {
+            window.rateLimiter.registrarUso('dicas');
+            const status = window.rateLimiter.podeExecutar('dicas');
+            console.log(`📊 Rate Limit: ${status.restante} dicas restantes (vitalício)`);
+        }
+        
     } catch (error) {
         console.error('Erro:', error);
         chatMessages.innerHTML = `
@@ -4312,8 +4369,8 @@ setInterval(() => {
 
 <!-- 4. FAQ -->
 <div class="section" id="faq-section" style="display: none;">
-    <div style="max-width: 900px; margin: 0 auto;">
-        <div style="text-align: center; margin-bottom: 30px;">
+    <div style="max-width: 900px; margin: 0 auto; padding-top: 0;">
+        <div style="text-align: center; margin-bottom: 20px;">
             <h2 style="color: #d4af37; font-size: 2em; margin-bottom: 10px;">📚 Perguntas Frequentes</h2>
             <p style="color: #999; font-size: 1.1em;">
                 Respostas rápidas para as dúvidas mais comuns
