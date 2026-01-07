@@ -2029,14 +2029,23 @@ function limparColecao() {
         console.log('🔓 Análise invalidada - coleção limpa');
         
         // Limpa radar (sem regenerar, pois não há perfumes)
-        if (window.radarChart) {
-            window.radarChart.destroy();
-            window.radarChart = null;
+        if (radarChart) {
+            radarChart.destroy();
+            radarChart = null;
         }
         
+        // 🔄 FORÇA atualização IMEDIATA da lista
+        const container = document.getElementById('perfume-list');
+        const countSpan = document.getElementById('perfume-count');
+        if (container) container.innerHTML = '';
+        if (countSpan) countSpan.textContent = '0';
+        
+        // Atualiza tudo
         renderizarLista();
         atualizarRadar();
         atualizarNivelDOM();
+        
+        console.log('✅ Coleção limpa! Lista atualizada.');
     }
 }
 
@@ -2162,10 +2171,160 @@ function atualizarRadarComAPI(analiseAPI) {
     
     console.log('📊 Valores para radar:', valores);
     
+    // Tenta renderizar canvas (3 tentativas)
     renderizarRadarChart(familias, valores, analiseAPI);
+    
+    // FALLBACK: Se canvas falhar, renderiza barras CSS
+    setTimeout(() => {
+        const canvas = document.getElementById('radarChart');
+        if (!canvas || !radarChart) {
+            console.log('⚠️ Canvas falhou, usando visualização alternativa');
+            renderizarRadarAlternativo(analiseAPI);
+        }
+    }, 5000); // Aguarda 5s para ver se canvas renderizou
     
     // Renderiza análise gamificada
     renderizarAnaliseGameficada(analiseAPI);
+}
+
+function renderizarRadarAlternativo(analiseAPI) {
+    const radarContainer = document.querySelector('.radar-container');
+    if (!radarContainer) return;
+    
+    console.log('🎨 Renderizando visualização alternativa (barras CSS)');
+    
+    const familias = analiseAPI.perfumes_por_familia;
+    const total = Object.values(familias).reduce((a, b) => a + b, 0);
+    
+    const emojis = {
+        'Fresco/Cítrico': '🍋',
+        'Aromático/Verde': '🌳',
+        'Doce/Gourmand': '🍯',
+        'Amadeirado': '🪵',
+        'Especiado/Oriental': '🌶️',
+        'Aquático': '💧',
+        'Talco/Fougère': '🧼',
+        'Floral': '🌸',
+        'Frutado': '🍇'
+    };
+    
+    const cores = {
+        'Fresco/Cítrico': '#4CAF50',
+        'Aromático/Verde': '#2196F3',
+        'Doce/Gourmand': '#FF9800',
+        'Amadeirado': '#795548',
+        'Especiado/Oriental': '#E91E63',
+        'Aquático': '#00BCD4',
+        'Talco/Fougère': '#9C27B0',
+        'Floral': '#F06292',
+        'Frutado': '#9C27B0'
+    };
+    
+    let html = `
+        <div style="padding: 30px 20px;">
+            <h3 style="
+                color: #d4af37; 
+                text-align: center; 
+                margin-bottom: 25px;
+                font-size: 1.3em;
+                font-weight: 600;
+            ">
+                📊 Distribuição da Coleção
+            </h3>
+    `;
+    
+    // Ordena famílias por quantidade (maior primeiro)
+    const familiasOrdenadas = Object.entries(familias)
+        .sort(([, a], [, b]) => b - a);
+    
+    familiasOrdenadas.forEach(([familia, quantidade]) => {
+        const porcentagem = total > 0 ? Math.round((quantidade / total) * 100) : 0;
+        const emoji = emojis[familia] || '🎯';
+        const cor = cores[familia] || '#d4af37';
+        
+        html += `
+            <div style="margin-bottom: 18px;">
+                <div style="
+                    display: flex; 
+                    justify-content: space-between; 
+                    align-items: center;
+                    margin-bottom: 6px;
+                ">
+                    <span style="
+                        color: #ddd;
+                        font-size: 0.95em;
+                        font-weight: 500;
+                    ">
+                        ${emoji} ${familia}
+                    </span>
+                    <span style="
+                        color: ${quantidade > 0 ? cor : '#666'};
+                        font-weight: 600;
+                        font-size: 0.9em;
+                    ">
+                        ${quantidade} ${quantidade === 1 ? 'perfume' : 'perfumes'}
+                    </span>
+                </div>
+                <div style="
+                    width: 100%;
+                    height: 10px;
+                    background: rgba(255, 255, 255, 0.05);
+                    border-radius: 10px;
+                    overflow: hidden;
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                ">
+                    <div style="
+                        width: ${porcentagem}%;
+                        height: 100%;
+                        background: linear-gradient(90deg, ${cor}, ${cor}dd);
+                        border-radius: 10px;
+                        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+                        box-shadow: ${quantidade > 0 ? `0 0 10px ${cor}44` : 'none'};
+                    "></div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += `
+            <div style="
+                margin-top: 30px;
+                padding: 20px;
+                background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(212, 175, 55, 0.05));
+                border: 2px solid #d4af37;
+                border-radius: 15px;
+                text-align: center;
+            ">
+                <div style="
+                    color: #999; 
+                    font-size: 0.85em;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    margin-bottom: 8px;
+                ">
+                    Total na Coleção
+                </div>
+                <div style="
+                    color: #d4af37; 
+                    font-size: 2em; 
+                    font-weight: 700;
+                    text-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+                ">
+                    ${total}
+                </div>
+                <div style="
+                    color: #d4af37;
+                    font-size: 0.9em;
+                    margin-top: 5px;
+                ">
+                    ${total === 1 ? 'perfume' : 'perfumes'}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    radarContainer.innerHTML = html;
+    console.log('✅ Visualização alternativa renderizada!');
 }
 
 function renderizarAnaliseGameficada(analise) {
@@ -2195,80 +2354,155 @@ function renderizarAnaliseGameficada(analise) {
     
     const nivel = analise.nivel || {};
     const equilibrio = analise.equilibrio || {};
-    const dominante = analise.familia_dominante || {};
+    
+    // Trata familia_dominante como string ou objeto
+    let dominante = analise.familia_dominante || {};
+    if (typeof dominante === 'string') {
+        // Se for string, converte para objeto
+        const familias = analise.perfumes_por_familia || {};
+        const total = Object.values(familias).reduce((a, b) => a + b, 0);
+        const quantidade = familias[dominante] || 0;
+        const porcentagem = total > 0 ? Math.round((quantidade / total) * 100) : 0;
+        
+        dominante = {
+            nome: dominante,
+            quantidade: quantidade,
+            porcentagem: porcentagem
+        };
+    }
+    
+    // Se não tem dominante claro (empate), mostra "Equilibrado"
+    if (!dominante.nome || dominante.porcentagem === 0) {
+        dominante = {
+            nome: 'Equilibrado',
+            porcentagem: 0
+        };
+    }
+    
     const top3_faltando = analise.top3_faltando || [];
     
     const html = `
-        <!-- Nível do Usuário -->
+        <!-- Grid 2x2 para os cards (responsivo) -->
         <div style="
-            background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
-            border: 2px solid ${nivel.emoji === '🎯' ? '#4caf50' : nivel.emoji === '⚠️' ? '#ff9800' : '#d4af37'};
-            border-radius: 15px;
-            padding: 25px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
             margin-bottom: 20px;
         ">
-            <div style="text-align: center; margin-bottom: 15px;">
-                <div style="font-size: 3em;">${nivel.emoji || '🎯'}</div>
-                <div style="font-size: 1.5em; font-weight: 700; color: #d4af37; margin-top: 10px;">
-                    ${nivel.titulo || 'INICIANTE'}
+            <!-- Card 1: Nível do Usuário -->
+            <div style="
+                background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
+                border: 2px solid ${nivel.emoji === '🎯' ? '#4caf50' : nivel.emoji === '⚠️' ? '#ff9800' : '#d4af37'};
+                border-radius: 15px;
+                padding: 25px;
+                min-height: 200px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            ">
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <div style="font-size: 3em;">${nivel.emoji || '🎯'}</div>
+                    <div style="font-size: 1.5em; font-weight: 700; color: #d4af37; margin-top: 10px;">
+                        ${nivel.titulo || 'INICIANTE'}
+                    </div>
+                </div>
+                <div style="color: #ccc; text-align: center; line-height: 1.6; font-size: 0.95em;">
+                    ${nivel.descricao || 'Continue adicionando perfumes à sua coleção!'}
                 </div>
             </div>
-            <div style="color: #ccc; text-align: center; line-height: 1.6;">
-                ${nivel.descricao || 'Continue adicionando perfumes à sua coleção!'}
+            
+            <!-- Card 2: Status de Equilíbrio -->
+            <div style="
+                background: linear-gradient(135deg, ${
+                    equilibrio.status === 'equilibrada' ? 'rgba(76, 175, 80, 0.15)' :
+                    equilibrio.status === 'leve_desequilibrio' ? 'rgba(255, 152, 0, 0.15)' :
+                    'rgba(255, 68, 68, 0.15)'
+                }, rgba(0, 0, 0, 0.1));
+                border: 2px solid ${
+                    equilibrio.status === 'equilibrada' ? '#4caf50' :
+                    equilibrio.status === 'leve_desequilibrio' ? '#ff9800' :
+                    '#ff4444'
+                };
+                border-radius: 15px;
+                padding: 25px;
+                min-height: 200px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            ">
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                    <div style="font-size: 2.5em;">${equilibrio.emoji || '✅'}</div>
+                    <div style="flex: 1;">
+                        <div style="font-size: 1.2em; font-weight: 700; color: #d4af37;">
+                            ${equilibrio.status === 'equilibrada' ? '✅ Equilibrada' :
+                              equilibrio.status === 'leve_desequilibrio' ? '⚠️ Leve Desequilíbrio' :
+                              '🚨 Desbalanceada'}
+                        </div>
+                        <div style="color: #999; font-size: 0.85em; margin-top: 5px;">
+                            ${dominante.porcentagem > 0 
+                                ? `${dominante.nome} (${dominante.porcentagem}%)`
+                                : 'Equilibrado'}
+                        </div>
+                    </div>
+                </div>
+                <div style="color: #ccc; line-height: 1.5; font-size: 0.9em;">
+                    ${equilibrio.mensagem || 'Continue diversificando!'}
+                </div>
+            </div>
+            
+            <!-- Card 3: Famílias que Faltam -->
+            ${top3_faltando.length > 0 ? `
+            <div style="
+                background: linear-gradient(135deg, rgba(100, 181, 246, 0.15), rgba(100, 181, 246, 0.05));
+                border: 2px solid #64b5f6;
+                border-radius: 15px;
+                padding: 25px;
+                min-height: 200px;
+                display: flex;
+                flex-direction: column;
+            ">
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                    <div style="font-size: 2.5em;">🎯</div>
+                    <div style="font-size: 1.3em; font-weight: 700; color: #64b5f6;">
+                        Próximas Metas
+                    </div>
+                </div>
+                <div style="color: #ccc; font-size: 0.95em; margin-bottom: 12px;">
+                    Expanda sua coleção nestas famílias:
+                </div>
+                <div style="color: #d4af37; line-height: 2;">
+                    ${top3_faltando.slice(0, 3).map((f, i) => 
+                        `<div style="font-weight: 600;">${i + 1}. ${f}</div>`
+                    ).join('')}
+                </div>
+            </div>
+            ` : ''}
+            
+            <!-- Card 4: Total (compacto) -->
+            <div style="
+                background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(212, 175, 55, 0.05));
+                border: 2px solid #d4af37;
+                border-radius: 15px;
+                padding: 25px;
+                min-height: 200px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+            ">
+                <div style="color: #999; font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">
+                    Total na Coleção
+                </div>
+                <div style="color: #d4af37; font-size: 3em; font-weight: 700; text-shadow: 0 0 20px rgba(212, 175, 55, 0.3);">
+                    ${minhaColecao.length}
+                </div>
+                <div style="color: #d4af37; font-size: 1em; margin-top: 5px;">
+                    ${minhaColecao.length === 1 ? 'perfume' : 'perfumes'}
+                </div>
             </div>
         </div>
         
-        <!-- Status de Equilíbrio -->
-        <div style="
-            background: linear-gradient(135deg, ${
-                equilibrio.status === 'equilibrada' ? 'rgba(76, 175, 80, 0.15)' :
-                equilibrio.status === 'leve_desequilibrio' ? 'rgba(255, 152, 0, 0.15)' :
-                'rgba(255, 68, 68, 0.15)'
-            }, rgba(0, 0, 0, 0.1));
-            border: 2px solid ${
-                equilibrio.status === 'equilibrada' ? '#4caf50' :
-                equilibrio.status === 'leve_desequilibrio' ? '#ff9800' :
-                '#ff4444'
-            };
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 20px;
-        ">
-            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                <div style="font-size: 2.5em;">${equilibrio.emoji || '✅'}</div>
-                <div>
-                    <div style="font-size: 1.3em; font-weight: 700; color: #d4af37;">
-                        ${equilibrio.status === 'equilibrada' ? '✅ Coleção Equilibrada' :
-                          equilibrio.status === 'leve_desequilibrio' ? '⚠️ Leve Desequilíbrio' :
-                          '🚨 Coleção Desbalanceada'}
-                    </div>
-                    <div style="color: #999; font-size: 0.9em; margin-top: 5px;">
-                        Família dominante: ${dominante.nome || 'N/A'} (${dominante.porcentagem || 0}%)
-                    </div>
-                </div>
-            </div>
-            <div style="color: #ccc; line-height: 1.6;">
-                ${equilibrio.mensagem || 'Continue diversificando sua coleção!'}
-            </div>
-        </div>
-        
-        <!-- Famílias que Faltam -->
-        ${top3_faltando.length > 0 ? `
-        <div style="
-            background: linear-gradient(135deg, rgba(100, 181, 246, 0.15), rgba(100, 181, 246, 0.05));
-            border: 2px solid #64b5f6;
-            border-radius: 15px;
-            padding: 25px;
-        ">
-            <div style="font-size: 1.3em; font-weight: 700; color: #64b5f6; margin-bottom: 15px;">
-                🎯 Próximas Metas
-            </div>
-            <div style="color: #ccc; line-height: 1.8;">
-                Expanda sua coleção nestas famílias:<br>
-                ${top3_faltando.map((fam, i) => `<strong style="color: #d4af37;">${i + 1}. ${fam}</strong>`).join('<br>')}
-            </div>
-        </div>
-        ` : ''}
     `;
     
     container.innerHTML = html;
@@ -2381,6 +2615,61 @@ function renderizarRadarChart(familias, valores, analise, tentativa = 0) {
 }
 
 // Função atualizarColecao removida - agora usamos apenas analisarColecao
+
+// ===================================
+// 🎯 SISTEMA LOCALSTORAGE-FIRST
+// ===================================
+
+/**
+ * Função central que renderiza TUDO a partir do localStorage
+ * Chamada em:
+ * - Inicialização do app
+ * - Após análise da API
+ * - Ao mudar de aba
+ */
+function renderizarTudoDoLocalStorage() {
+    console.log('🎯 renderizarTudoDoLocalStorage() chamada');
+    
+    const ultimaAnalise = JSON.parse(localStorage.getItem('ultimaAnalise') || '{}');
+    
+    if (!ultimaAnalise.dados) {
+        console.log('❌ Sem dados no localStorage');
+        
+        // Limpa tudo
+        const container = document.getElementById('analise-gamificada');
+        if (container) {
+            renderizarAnaliseGameficada(null);
+        }
+        
+        return;
+    }
+    
+    const dados = ultimaAnalise.dados;
+    console.log('✅ Dados encontrados, renderizando tudo...');
+    
+    // 1. RADAR - Usa visualização ALTERNATIVA (barras CSS)
+    if (dados.analise_colecao) {
+        console.log('📊 Renderizando radar (barras CSS)...');
+        renderizarRadarAlternativo(dados.analise_colecao);
+    }
+    
+    // 2. CARDS GAMIFICADOS
+    if (dados.analise_colecao) {
+        console.log('🎮 Renderizando cards...');
+        renderizarAnaliseGameficada(dados.analise_colecao);
+    }
+    
+    // 3. MISSÃO + SUGESTÕES
+    console.log('🎯 Renderizando missão...');
+    window.dadosAnaliseAtual = dados;
+    renderizarMissaoGameficada(dados);
+    
+    // 4. RANKING/PONTOS
+    console.log('🏆 Atualizando ranking...');
+    atualizarNivelDOM();
+    
+    console.log('✅ Tudo renderizado do localStorage!');
+}
 
 // ===================================
 // MISSÃO (ANÁLISE)
@@ -2513,48 +2802,63 @@ ${window.perfumesJaSugeridos && window.perfumesJaSugeridos.length > 0 ? window.p
 INSTRUÇÕES CRÍTICAS:
 
 ===========================================================
-📊 PARTE 1: CLASSIFICAÇÃO FRAGANTICA (OBRIGATÓRIO)
+📊 PARTE 1: CLASSIFICAÇÃO DE FAMÍLIAS OLFATIVAS (OBRIGATÓRIO)
 ===========================================================
 
-Para CADA perfume acima, você DEVE:
+Para CADA perfume acima, você DEVE classificá-lo em UMA das 9 famílias abaixo.
 
-1. Consultar a página do perfume no Fragantica
-2. Olhar a seção "Main Accords" (Principais Acordes)
-3. Usar a PRIMEIRA família listada nos acordes
+Use seu conhecimento sobre perfumes masculinos e os acordes principais de cada fragrância.
 
-EXEMPLO CORRETO:
-- "Nishane Hacivat" → Main Accords: woody, citrus, mossy
-  → FAMÍLIA: Amadeirado (porque "woody" é o primeiro)
-  
-- "Parfums de Marly Percival" → Main Accords: woody, aromatic, citrus
-  → FAMÍLIA: Amadeirado (porque "woody" é o primeiro)
-  
-- "Dior Sauvage" → Main Accords: fresh spicy, aromatic, citrus
-  → FAMÍLIA: Aromático/Verde (porque "fresh spicy" + "aromatic")
+**FAMÍLIAS OLFATIVAS (escolha APENAS UMA por perfume):**
 
-MAPEAMENTO DOS ACORDES PARA FAMÍLIAS:
-- woody, cedar, sandalwood → Amadeirado
-- fresh spicy, aromatic, green → Aromático/Verde
-- sweet, vanilla, caramel, gourmand → Doce/Gourmand
-- citrus, bergamot, lemon → Fresco/Cítrico
-- spicy, oriental, amber → Especiado/Oriental
-- aquatic, marine, ozonic → Aquático
-- powdery, lavender, fougere → Talco/Fougère
-- floral, rose, jasmine → Floral
-- fruity, apple, pineapple → Frutado
+1. **Fresco/Cítrico**: Perfumes leves, cítricos, aquosos
+   - Exemplos: Acqua di Gio, Dolce & Gabbana Light Blue, Versace Man Eau Fraiche
+   - Acordes: citrus, bergamot, lemon, aquatic, marine
 
-IMPORTANTE: Use conhecimento REAL do Fragantica, não invente!
+2. **Aromático/Verde**: Perfumes frescos com ervas, lavanda, especiarias leves
+   - Exemplos: Dior Sauvage, Bleu de Chanel, Paco Rabanne Invictus
+   - Acordes: aromatic, fresh spicy, lavender, herbal, green
 
-As famílias possíveis são APENAS estas 9:
-1. Fresco/Cítrico
-2. Aromático/Verde
-3. Doce/Gourmand
-4. Amadeirado
-5. Especiado/Oriental
-6. Aquático
-7. Talco/Fougère
-8. Floral
-9. Frutado
+3. **Doce/Gourmand**: Perfumes doces, com baunilha, caramelo, açúcar
+   - Exemplos: Paco Rabanne 1 Million, JPG Le Male, Viktor & Rolf Spicebomb
+   - Acordes: sweet, vanilla, caramel, gourmand, tonka
+
+4. **Amadeirado**: Perfumes com madeiras (cedro, sândalo, patchouli)
+   - Exemplos: Dior Homme Intense, Tom Ford Oud Wood, Creed Aventus (base)
+   - Acordes: woody, cedar, sandalwood, patchouli, vetiver
+
+5. **Especiado/Oriental**: Perfumes com especiarias fortes, âmbar, resinas
+   - Exemplos: YSL La Nuit de L'Homme, Givenchy Gentleman, Dior Fahrenheit
+   - Acordes: spicy, oriental, amber, incense, cinnamon
+
+6. **Aquático**: Perfumes marinhos, ozônicos, com sal
+   - Exemplos: Nautica Voyage, Davidoff Cool Water, Issey Miyake L'Eau d'Issey
+   - Acordes: aquatic, marine, ozonic, sea notes
+
+7. **Talco/Fougère**: Perfumes clássicos com lavanda, cumarina, barbear
+   - Exemplos: Paco Rabanne Pour Homme, Azzaro Pour Homme, Guerlain Habit Rouge
+   - Acordes: powdery, lavender, fougere, coumarin
+
+8. **Floral**: Perfumes com flores (raro em masculinos, mas existe)
+   - Exemplos: Dior Homme, Chanel Allure Homme
+   - Acordes: floral, iris, rose, violet
+
+9. **Frutado**: Perfumes com frutas (abacaxi, maçã, pêra)
+   - Exemplos: Creed Aventus, Versace Eros, Carolina Herrera Bad Boy
+   - Acordes: fruity, pineapple, apple, blackcurrant
+
+**INSTRUÇÕES DE CLASSIFICAÇÃO:**
+- Use o acorde DOMINANTE do perfume
+- Se tiver dúvida entre 2, escolha a mais característica
+- NUNCA invente - use conhecimento real
+- Se não conhecer um perfume, classifique baseado em perfumes similares da mesma linha/marca
+
+**EXEMPLOS DE CLASSIFICAÇÃO CORRETA:**
+- Dior Sauvage → Aromático/Verde (fresh spicy dominante)
+- Paco Rabanne 1 Million → Doce/Gourmand (sweet/cinnamon)
+- Acqua di Gio → Fresco/Cítrico (citrus/marine)
+- Creed Aventus → Frutado (pineapple dominante, apesar da base amadeirada)
+- Tom Ford Oud Wood → Amadeirado (oud/woody)
 
 Conte quantos perfumes há em cada família e identifique as 3 famílias com MENOS perfumes.
 
@@ -2697,11 +3001,8 @@ Analise e retorne análise detalhada + recomendações COM CONCENTRAÇÃO.
         
         console.log('✅ Usando classificação validada pela API');
         
-        // Salva classificações
+        // Salva classificações (compatibilidade)
         localStorage.setItem('classificacoesValidadas', JSON.stringify(data.analise_colecao.perfumes_por_familia));
-        
-        // ATUALIZA RADAR
-        atualizarRadarComAPI(data.analise_colecao);
         
         // Salva cache COM PERFIL
         localStorage.setItem('ultimaAnalise', JSON.stringify({
@@ -2711,7 +3012,12 @@ Analise e retorne análise detalhada + recomendações COM CONCENTRAÇÃO.
             timestamp: Date.now()
         }));
         
-        // Salva globalmente
+        console.log('💾 Dados salvos no localStorage');
+        
+        // 🎯 RENDERIZA TUDO DO LOCALSTORAGE (fonte única)
+        renderizarTudoDoLocalStorage();
+        
+        // Salva globalmente (compatibilidade)
         window.dadosAnaliseAtual = data;
         window.missaoAtualIndex = 0;
         
@@ -2728,16 +3034,10 @@ Analise e retorne análise detalhada + recomendações COM CONCENTRAÇÃO.
             atualizarContadores(); // Atualiza contador visual
         }
         
-        // 💾 SALVA radar no localStorage
-        salvarRadarNoStorage(data.analise_colecao);
-        
         // Tracking
         const nivelAtual = calcularNivelAtual();
         trackCollection(minhaColecao, data.analise_colecao);
         trackAnalysis(data.analise_colecao, nivelAtual, data.recomendacoes);
-        
-        // Renderiza missão (mas NÃO muda aba)
-        renderizarMissaoGameficada(data);
         
         // Salva perfumes recomendados no histórico
         if (data.recomendacoes && data.recomendacoes.length > 0) {
@@ -3190,8 +3490,8 @@ function calcularNivelAtual() {
         };
     }
     
-    const total = analise.total_perfumes;
-    const familias = analise.familias_representadas || Object.keys(analise.perfumes_por_familia).length;
+    const total = analise.total_perfumes || minhaColecao.length;
+    const familias = analise.familias_representadas || Object.keys(analise.perfumes_por_familia).filter(f => analise.perfumes_por_familia[f] > 0).length;
     
     let pontos = 0;
     
@@ -3202,7 +3502,20 @@ function calcularNivelAtual() {
     pontos += Math.round((familias / 9) * 30);
     
     // 3. Equilíbrio (30 pontos máx)
-    const dominante = analise.familia_dominante?.porcentagem || 0;
+    let dominante = 0;
+    
+    // Trata familia_dominante como string ou objeto
+    if (analise.familia_dominante) {
+        if (typeof analise.familia_dominante === 'object' && analise.familia_dominante.porcentagem) {
+            dominante = analise.familia_dominante.porcentagem;
+        } else if (typeof analise.familia_dominante === 'string') {
+            // Calcula porcentagem manualmente
+            const nomeDominante = analise.familia_dominante;
+            const quantidadeDominante = analise.perfumes_por_familia[nomeDominante] || 0;
+            dominante = total > 0 ? Math.round((quantidadeDominante / total) * 100) : 0;
+        }
+    }
+    
     if (dominante < 30) pontos += 30;
     else if (dominante < 40) pontos += 25;
     else if (dominante < 50) pontos += 15;
@@ -4782,23 +5095,11 @@ carregarPerfil();
 renderizarLista();
 
 // Tenta carregar análise salva (radar + missão)
-const ultimaAnalise = JSON.parse(localStorage.getItem('ultimaAnalise') || '{}');
-console.log('🎯 Inicializando radar...');
-console.log('  Análise salva?', ultimaAnalise.dados ? 'SIM' : 'NÃO');
+console.log('🎯 Inicializando app...');
 console.log('  Coleção atual:', minhaColecao.length, 'perfumes');
 
-if (ultimaAnalise.dados && ultimaAnalise.dados.analise_colecao) {
-    console.log('📊 Carregando análise salva');
-    // Carrega radar
-    atualizarRadarComAPI(ultimaAnalise.dados.analise_colecao);
-    // Carrega missão
-    window.dadosAnaliseAtual = ultimaAnalise.dados;
-    renderizarMissaoGameficada(ultimaAnalise.dados);
-} else {
-    console.log('ℹ️ Sem análise salva. Clique em "Analisar" para gerar.');
-}
-
-atualizarNivelDOM();
+// 🎯 RENDERIZA TUDO DO LOCALSTORAGE (fonte única)
+renderizarTudoDoLocalStorage();
 
 // Atualiza contadores quando rate limiter carregar
 setTimeout(() => {
