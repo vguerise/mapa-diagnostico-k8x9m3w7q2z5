@@ -5,39 +5,19 @@
 class RateLimiter {
     constructor() {
         this.limits = {
-            // Plano GRATUITO (trial 7 dias)
-            free: {
-                analise: { max: 1, periodo: '7d', resetDiario: false },
-                missao: { max: 3, periodo: '7d', resetDiario: false },
-                chat: { max: 5, periodo: '7d', resetDiario: false },
-                total: { max: 9, periodo: '7d', resetDiario: false }
-            },
-            
-            // Plano BÁSICO (R$ 47/ano)
+            // Plano BÁSICO (R$ 47/ano) - ÚNICO PLANO
             basico: {
-                analise: { max: 10, periodo: '1d', resetDiario: true },
-                missao: { max: 5, periodo: '1d', resetDiario: true },
-                chat: { max: 15, periodo: '1d', resetDiario: true },
-                total: { max: 30, periodo: '1d', resetDiario: true }
-            },
-            
-            // Plano PREMIUM (R$ 97/ano) - futuro
-            premium: {
-                analise: { max: 999, periodo: '1d', resetDiario: true },
-                missao: { max: 999, periodo: '1d', resetDiario: true },
-                chat: { max: 50, periodo: '1d', resetDiario: true },
-                total: { max: 999, periodo: '1d', resetDiario: true }
+                analise: { max: 8, periodo: '30d', resetDiario: false },  // 8 por mês
+                chat: { max: 12, periodo: '30d', resetDiario: false },     // 12 por mês
+                dicas: { max: 3, periodo: 'vitalicio', resetDiario: false }, // 3 vitalício
+                missao: { max: 999, periodo: '30d', resetDiario: false }   // Ilimitado
             }
         };
     }
     
-    // Pega plano do usuário
+    // Pega plano do usuário (sempre 'basico' agora)
     getPlanoAtual() {
-        const assinatura = JSON.parse(localStorage.getItem('assinaturaAtiva') || '{}');
-        
-        if (!assinatura.ativa) return 'free';
-        if (assinatura.plano === 'premium') return 'premium';
-        return 'basico';
+        return 'basico'; // Todos são pagos
     }
     
     // Verifica se pode fazer ação
@@ -107,6 +87,7 @@ class RateLimiter {
     
     expirou(timestamp, periodo) {
         if (!timestamp) return true;
+        if (periodo === 'vitalicio') return false; // Nunca expira
         
         const agora = Date.now();
         const diff = agora - timestamp;
@@ -120,6 +101,7 @@ class RateLimiter {
     
     getProximoReset(timestamp, periodo) {
         if (!timestamp) return new Date();
+        if (periodo === 'vitalicio') return new Date(9999, 11, 31); // Nunca
         
         const data = new Date(timestamp);
         
