@@ -1,130 +1,4832 @@
-// ============================================
-// SISTEMA DE RATE LIMITING - PAID-ONLY
-// ============================================
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa da Coleção Perfeita</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Análise inteligente de coleção de perfumes masculinos com IA">
+    <meta name="theme-color" content="#d4af37">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Mapa Perfumes">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Ícones para iOS -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-192x192.png">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-class RateLimiter {
-    constructor() {
-        this.limits = {
-            basico: {
-                analise: { max: 8, periodo: '30d' },
-                chat: { max: 12, periodo: '30d' },
-                dicas: { max: 3, periodo: 'vitalicio' }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Layout Principal com Sidebar */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Lateral */
+        .sidebar {
+            width: 280px;
+            background: rgba(0, 0, 0, 0.4);
+            border-right: 2px solid rgba(212, 175, 55, 0.3);
+            padding: 20px 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 0 20px 20px 20px;
+            border-bottom: 2px solid rgba(212, 175, 55, 0.3);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-logo {
+            font-size: 1.5em;
+            font-weight: 700;
+            background: linear-gradient(90deg, #d4af37, #f4e5b1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 5px;
+        }
+
+        .sidebar-subtitle {
+            color: #999;
+            font-size: 0.85em;
+        }
+
+        .sidebar-nav {
+            padding: 0;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 18px 20px;
+            color: #ccc;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            font-size: 1em;
+            font-weight: 500;
+        }
+
+        .nav-item:hover {
+            background: rgba(212, 175, 55, 0.1);
+            color: #d4af37;
+            border-left-color: #d4af37;
+        }
+
+        .nav-item.active {
+            background: rgba(212, 175, 55, 0.15);
+            color: #d4af37;
+            border-left-color: #d4af37;
+        }
+
+        .nav-item-icon {
+            font-size: 1.4em;
+            width: 30px;
+            text-align: center;
+        }
+
+        .nav-item-text {
+            flex: 1;
+        }
+
+        /* Conteúdo Principal */
+        .main-content {
+            margin-left: 280px;
+            flex: 1;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .content-section {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
             }
-        };
-        
-        // 👑 LISTA VIP - Sem limites
-        this.emailsVIP = [
-            'vguerise@gmail.com'
-        ];
-    }
-    
-    isVIP() {
-        const emailSalvo = localStorage.getItem('userEmail');
-        if (!emailSalvo) return false;
-        
-        const emailNormalizado = emailSalvo.toLowerCase().trim();
-        return this.emailsVIP.includes(emailNormalizado);
-    }
-    
-    getPlanoAtual() {
-        // Se é VIP, retorna plano especial
-        if (this.isVIP()) {
-            return 'vip';
-        }
-        return 'basico';
-    }
-    
-    getContador(acao) {
-        const key = `ratelimit_${acao}`;
-        const data = localStorage.getItem(key);
-        
-        if (!data) {
-            return { contador: 0, timestamp: Date.now() };
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
-        return JSON.parse(data);
-    }
-    
-    salvarContador(acao, contador, timestamp) {
-        const key = `ratelimit_${acao}`;
-        localStorage.setItem(key, JSON.stringify({ contador, timestamp }));
-    }
-    
-    expirou(timestamp, periodo) {
-        if (periodo === 'vitalicio') return false;
-        
-        const agora = Date.now();
-        const diff = agora - timestamp;
-        
-        if (periodo === '30d') return diff > 30 * 24 * 60 * 60 * 1000;
-        
-        return false;
-    }
-    
-    podeExecutar(acao) {
-        // 👑 VIP = sem limites
-        if (this.isVIP()) {
-            console.log('👑 Usuário VIP - sem limites!');
-            return { 
-                pode: true, 
-                restante: 999,
-                proximoReset: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-            };
+        @keyframes pulseGlow {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(212, 175, 55, 0.6), 0 0 40px rgba(212, 175, 55, 0.3);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(212, 175, 55, 1), 0 0 80px rgba(212, 175, 55, 0.5);
+                transform: scale(1.05);
+            }
         }
         
-        const plano = this.getPlanoAtual();
-        const limite = this.limits[plano][acao];
-        
-        if (!limite) {
-            return { pode: true, restante: 999 };
+        @keyframes missionPulse {
+            0%, 100% {
+                background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
+                box-shadow: none;
+                transform: scale(1);
+            }
+            50% {
+                background: linear-gradient(135deg, #d4af37, #f4c542);
+                box-shadow: 0 0 30px rgba(212, 175, 55, 0.8), inset 0 0 20px rgba(255, 215, 0, 0.3);
+                transform: scale(1.05);
+            }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #d4af37, #f4e5b1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: #999;
+            font-size: 1.1em;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: #d4af37;
+            box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, #d4af37, #f4e5b1);
+        }
+
+        .card-title {
+            color: #d4af37;
+            font-size: 1.4em;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .card-description {
+            color: #ccc;
+            font-size: 0.95em;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .tag {
+            background: rgba(212, 175, 55, 0.2);
+            color: #d4af37;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+        }
+
+        .examples {
+            background: rgba(212, 175, 55, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .examples-title {
+            color: #d4af37;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .examples-list {
+            color: #aaa;
+            font-size: 0.85em;
+            line-height: 1.5;
+        }
+
+        .section-title {
+            color: white;
+            font-size: 1.8em;
+            margin: 40px 0 20px 0;
+            text-align: center;
+        }
+
+        .levels {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .level-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            flex: 1;
+            min-width: 300px;
+            max-width: 400px;
+        }
+
+        .level-title {
+            color: #d4af37;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .level-item {
+            background: rgba(212, 175, 55, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            color: #ccc;
+            font-size: 0.95em;
+        }
+
+        .level-item strong {
+            color: #d4af37;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .interactive-note {
+            background: rgba(100, 150, 255, 0.1);
+            border: 2px solid rgba(100, 150, 255, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 40px;
+            text-align: center;
+            color: #9bc4ff;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            padding: 15px;
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
+            border: 2px solid rgba(212, 175, 55, 0.4);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .checkbox-container:hover {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.1));
+            border-color: #d4af37;
+            transform: translateX(5px);
+        }
+
+        .checkbox-container input {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            accent-color: #d4af37;
+        }
+
+        .checkbox-container label {
+            cursor: pointer;
+            flex: 1;
+            color: #f4e5b1;
+            font-weight: 600;
+            font-size: 1.05em;
+        }
+
+        .balance-section {
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .balance-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 15px;
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .balance-title {
+            color: #d4af37;
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .balance-subtitle {
+            color: #ccc;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 0.95em;
+        }
+
+        .balance-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .balance-item {
+            background: rgba(212, 175, 55, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+        }
+
+        .balance-item-emoji {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .balance-item-name {
+            color: #d4af37;
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        .balance-item-count {
+            color: white;
+            font-size: 2em;
+            font-weight: 700;
+        }
+
+        .balance-chart {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            color: #d4af37;
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .perfume-input-container {
+            margin-bottom: 30px;
+        }
+
+        .perfume-input {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 1em;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 10px;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .perfume-input:focus {
+            outline: none;
+            border-color: #d4af37;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+        }
+
+        .perfume-input::placeholder {
+            color: #666;
+        }
+
+        .add-button, .analyze-button, .clear-button {
+            padding: 12px 30px;
+            font-size: 1em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            margin: 5px;
+        }
+
+        .add-button {
+            background: linear-gradient(135deg, #d4af37, #f4e5b1);
+            color: #1e1e1e;
+        }
+
+        .add-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(212, 175, 55, 0.4);
+        }
+
+        .analyze-button {
+            background: linear-gradient(135deg, #4caf50, #66bb6a);
+            color: white;
+        }
+
+        .analyze-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
+        }
+
+        .clear-button {
+            background: linear-gradient(135deg, #f44336, #e57373);
+            color: white;
+        }
+
+        .clear-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(244, 67, 54, 0.4);
+        }
+
+        .perfume-list {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .perfume-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .perfume-item:hover {
+            border-color: #d4af37;
+            transform: translateX(5px);
+        }
+
+        .perfume-name {
+            color: white;
+            font-size: 1em;
+            flex: 1;
+        }
+
+        .remove-button {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid rgba(244, 67, 54, 0.4);
+            color: #f44336;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+        }
+
+        .remove-button:hover {
+            background: rgba(244, 67, 54, 0.3);
+            transform: scale(1.05);
+        }
+
+        .result-container {
+            margin-top: 30px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 15px;
+        }
+
+        .result-title {
+            color: #d4af37;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .result-text {
+            color: #ccc;
+            line-height: 1.8;
+            font-size: 1em;
+        }
+
+        .loading {
+            text-align: center;
+            color: #d4af37;
+            font-size: 1.2em;
+            padding: 40px;
+            animation: pulse 1.5s ease-in-out infinite;
         }
         
-        const { contador, timestamp } = this.getContador(acao);
-        
-        // Verifica se expirou
-        if (this.expirou(timestamp, limite.periodo)) {
-            // Reset
-            this.salvarContador(acao, 0, Date.now());
-            return { 
-                pode: true, 
-                restante: limite.max,
-                proximoReset: this.getProximoReset(Date.now(), limite.periodo)
-            };
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.7;
+                transform: scale(1.05);
+            }
         }
         
-        // Verifica limite
-        if (contador >= limite.max) {
-            return { 
-                pode: false, 
-                restante: 0,
-                proximoReset: this.getProximoReset(timestamp, limite.periodo)
-            };
+        .loading-dots::after {
+            content: '';
+            animation: dots 1.5s steps(4, end) infinite;
         }
         
-        return { 
-            pode: true, 
-            restante: limite.max - contador,
-            proximoReset: this.getProximoReset(timestamp, limite.periodo)
-        };
-    }
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+        
+        .analyzing-animation {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            padding: 40px;
+            background: rgba(212, 175, 55, 0.05);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 15px;
+            margin: 20px auto;
+            max-width: 600px;
+        }
+        
+        .analyzing-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(212, 175, 55, 0.2);
+            border-top: 4px solid #d4af37;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .analyzing-text {
+            color: #d4af37;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+        
+        .analyzing-subtext {
+            color: #999;
+            font-size: 0.95em;
+            text-align: center;
+        }
+
+        .radar-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto !important;
+        }
+
+        /* Chat do Perfumista */
+        .chat-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+        }
+
+        .chat-title {
+            color: #d4af37;
+            font-size: 1.8em;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .chat-subtitle {
+            color: #999;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 0.95em;
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 15px 20px;
+            font-size: 1em;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 10px;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #d4af37;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+        }
+
+        .chat-send-button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #d4af37, #f4e5b1);
+            color: #1e1e1e;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .chat-send-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(212, 175, 55, 0.4);
+        }
+
+        .chat-send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .chat-messages {
+            max-height: 500px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .chat-message {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .chat-message.user {
+            background: rgba(212, 175, 55, 0.1);
+            border-left: 3px solid #d4af37;
+        }
+
+        .chat-message.assistant {
+            background: rgba(100, 150, 255, 0.1);
+            border-left: 3px solid #6496ff;
+        }
+
+        .chat-message-header {
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+
+        .chat-message.user .chat-message-header {
+            color: #d4af37;
+        }
+
+        .chat-message.assistant .chat-message-header {
+            color: #6496ff;
+        }
+
+        .chat-message-content {
+            color: #ccc;
+            line-height: 1.6;
+        }
+
+        .suggestions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .suggestion-card {
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .suggestion-name {
+            color: #d4af37;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .suggestion-familia {
+            color: #999;
+            font-size: 0.85em;
+            margin-bottom: 5px;
+        }
+
+        .suggestion-preco {
+            color: #4caf50;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+        }
+
+        .suggestion-por-que {
+            color: #ccc;
+            font-size: 0.9em;
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+
+        .suggestion-quando {
+            color: #999;
+            font-size: 0.85em;
+            font-style: italic;
+        }
+
+        /* Perfil Section */
+        .profile-form {
+            max-width: 700px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-label {
+            display: block;
+            color: #d4af37;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 1em;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 8px;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #d4af37;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
+        }
+
+        .form-select option {
+            background: #2d2d2d;
+            color: white;
+        }
+
+        .save-profile-button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #4caf50, #66bb6a);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .save-profile-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
+        }
+
+        .profile-saved {
+            background: rgba(76, 175, 80, 0.2);
+            border: 2px solid rgba(76, 175, 80, 0.4);
+            color: #4caf50;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 20px;
+            font-weight: 600;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .balance-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+            }
+            
+            .sidebar-header {
+                padding: 10px;
+            }
+            
+            .sidebar-logo {
+                font-size: 1.2em;
+                text-align: center;
+            }
+            
+            .sidebar-subtitle {
+                display: none;
+            }
+            
+            .nav-item {
+                flex-direction: column;
+                gap: 5px;
+                padding: 15px 10px;
+            }
+            
+            .nav-item-text {
+                font-size: 0.75em;
+                text-align: center;
+            }
+            
+            .nav-item-icon {
+                font-size: 1.5em;
+            }
+            
+            .main-content {
+                margin-left: 70px;
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .balance-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .perfume-input-container > div {
+                flex-direction: column !important;
+            }
+            
+            .perfume-input-container .add-button,
+            .perfume-input-container .start-collection-button {
+                width: 100% !important;
+                min-width: auto !important;
+            }
+        }
+
+        /* Scrollbar personalizada */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(212, 175, 55, 0.5);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(212, 175, 55, 0.7);
+        }
+
+        /* ========================================
+           GAMIFICAÇÃO - CARD MISSÃO
+           ======================================== */
+        .mission-container {
+            margin-top: 30px;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes missionChange {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .mission-changing {
+            animation: missionChange 0.6s ease-in-out;
+        }
+
+        .mission-card {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%);
+            border: 3px solid #d4af37;
+            border-radius: 20px;
+            padding: 35px;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(212, 175, 55, 0.3);
+        }
+
+        .mission-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(90deg, #d4af37, #f4e5b1, #d4af37);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .mission-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #d4af37 0%, #f4e5b1 100%);
+            color: #1e1e1e;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.9em;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+        }
+
+        .mission-title {
+            color: #fff;
+            font-size: 1.8em;
+            font-weight: 700;
+            margin: 0 0 25px 0;
+            line-height: 1.3;
+        }
+
+        .mission-details {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .detail-row {
+            color: #ccc;
+            font-size: 1.05em;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            line-height: 1.6;
+        }
+
+        .detail-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .detail-row strong {
+            color: #d4af37;
+            min-width: 120px;
+            margin-right: 10px;
+        }
+
+        .mission-why {
+            background: rgba(212, 175, 55, 0.1);
+            border-left: 4px solid #d4af37;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1.05em;
+            line-height: 1.6;
+        }
+
+        .mission-why strong {
+            color: #d4af37;
+        }
+
+        .mission-progress {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(76, 175, 80, 0.1) 100%);
+            border: 2px solid rgba(76, 175, 80, 0.4);
+            border-radius: 10px;
+            padding: 15px 20px;
+            text-align: center;
+            margin: 20px 0;
+            color: #4caf50;
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+
+        .mission-progress strong {
+            color: #66ff66;
+            font-size: 1.2em;
+        }
+
+        .mission-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .btn-mission-primary {
+            flex: 1;
+            min-width: 200px;
+            padding: 18px 30px;
+            background: linear-gradient(135deg, #d4af37 0%, #f4e5b1 100%);
+            color: #1e1e1e;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(212, 175, 55, 0.4);
+        }
+
+        .btn-mission-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(212, 175, 55, 0.6);
+        }
+
+        .btn-mission-secondary {
+            flex: 1;
+            min-width: 200px;
+            padding: 18px 30px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #d4af37;
+            border: 2px solid rgba(212, 175, 55, 0.5);
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-mission-secondary:hover {
+            background: rgba(212, 175, 55, 0.15);
+            border-color: #d4af37;
+            transform: translateY(-2px);
+        }
+
+        .candidates-card {
+            display: none;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 20px;
+        }
+
+        .candidates-card.show {
+            display: block;
+            animation: fadeInUp 0.4s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .candidate-item {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.05) 100%);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .candidate-item:hover {
+            border-color: #d4af37;
+            transform: translateX(5px);
+            box-shadow: 0 5px 20px rgba(212, 175, 55, 0.3);
+        }
+
+        .candidate-name {
+            color: #d4af37;
+            font-size: 1.3em;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .candidate-family {
+            color: #f4e5b1;
+            font-size: 0.95em;
+            margin-bottom: 8px;
+        }
+
+        .candidate-why {
+            color: #ccc;
+            font-size: 0.95em;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+
+        .candidate-when {
+            color: #999;
+            font-size: 0.9em;
+            font-style: italic;
+        }
+
+        /* Botão "Estou começando" */
+        .start-collection-button {
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(135deg, #4caf50, #66bb6a);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.2em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
+        }
+
+        .start-collection-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(76, 175, 80, 0.6);
+        }
+
+        @media (max-width: 768px) {
+            .mission-card {
+                padding: 25px;
+            }
+
+            .mission-title {
+                font-size: 1.4em;
+            }
+
+            .mission-actions {
+                flex-direction: column;
+            }
+
+            .btn-mission-primary,
+            .btn-mission-secondary {
+                width: 100%;
+            }
+        }
+    </style>
     
-    registrarUso(acao) {
-        const { contador, timestamp } = this.getContador(acao);
-        this.salvarContador(acao, contador + 1, timestamp || Date.now());
-    }
-    
-    getProximoReset(timestamp, periodo) {
-        if (periodo === 'vitalicio') return new Date(9999, 11, 31);
+</head>
+<body>
+
+    <!-- Layout com Sidebar -->
+    <div class="app-container">
         
-        const data = new Date(timestamp);
-        if (periodo === '30d') {
-            data.setDate(data.getDate() + 30);
+        <!-- Sidebar Lateral -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">Mapa Perfumes</div>
+                <div class="sidebar-subtitle">Coleção Perfeita</div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-item active" data-section="perfil">
+                    <span class="nav-item-icon">👤</span>
+                    <span class="nav-item-text">Perfil</span>
+                </div>
+                <div class="nav-item" data-section="colecao">
+                    <span class="nav-item-icon">🎯</span>
+                    <span class="nav-item-text">Coleção</span>
+                </div>
+                <div class="nav-item" data-section="missao">
+                    <span class="nav-item-icon">🏆</span>
+                    <span class="nav-item-text">Missão</span>
+                </div>
+                <div class="nav-item" data-section="sugestoes">
+                    <span class="nav-item-icon">🧪</span>
+                    <span class="nav-item-text">O Perfumista</span>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Conteúdo Principal -->
+        <main class="main-content">
+            
+            <!-- Barra de Nível + Nome FIXA (aparece em todas as abas) -->
+            <div id="nivel-fixo-container" style="margin-bottom: 30px;"></div>
+            
+            <!-- Seção: Perfil -->
+            <section id="perfil" class="content-section active">
+                <div class="container">
+                    <header>
+                        <h1>👤 Seu Perfil</h1>
+                        <p class="subtitle">Configure suas preferências para recomendações personalizadas</p>
+                    </header>
+
+                    <div class="profile-form">
+                        <div class="form-group">
+                            <label class="form-label" for="nome">👋 Como você quer ser chamado?</label>
+                            <input 
+                                type="text" 
+                                id="nome" 
+                                class="form-input" 
+                                placeholder="Seu nome ou apelido"
+                            >
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="email">📧 Seu email (opcional)</label>
+                            <input 
+                                type="email" 
+                                id="email" 
+                                class="form-input" 
+                                placeholder="seu@email.com"
+                            >
+                            <small style="color: #999; font-size: 0.85em; display: block; margin-top: 5px;">
+                                Usado apenas para identificação do perfil
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="clima">🌡️ Qual o clima da sua cidade?</label>
+                            <select id="clima" class="form-select">
+                                <option value="Quente">Quente (acima de 28°C)</option>
+                                <option value="Temperado" selected>Temperado (20-28°C)</option>
+                                <option value="Frio">Frio (abaixo de 20°C)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="ambiente">🏢 Onde você trabalha?</label>
+                            <select id="ambiente" class="form-select">
+                                <option value="Fechado">Ambiente fechado (escritório, loja)</option>
+                                <option value="Aberto">Ambiente aberto (externo, viagens)</option>
+                                <option value="Ambos" selected>Ambos</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="idade">🎂 Faixa etária</label>
+                            <select id="idade" class="form-select">
+                                <option value="18-25">18-25 anos</option>
+                                <option value="25-35" selected>25-35 anos</option>
+                                <option value="35-45">35-45 anos</option>
+                                <option value="45-60">45-60 anos</option>
+                                <option value="60+">60+ anos</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="orcamento">💰 Orçamento por perfume</label>
+                            <select id="orcamento" class="form-select">
+                                <option value="até R$ 300">até R$ 300</option>
+                                <option value="R$ 300-500" selected>R$ 300-500</option>
+                                <option value="R$ 500-800">R$ 500-800</option>
+                                <option value="R$ 800-1500">R$ 800-1500</option>
+                                <option value="acima de R$ 1500">acima de R$ 1500</option>
+                            </select>
+                        </div>
+
+                        <button class="save-profile-button" onclick="salvarPerfil()">
+                            💾 Salvar Perfil
+                        </button>
+
+                        <div id="profile-saved-message" style="display: none;" class="profile-saved">
+                            ✅ Perfil salvo com sucesso!
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Seção: Coleção -->
+            <section id="colecao" class="content-section">
+                <div class="container">
+                    <header>
+                        <h1>🎯 Minha Coleção</h1>
+                        <p class="subtitle">Adicione seus perfumes e visualize o radar da sua coleção</p>
+                    </header>
+
+                    <!-- Input de Perfume -->
+                    <div class="perfume-input-container">
+                        <!-- Nome do Perfume -->
+                        <div style="margin-bottom: 15px;">
+                            <label for="perfume-input" style="display: block; color: #d4af37; font-weight: 600; margin-bottom: 8px; font-size: 0.95em;">
+                                📝 Nome do Perfume
+                            </label>
+                            <input 
+                                type="text" 
+                                id="perfume-input" 
+                                class="perfume-input" 
+                                placeholder="Digite o nome do perfume (ex: Sauvage, Eros, Invictus...)"
+                                onkeypress="if(event.key === 'Enter') adicionarPerfume()"
+                                style="width: 100%;"
+                            >
+                        </div>
+                        
+                        <!-- Concentração -->
+                        <div style="margin-bottom: 20px;">
+                            <label for="concentracao-select" style="display: block; color: #d4af37; font-weight: 600; margin-bottom: 8px; font-size: 0.95em;">
+                                💧 Concentração
+                            </label>
+                            <select 
+                                id="concentracao-select" 
+                                class="perfume-input"
+                                style="
+                                    width: 100%;
+                                    padding: 12px 15px;
+                                    background: #2a2a2a;
+                                    border: 1px solid #444;
+                                    border-radius: 8px;
+                                    color: #fff;
+                                    font-size: 1em;
+                                    cursor: pointer;
+                                "
+                            >
+                                <option value="EDT">EDT (Eau de Toilette)</option>
+                                <option value="EDP" selected>EDP (Eau de Parfum)</option>
+                                <option value="Parfum">Parfum (Extrait)</option>
+                                <option value="Elixir">Elixir</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
+                            <button class="add-button" onclick="adicionarPerfume()" style="flex: 1; min-width: 150px;">
+                                ➕ Adicionar
+                            </button>
+                            <button id="btn-analisar" class="analyze-button" onclick="analisarColecao()" style="flex: 1; min-width: 150px; margin: 0; padding: 12px 30px; font-size: 1em;">
+                                🔍 Analisar <span id="contador-analise">(8/8)</span>
+                            </button>
+                            <button id="btn-dicas" class="start-collection-button" onclick="iniciarColecaoDoZero()" style="flex: 1; min-width: 200px; margin: 0; padding: 12px 30px; font-size: 1em; background: linear-gradient(135deg, #d4af37, #f4c542); color: #1a1a1a; font-weight: 700;">
+                                🌱 Dicas Iniciante <span id="contador-dicas">(3/3)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Dropdown da Lista de Perfumes -->
+                    <div style="max-width: 800px; margin: 30px auto;">
+                        <button 
+                            id="toggle-list-button"
+                            onclick="toggleListaPerfumes()"
+                            style="
+                                width: 100%;
+                                padding: 15px 20px;
+                                background: rgba(212, 175, 55, 0.1);
+                                border: 2px solid rgba(212, 175, 55, 0.3);
+                                border-radius: 10px;
+                                color: #d4af37;
+                                font-size: 1em;
+                                font-weight: 600;
+                                cursor: pointer;
+                                transition: all 0.3s ease;
+                                display: flex;
+                                align-items: center;
+                                justify-content: space-between;
+                            "
+                        >
+                            <span>📋 Minha Lista (<span id="perfume-count">0</span> perfumes)</span>
+                            <span id="toggle-icon">▼</span>
+                        </button>
+                        
+                        <div id="perfume-list" class="perfume-list" style="display: none; margin-top: 10px;"></div>
+                        
+                        <!-- Botão Limpar dentro do dropdown -->
+                        <div id="clear-button-container" style="display: none; margin-top: 10px;">
+                            <button class="clear-button" onclick="limparColecao()" style="width: 100%; margin: 0;">
+                                🗑️ Limpar Toda a Coleção
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Radar de Coleção -->
+                    <div class="balance-section">
+                        <div class="balance-card">
+                            <div class="balance-title">📊 Radar da Coleção</div>
+                            <div class="balance-subtitle">Visualize o equilíbrio das famílias olfativas</div>
+                            
+                            <div class="radar-container">
+                                <canvas id="radarChart"></canvas>
+                            </div>
+
+                            <!-- Análise Gamificada -->
+                            <div id="analise-gamificada" style="margin-top: 30px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Seção: Missão -->
+            <section id="missao" class="content-section">
+                <div class="container">
+                    <header>
+                        <h1>🏆 Sua Missão</h1>
+                        <p class="subtitle">Complete sua jornada e alcance a coleção perfeita</p>
+                    </header>
+
+                    <!-- Resultado da Análise -->
+                    <div id="result-container">
+                        <div style="text-align: center; padding: 60px 20px; color: #999;">
+                            <div style="font-size: 3em; margin-bottom: 20px;">🎯</div>
+                            <h3 style="color: #d4af37; margin-bottom: 15px;">Nenhuma missão ainda</h3>
+                            <p>Vá na aba <strong>Coleção</strong> e clique em<br><strong>"Analisa minha Coleção"</strong> para gerar sua missão!</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Seção: Sugestões -->
+            <section id="sugestoes" class="content-section">
+                <div class="container">
+                    <header>
+                        <h1>💡 Pergunte ao Perfumista</h1>
+                        <p class="subtitle">Tire suas dúvidas e receba recomendações personalizadas</p>
+                    </header>
+
+                    <div class="chat-container">
+                        <div class="chat-title">🧪 O Perfumista</div>
+                        <div class="chat-subtitle">Especialista em perfumaria masculina brasileira</div>
+
+                        <!-- Mensagens do Chat -->
+                        <div id="chat-messages" class="chat-messages"></div>
+
+                        <!-- Input do Chat -->
+                        <div class="chat-input-container">
+                            <input 
+                                type="text" 
+                                id="chat-input" 
+                                class="chat-input" 
+                                placeholder="Ex: Qual perfume combina com minha coleção? Tenho R$500, o que comprar?"
+                                onkeypress="if(event.key === 'Enter') enviarPergunta()"
+                            >
+                            <button id="chat-send-button" class="chat-send-button" onclick="enviarPergunta()">
+                                📤 Enviar <span id="contador-chat">(12/12)</span>
+                            </button>
+                        </div>
+                        
+                        <!-- FAQ Dropdown -->
+                        <details style="margin-top: 20px; background: rgba(212, 175, 55, 0.05); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 8px; padding: 15px;">
+                            <summary style="cursor: pointer; font-weight: 600; color: #d4af37; font-size: 1.1em;">
+                                📚 Perguntas Frequentes (clique para expandir)
+                            </summary>
+                            <div style="margin-top: 15px; padding-left: 10px;">
+                                <details style="margin-bottom: 10px;">
+                                    <summary style="cursor: pointer; color: #fff; padding: 8px 0;">🌿 O que é família olfativa?</summary>
+                                    <p style="color: #ccc; padding-left: 20px; margin: 10px 0;">É a categoria que define o tipo de cheiro do perfume: cítrico, amadeirado, oriental, floral, etc. Ela diz quando, como e por que aquele perfume funciona.</p>
+                                </details>
+                                
+                                <details style="margin-bottom: 10px;">
+                                    <summary style="cursor: pointer; color: #fff; padding: 8px 0;">💧 EDT vs EDP vs Parfum</summary>
+                                    <div style="color: #ccc; padding-left: 20px; margin: 10px 0;">
+                                        <strong>EDT:</strong> mais leve, dura menos.<br>
+                                        <strong>EDP:</strong> mais concentrado, dura mais.<br>
+                                        <strong>Parfum:</strong> mais forte e caro, poucas borrifadas.
+                                    </div>
+                                </details>
+                                
+                                <details style="margin-bottom: 10px;">
+                                    <summary style="cursor: pointer; color: #fff; padding: 8px 0;">⏱️ Quanto tempo dura perfume?</summary>
+                                    <p style="color: #ccc; padding-left: 20px; margin: 10px 0;">Depende da concentração e da pele, em média <strong>6 a 12 horas</strong>.</p>
+                                </details>
+                                
+                                <details style="margin-bottom: 10px;">
+                                    <summary style="cursor: pointer; color: #fff; padding: 8px 0;">🎯 Como aplicar perfume?</summary>
+                                    <div style="color: #ccc; padding-left: 20px; margin: 10px 0;">
+                                        <strong>Onde:</strong> Pescoço, Pulsos, Peito<br>
+                                        <strong>Quantos:</strong><br>
+                                        • Dia: 2–3 EDT / 1–2 EDP<br>
+                                        • Noite: 4–5 EDT / 2–3 EDP<br>
+                                        <strong>💡 Dica:</strong> Não esfregar. Especialmente os punhos.
+                                    </div>
+                                </details>
+                                
+                                <details style="margin-bottom: 10px;">
+                                    <summary style="cursor: pointer; color: #fff; padding: 8px 0;">💵 Orçamento para iniciante?</summary>
+                                    <p style="color: #ccc; padding-left: 20px; margin: 10px 0;">Entre <strong>R$ 300 e R$ 1000</strong> já dá para montar uma coleção funcional.</p>
+                                </details>
+                                
+                                <details style="margin-bottom: 10px;">
+                                    <summary style="cursor: pointer; color: #fff; padding: 8px 0;">🔄 Clone vs original?</summary>
+                                    <p style="color: #ccc; padding-left: 20px; margin: 10px 0;">Clone copia cheiro. Original entrega <strong>qualidade, evolução e performance</strong>.</p>
+                                </details>
+                                
+                                <details style="margin-bottom: 10px;">
+                                    <summary style="cursor: pointer; color: #fff; padding: 8px 0;">📊 Quantos perfumes devo ter?</summary>
+                                    <p style="color: #ccc; padding-left: 20px; margin: 10px 0;"><strong>3 ou 4.</strong> Um para calor, um para frio, um para noite e um para trabalho. Isso cobre 95% das situações.</p>
+                                </details>
+                                
+                                <details style="margin-bottom: 10px;">
+                                    <summary style="cursor: pointer; color: #fff; padding: 8px 0;">💼 Perfume para trabalho?</summary>
+                                    <p style="color: #ccc; padding-left: 20px; margin: 10px 0;">Famílias <strong>frescas, aromáticas e cítricas</strong>.</p>
+                                </details>
+                                
+                                <details style="margin-bottom: 10px;">
+                                    <summary style="cursor: pointer; color: #fff; padding: 8px 0;">🌙 Perfume para noite?</summary>
+                                    <p style="color: #ccc; padding-left: 20px; margin: 10px 0;">Famílias <strong>orientais, amadeiradas e doces</strong>.</p>
+                                </details>
+                                
+                                <details style="margin-bottom: 10px;">
+                                    <summary style="cursor: pointer; color: #fff; padding: 8px 0;">☀️ Perfume para verão?</summary>
+                                    <p style="color: #ccc; padding-left: 20px; margin: 10px 0;">Cítricos, aquáticos e aromáticos.</p>
+                                </details>
+                                
+                                <details style="margin-bottom: 10px;">
+                                    <summary style="cursor: pointer; color: #fff; padding: 8px 0;">❄️ Perfume para inverno?</summary>
+                                    <p style="color: #ccc; padding-left: 20px; margin: 10px 0;">Amadeirados, especiados e orientais.</p>
+                                </details>
+                                
+                                <details style="margin-bottom: 10px;">
+                                    <summary style="cursor: pointer; color: #fff; padding: 8px 0;">✈️ Perfume importado vale?</summary>
+                                    <p style="color: #ccc; padding-left: 20px; margin: 10px 0;">Na maioria das vezes sim, <strong>mais qualidade e fixação</strong>.</p>
+                                </details>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+// ===================================
+// CONFIGURAÇÃO SUPABASE (TRACKING)
+// ===================================
+
+const SUPABASE_URL = 'https://frivahuiffxrxzcjrlom.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZyaXZhaHVpZmZ4cnh6Y2pybG9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzgxMTAsImV4cCI6MjA4MzA1NDExMH0.9cIQs8qhctqZsiNlh4hOVHCjOBMR7UBFpBXiVST6iL4';
+
+// Inicializa Supabase
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const trackingEnabled = true;
+console.log('✅ Tracking Supabase ativado');
+
+// Gera ou recupera ID anônimo do usuário
+function getAnonymousUserId() {
+    let userId = localStorage.getItem('anonymousUserId');
+    if (!userId) {
+        userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('anonymousUserId', userId);
+        console.log('🆔 Novo ID anônimo gerado:', userId);
+    }
+    return userId;
+}
+
+const anonymousUserId = getAnonymousUserId();
+
+// ===================================
+// FUNÇÕES DE TRACKING
+// ===================================
+
+async function trackEvent(eventType, eventData = {}) {
+    if (!trackingEnabled) return;
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from('user_events')
+            .insert([{
+                user_anonymous_id: anonymousUserId,
+                event_type: eventType,
+                event_data: eventData
+            }]);
+        
+        if (error) {
+            console.error('❌ Erro ao trackear evento:', error);
+        } else {
+            console.log('📊 Evento trackeado:', eventType);
         }
-        return data;
+    } catch (err) {
+        console.error('❌ Erro no tracking:', err);
     }
 }
 
+async function trackProfile(perfil) {
+    if (!trackingEnabled) return;
+    
+    try {
+        // Remove nome antes de salvar (LGPD compliant)
+        const { nome, ...perfilSemNome } = perfil;
+        
+        // Tenta fazer upsert (insert ou update)
+        const { data, error } = await supabaseClient
+            .from('user_profiles')
+            .upsert([{
+                user_anonymous_id: anonymousUserId,
+                ...perfilSemNome,
+                updated_at: new Date().toISOString()
+            }], {
+                onConflict: 'user_anonymous_id'
+            });
+        
+        if (error) {
+            console.error('❌ Erro ao salvar perfil:', error);
+        } else {
+            console.log('✅ Perfil salvo no Supabase (sem nome)');
+            trackEvent('perfil_atualizado', { campos: Object.keys(perfilSemNome) });
+        }
+    } catch (err) {
+        console.error('❌ Erro ao salvar perfil:', err);
+    }
+}
+
+async function trackCollection(colecao, analise) {
+    if (!trackingEnabled) return;
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from('user_collections')
+            .insert([{
+                user_anonymous_id: anonymousUserId,
+                perfumes: colecao,
+                total_perfumes: colecao.length,
+                familias_distribuicao: analise.perfumes_por_familia,
+                familia_dominante: analise.familia_dominante.nome
+            }]);
+        
+        if (error) {
+            console.error('❌ Erro ao salvar coleção:', error);
+        } else {
+            console.log('✅ Coleção salva no Supabase');
+        }
+    } catch (err) {
+        console.error('❌ Erro ao salvar coleção:', err);
+    }
+}
+
+async function trackAnalysis(analiseData, nivel, recomendacoes) {
+    if (!trackingEnabled) return;
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from('user_analyses')
+            .insert([{
+                user_anonymous_id: anonymousUserId,
+                perfumes_analisados: minhaColecao,
+                familias_lacunas: analiseData.top3_faltando || [],
+                recomendacoes: recomendacoes || [],
+                nivel_usuario: nivel ? nivel.nome : null,
+                pontos_gamificacao: nivel ? nivel.pontos : 0
+            }]);
+        
+        if (error) {
+            console.error('❌ Erro ao salvar análise:', error);
+        } else {
+            console.log('✅ Análise salva no Supabase');
+            trackEvent('analise_completa', {
+                total_perfumes: minhaColecao.length,
+                nivel: nivel ? nivel.nome : null,
+                pontos: nivel ? nivel.pontos : 0
+            });
+        }
+    } catch (err) {
+        console.error('❌ Erro ao salvar análise:', err);
+    }
+}
+
+// ===================================
+// NAVEGAÇÃO ENTRE ABAS
+// ===================================
+
+// Adiciona eventos de clique nas abas
+document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+        const section = item.getAttribute('data-section');
+        
+        // Remove active de todas as abas e seções
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+        
+        // Adiciona active na aba e seção clicada
+        item.classList.add('active');
+        document.getElementById(section).classList.add('active');
+        
+        // Se entrou na aba Missão, carrega análise em cache (se existir)
+        if (section === 'missao') {
+            carregarAnaliseCache();
+        }
+    });
+});
+
+// Função para carregar análise em cache ao abrir a aba Missão
+function carregarAnaliseCache() {
+    const ultimaAnalise = JSON.parse(localStorage.getItem('ultimaAnalise') || '{}');
+    const colecaoAtualString = JSON.stringify(minhaColecao.sort());
+    const resultContainer = document.getElementById('result-container');
+    
+    // Se tem análise salva E a coleção não mudou
+    if (ultimaAnalise.colecao === colecaoAtualString && ultimaAnalise.dados) {
+        console.log('📦 Carregando análise em cache');
+        
+        // Restaura dados globais para rotação de missões
+        window.dadosAnaliseAtual = ultimaAnalise.dados;
+        window.missaoAtualIndex = 0;
+        
+        renderizarMissaoGameficada(ultimaAnalise.dados);
+    }
+}
+
+// ===================================
+// PERFIL
+// ===================================
+
+function carregarPerfil() {
+    const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
+    
+    if (perfil.nome) document.getElementById('nome').value = perfil.nome;
+    if (perfil.clima) document.getElementById('clima').value = perfil.clima;
+    if (perfil.ambiente) document.getElementById('ambiente').value = perfil.ambiente;
+    if (perfil.idade) document.getElementById('idade').value = perfil.idade;
+    if (perfil.orcamento) document.getElementById('orcamento').value = perfil.orcamento;
+    
+    // Carrega email
+    const email = localStorage.getItem('userEmail');
+    if (email) {
+        document.getElementById('email').value = email;
+    }
+}
+
+function salvarPerfil() {
+    const perfil = {
+        nome: document.getElementById('nome').value,
+        clima: document.getElementById('clima').value,
+        ambiente: document.getElementById('ambiente').value,
+        idade: document.getElementById('idade').value,
+        orcamento: document.getElementById('orcamento').value
+    };
+    
+    // Salva email separadamente (para rate limiting VIP)
+    const email = document.getElementById('email').value.trim();
+    if (email) {
+        localStorage.setItem('userEmail', email.toLowerCase());
+        console.log('📧 Email salvo:', email);
+    }
+    
+    localStorage.setItem('perfilUsuario', JSON.stringify(perfil));
+    
+    // 📊 TRACKING: Salva perfil no Supabase (sem nome)
+    trackProfile(perfil);
+    
+    // Atualiza barra de nível com nome
+    atualizarNivelDOM();
+    
+    // Mostra mensagem de sucesso
+    const message = document.getElementById('profile-saved-message');
+    message.style.display = 'block';
+    
+    setTimeout(() => {
+        message.style.display = 'none';
+    }, 3000);
+}
+
+// ===================================
+// COLEÇÃO
+// ===================================
+
+let minhaColecao = JSON.parse(localStorage.getItem('minhaColecao') || '[]');
+let radarChart = null;
+let radarRenderizando = false;
+
+function adicionarPerfume() {
+    const input = document.getElementById('perfume-input');
+    const selectConcentracao = document.getElementById('concentracao-select');
+    let nome = input.value.trim();
+    const concentracao = selectConcentracao.value;
+    
+    if (!nome) {
+        alert('Digite o nome do perfume');
+        return;
+    }
+    
+    // Capitaliza primeira letra de cada palavra
+    nome = capitalizarPerfume(nome);
+    
+    // Verifica se perfume já existe (mesmo nome, qualquer concentração)
+    const jaExiste = minhaColecao.some(p => {
+        const perfumeNome = typeof p === 'string' ? p : p.nome;
+        return perfumeNome === nome;
+    });
+    
+    if (jaExiste) {
+        alert('Este perfume já está na sua coleção');
+        return;
+    }
+    
+    // Adiciona com concentração
+    minhaColecao.push({ nome, concentracao });
+    
+    // Ordena alfabeticamente pelo nome
+    minhaColecao.sort((a, b) => {
+        const nomeA = typeof a === 'string' ? a : a.nome;
+        const nomeB = typeof b === 'string' ? b : b.nome;
+        return nomeA.localeCompare(nomeB, 'pt-BR', { sensitivity: 'base' });
+    });
+    
+    localStorage.setItem('minhaColecao', JSON.stringify(minhaColecao));
+    
+    // 🔓 INVALIDA cache ANTES de atualizar nível
+    if (window.cacheInteligente) {
+        window.cacheInteligente.invalidarAnalise();
+        console.log('🗑️ Cache invalidado - nova análise necessária');
+    }
+    localStorage.removeItem('ultimaColecaoAnalisada');
+    localStorage.removeItem('ultimaAnalise');
+    
+    // 🗑️ Limpa cards gamificados (força aviso de desatualização)
+    const container = document.getElementById('analise-gamificada');
+    if (container) {
+        renderizarAnaliseGameficada(null);  // null = mostra aviso
+    }
+    
+    // 📊 TRACKING: Perfume adicionado
+    trackEvent('perfume_adicionado', {
+        perfume: nome,
+        total_colecao: minhaColecao.length
+    });
+    
+    input.value = '';
+    renderizarLista();
+    atualizarNivelDOM();  // Agora recalcula com cache limpo
+    
+    // ✨ Adiciona GLOW no botão Analisar
+    const btnAnalisar = document.getElementById('btn-analisar');
+    if (btnAnalisar && !btnAnalisar.style.animation) {
+        btnAnalisar.style.animation = 'missionPulse 1.5s ease-in-out infinite';
+        console.log('✨ Botão Analisar piscando - coleção mudou!');
+    }
+    
+    // Atualiza contadores visuais
+    if (window.atualizarContadores) {
+        setTimeout(() => atualizarContadores(), 100);
+    }
+}
+
+function capitalizarPerfume(texto) {
+    // Palavras que não devem ser capitalizadas (exceto se forem a primeira palavra)
+    const excecoes = ['de', 'da', 'do', 'das', 'dos', 'e', 'pour', 'by', 'le', 'la', 'for'];
+    
+    return texto.toLowerCase()
+        .split(' ')
+        .map((palavra, index) => {
+            // Primeira palavra sempre capitaliza
+            if (index === 0) {
+                return palavra.charAt(0).toUpperCase() + palavra.slice(1);
+            }
+            
+            // Palavras de exceção não capitalizam (a menos que seja primeira)
+            if (excecoes.includes(palavra)) {
+                return palavra;
+            }
+            
+            // Resto capitaliza
+            return palavra.charAt(0).toUpperCase() + palavra.slice(1);
+        })
+        .join(' ');
+}
+
+function removerPerfume(index) {
+    const perfumeRemovido = minhaColecao[index];
+    minhaColecao.splice(index, 1);
+    localStorage.setItem('minhaColecao', JSON.stringify(minhaColecao));
+    
+    // 🔓 INVALIDA cache ANTES de atualizar nível (importante!)
+    if (window.cacheInteligente) {
+        window.cacheInteligente.invalidarAnalise();
+    }
+    localStorage.removeItem('ultimaColecaoAnalisada');
+    localStorage.removeItem('ultimaAnalise');
+    console.log('🗑️ Cache invalidado - pontos serão recalculados');
+    
+    // 🗑️ Limpa cards gamificados
+    const container = document.getElementById('analise-gamificada');
+    if (container) {
+        renderizarAnaliseGameficada(null);
+    }
+    
+    // 📊 TRACKING: Perfume removido
+    trackEvent('perfume_removido', {
+        perfume: perfumeRemovido,
+        total_colecao: minhaColecao.length
+    });
+    
+    renderizarLista();
+    atualizarNivelDOM();  // Agora vai recalcular com análise limpa
+    
+    // ✨ Glow no botão Analisar
+    const btnAnalisar = document.getElementById('btn-analisar');
+    if (btnAnalisar && !btnAnalisar.style.animation) {
+        btnAnalisar.style.animation = 'missionPulse 1.5s ease-in-out infinite';
+        console.log('✨ Botão Analisar piscando - coleção mudou!');
+    }
+    
+    // Atualiza contadores visuais
+    if (window.atualizarContadores) {
+        setTimeout(() => atualizarContadores(), 100);
+    }
+}
+
+function limparColecao() {
+    if (confirm('Deseja realmente limpar toda a coleção?')) {
+        minhaColecao = [];
+        localStorage.setItem('minhaColecao', JSON.stringify(minhaColecao));
+        
+        // 🔓 INVALIDA análise antiga
+        localStorage.removeItem('ultimaColecaoAnalisada');
+        localStorage.removeItem('ultimaAnalise');
+        console.log('🔓 Análise invalidada - coleção limpa');
+        
+        // Limpa radar (sem regenerar, pois não há perfumes)
+        if (window.radarChart) {
+            window.radarChart.destroy();
+            window.radarChart = null;
+        }
+        
+        renderizarLista();
+        atualizarRadar();
+        atualizarNivelDOM();
+    }
+}
+
+function renderizarLista() {
+    const container = document.getElementById('perfume-list');
+    const countSpan = document.getElementById('perfume-count');
+    
+    // Atualiza contador
+    if (countSpan) {
+        countSpan.textContent = minhaColecao.length;
+    }
+    
+    if (minhaColecao.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">Nenhum perfume adicionado ainda</p>';
+        return;
+    }
+    
+    container.innerHTML = minhaColecao.map((perfume, index) => {
+        // Compatibilidade: suporta tanto string quanto objeto
+        const nome = typeof perfume === 'string' ? perfume : perfume.nome;
+        const concentracao = typeof perfume === 'string' ? 'EDP' : perfume.concentracao;
+        
+        return `
+            <div class="perfume-item">
+                <span class="perfume-name">${nome} <span style="color: #d4af37; font-size: 0.85em;">(${concentracao})</span></span>
+                <button class="remove-button" onclick="removerPerfume(${index})">🗑️ Remover</button>
+            </div>
+        `;
+    }).join('');
+}
+
+function toggleListaPerfumes() {
+    const lista = document.getElementById('perfume-list');
+    const icon = document.getElementById('toggle-icon');
+    const button = document.getElementById('toggle-list-button');
+    const clearContainer = document.getElementById('clear-button-container');
+    
+    if (lista.style.display === 'none') {
+        lista.style.display = 'block';
+        if (minhaColecao.length > 0) {
+            clearContainer.style.display = 'block';
+        }
+        icon.textContent = '▲';
+        button.style.borderBottomLeftRadius = '0';
+        button.style.borderBottomRightRadius = '0';
+    } else {
+        lista.style.display = 'none';
+        clearContainer.style.display = 'none';
+        icon.textContent = '▼';
+        button.style.borderBottomLeftRadius = '10px';
+        button.style.borderBottomRightRadius = '10px';
+    }
+}
+
+function atualizarRadar() {
+    // Função desabilitada - radar só atualiza via API agora
+    // console.log('⚠️ atualizarRadar() desabilitada - use atualizarRadarComAPI()');
+}
+
+function atualizarRadarComAPI(analiseAPI) {
+    // Se não recebeu parâmetro, tenta carregar do localStorage
+    if (!analiseAPI) {
+        console.log('📦 Nenhum parâmetro recebido, carregando do localStorage...');
+        const ultimaAnalise = JSON.parse(localStorage.getItem('ultimaAnalise') || '{}');
+        if (ultimaAnalise.dados && ultimaAnalise.dados.analise_colecao) {
+            analiseAPI = ultimaAnalise.dados.analise_colecao;
+            console.log('✅ Análise carregada do localStorage');
+        } else {
+            console.log('❌ Sem análise salva no localStorage');
+            return;
+        }
+    }
+    
+    console.log('📊 Atualizando radar com classificação da API');
+    console.log('📦 Dados recebidos:', analiseAPI);
+    
+    if (!analiseAPI || !analiseAPI.perfumes_por_familia) {
+        console.error('❌ analiseAPI inválida:', analiseAPI);
+        return;
+    }
+    
+    console.log('👉 perfumes_por_familia:', analiseAPI.perfumes_por_familia);
+    
+    // Dados para o radar
+    const familias = [
+        '🍋 Fresco',
+        '🌳 Aromático',
+        '🍯 Doce',
+        '🪵 Amadeirado',
+        '🌶️ Especiado',
+        '💧 Aquático',
+        '🧼 Talco',
+        '🌸 Floral',
+        '🍇 Frutado'
+    ];
+    
+    // MAPEAMENTO CORRETO: API retorna SEM emoji
+    const mapeamento = {
+        'Fresco/Cítrico': '🍋 Fresco',
+        'Aromático/Verde': '🌳 Aromático',
+        'Doce/Gourmand': '🍯 Doce',
+        'Amadeirado': '🪵 Amadeirado',
+        'Especiado/Oriental': '🌶️ Especiado',
+        'Aquático': '💧 Aquático',
+        'Talco/Fougère': '🧼 Talco',
+        'Floral': '🌸 Floral',
+        'Frutado': '🍇 Frutado'
+    };
+    
+    // Inverte mapeamento: emoji → nome_api
+    const mapeamentoInverso = {};
+    Object.keys(mapeamento).forEach(nomeAPI => {
+        mapeamentoInverso[mapeamento[nomeAPI]] = nomeAPI;
+    });
+    
+    // Extrai valores usando mapeamento
+    const valores = familias.map(familiaEmoji => {
+        const nomeAPI = mapeamentoInverso[familiaEmoji];
+        const valor = analiseAPI.perfumes_por_familia[nomeAPI] || 0;
+        console.log(`  ${familiaEmoji} (${nomeAPI}): ${valor}`);
+        return valor;
+    });
+    
+    console.log('📊 Valores para radar:', valores);
+    
+    renderizarRadarChart(familias, valores, analiseAPI);
+    
+    // Renderiza análise gamificada
+    renderizarAnaliseGameficada(analiseAPI);
+}
+
+function renderizarAnaliseGameficada(analise) {
+    const container = document.getElementById('analise-gamificada');
+    if (!container) return;
+    
+    // Se não tem análise válida, limpa cards
+    if (!analise || !analise.perfumes_por_familia) {
+        container.innerHTML = `
+            <div style="
+                text-align: center;
+                padding: 40px;
+                color: #999;
+                background: rgba(255, 152, 0, 0.1);
+                border: 2px solid #ff9800;
+                border-radius: 15px;
+            ">
+                <div style="font-size: 2em; margin-bottom: 10px;">⚠️</div>
+                <div style="font-size: 1.2em; margin-bottom: 10px;">Análise desatualizada</div>
+                <div style="font-size: 0.9em;">
+                    Clique no botão <strong style="color: #d4af37;">Analisar</strong> (que está piscando) para atualizar os cards
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    const nivel = analise.nivel || {};
+    const equilibrio = analise.equilibrio || {};
+    const dominante = analise.familia_dominante || {};
+    const top3_faltando = analise.top3_faltando || [];
+    
+    const html = `
+        <!-- Nível do Usuário -->
+        <div style="
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
+            border: 2px solid ${nivel.emoji === '🎯' ? '#4caf50' : nivel.emoji === '⚠️' ? '#ff9800' : '#d4af37'};
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+        ">
+            <div style="text-align: center; margin-bottom: 15px;">
+                <div style="font-size: 3em;">${nivel.emoji || '🎯'}</div>
+                <div style="font-size: 1.5em; font-weight: 700; color: #d4af37; margin-top: 10px;">
+                    ${nivel.titulo || 'INICIANTE'}
+                </div>
+            </div>
+            <div style="color: #ccc; text-align: center; line-height: 1.6;">
+                ${nivel.descricao || 'Continue adicionando perfumes à sua coleção!'}
+            </div>
+        </div>
+        
+        <!-- Status de Equilíbrio -->
+        <div style="
+            background: linear-gradient(135deg, ${
+                equilibrio.status === 'equilibrada' ? 'rgba(76, 175, 80, 0.15)' :
+                equilibrio.status === 'leve_desequilibrio' ? 'rgba(255, 152, 0, 0.15)' :
+                'rgba(255, 68, 68, 0.15)'
+            }, rgba(0, 0, 0, 0.1));
+            border: 2px solid ${
+                equilibrio.status === 'equilibrada' ? '#4caf50' :
+                equilibrio.status === 'leve_desequilibrio' ? '#ff9800' :
+                '#ff4444'
+            };
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+        ">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                <div style="font-size: 2.5em;">${equilibrio.emoji || '✅'}</div>
+                <div>
+                    <div style="font-size: 1.3em; font-weight: 700; color: #d4af37;">
+                        ${equilibrio.status === 'equilibrada' ? '✅ Coleção Equilibrada' :
+                          equilibrio.status === 'leve_desequilibrio' ? '⚠️ Leve Desequilíbrio' :
+                          '🚨 Coleção Desbalanceada'}
+                    </div>
+                    <div style="color: #999; font-size: 0.9em; margin-top: 5px;">
+                        Família dominante: ${dominante.nome || 'N/A'} (${dominante.porcentagem || 0}%)
+                    </div>
+                </div>
+            </div>
+            <div style="color: #ccc; line-height: 1.6;">
+                ${equilibrio.mensagem || 'Continue diversificando sua coleção!'}
+            </div>
+        </div>
+        
+        <!-- Famílias que Faltam -->
+        ${top3_faltando.length > 0 ? `
+        <div style="
+            background: linear-gradient(135deg, rgba(100, 181, 246, 0.15), rgba(100, 181, 246, 0.05));
+            border: 2px solid #64b5f6;
+            border-radius: 15px;
+            padding: 25px;
+        ">
+            <div style="font-size: 1.3em; font-weight: 700; color: #64b5f6; margin-bottom: 15px;">
+                🎯 Próximas Metas
+            </div>
+            <div style="color: #ccc; line-height: 1.8;">
+                Expanda sua coleção nestas famílias:<br>
+                ${top3_faltando.map((fam, i) => `<strong style="color: #d4af37;">${i + 1}. ${fam}</strong>`).join('<br>')}
+            </div>
+        </div>
+        ` : ''}
+    `;
+    
+    container.innerHTML = html;
+}
+
+function renderizarRadarChart(familias, valores, analise, tentativa = 0) {
+    // Evita múltiplas chamadas simultâneas
+    if (radarRenderizando) {
+        console.log('⚠️ Radar já está sendo renderizado. Ignorando chamada duplicada.');
+        return;
+    }
+    
+    const ctx = document.getElementById('radarChart');
+    
+    if (!ctx) {
+        // Máximo 3 tentativas para evitar loop infinito
+        if (tentativa >= 3) {
+            console.error('❌ Canvas radarChart não encontrado após 3 tentativas. Abortando.');
+            return;
+        }
+        
+        console.log(`🔍 Tentativa ${tentativa + 1}/3: Canvas não encontrado. Mudando para aba Coleção...`);
+        
+        // Força mudança para aba Coleção
+        const abaColecao = document.querySelector('.nav-item[data-section="colecao"]');
+        if (abaColecao && !abaColecao.classList.contains('active')) {
+            abaColecao.click();
+            console.log('👆 Clicou na aba Coleção');
+        }
+        
+        // Tenta novamente após 1500ms (tempo generoso para renderizar)
+        setTimeout(() => renderizarRadarChart(familias, valores, analise, tentativa + 1), 1500);
+        return;
+    }
+    
+    // Verifica se canvas está visível
+    const isVisible = ctx.offsetParent !== null;
+    if (!isVisible && tentativa < 3) {
+        console.log(`⚠️ Canvas existe mas não está visível. Tentativa ${tentativa + 1}/3`);
+        setTimeout(() => renderizarRadarChart(familias, valores, analise, tentativa + 1), 1500);
+        return;
+    }
+    
+    console.log('✅ Canvas encontrado e visível! Renderizando radar...');
+    radarRenderizando = true;
+    
+    // Destrói chart anterior se existir
+    if (radarChart) {
+        radarChart.destroy();
+    }
+    
+    // Aguarda canvas estar completamente renderizado (1500ms)
+    setTimeout(() => {
+        try {
+            // Cria novo chart
+            radarChart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: familias,
+            datasets: [{
+                label: 'Sua Coleção',
+                data: valores,
+                fill: true,
+                backgroundColor: 'rgba(212, 175, 55, 0.2)',
+                borderColor: '#d4af37',
+                pointBackgroundColor: '#d4af37',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: '#d4af37'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1,
+                        color: '#999'
+                    },
+                    grid: {
+                        color: 'rgba(212, 175, 55, 0.2)'
+                    },
+                    pointLabels: {
+                        color: '#d4af37',
+                        font: {
+                            size: 12,
+                            weight: '600'
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+        } catch (error) {
+            console.error('❌ Erro ao criar radar chart:', error);
+        } finally {
+            // Libera flag
+            radarRenderizando = false;
+        }
+    }, 1500); // Aguarda 1500ms para garantir que canvas está completamente renderizado
+    
+    // Grid de famílias foi substituído por análise gamificada
+}
+
+// Função atualizarColecao removida - agora usamos apenas analisarColecao
+
+// ===================================
+// MISSÃO (ANÁLISE)
+// ===================================
+
+async function analisarColecao() {
+    console.log('🚀 analisarColecao() CHAMADA!');
+    
+    // ✨ PARA animação do botão
+    const btnAnalisar = document.getElementById('btn-analisar');
+    if (btnAnalisar) {
+        btnAnalisar.style.animation = '';
+        btnAnalisar.style.background = '';
+        btnAnalisar.style.boxShadow = '';
+        console.log('🛑 Animação do botão parada');
+    }
+    
+    if (minhaColecao.length === 0) {
+        alert('Adicione perfumes à sua coleção primeiro!');
+        return;
+    }
+    
+    // 🔒 RATE LIMITING: Verifica se pode executar
+    if (window.rateLimiter) {
+        const check = window.rateLimiter.podeExecutar('analise');
+        
+        if (!check.pode) {
+            mostrarPopupLimite('analise', window.rateLimiter.limits.basico.analise.max, check.proximoReset);
+            return;
+        }
+        
+        console.log(`✅ Rate Limit OK: ${check.restante} análises restantes este mês`);
+    }
+    
+    // 🗑️ LIMPA CACHE ao clicar em Analisar (força nova análise)
+    if (window.cacheInteligente) {
+        window.cacheInteligente.invalidarAnalise();
+        console.log('🗑️ Cache de análise invalidado - forçando nova análise');
+    }
+    
+    console.log('✅ Coleção tem', minhaColecao.length, 'perfumes');
+    
+    const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
+    
+    // Verifica cache
+    const ultimaAnalise = JSON.parse(localStorage.getItem('ultimaAnalise') || '{}');
+    const colecaoAtualString = JSON.stringify(minhaColecao.sort());
+    const perfilAtualString = JSON.stringify(perfil);
+    
+    // Usa cache APENAS se coleção E perfil não mudaram
+    if (ultimaAnalise.colecao === colecaoAtualString && 
+        ultimaAnalise.perfil === perfilAtualString && 
+        ultimaAnalise.dados) {
+        console.log('✅ Usando análise em cache (coleção e perfil iguais)');
+        
+        // Atualiza radar
+        atualizarRadarComAPI(ultimaAnalise.dados.analise_colecao);
+        
+        // Renderiza missão (mas NÃO muda aba)
+        const resultContainer = document.getElementById('result-container');
+        renderizarMissaoGameficada(ultimaAnalise.dados);
+        
+        // Adiciona glow na aba Missão
+        adicionarGlowMissao();
+        
+        // Toast
+        mostrarToast('✅ Análise carregada!', 'Vá na aba Missão para ver suas sugestões', 'success');
+        return;
+    }
+    
+    if (ultimaAnalise.perfil !== perfilAtualString) {
+        console.log('🔄 Perfil mudou! Forçando nova análise...');
+    }
+    
+    console.log('🔄 Iniciando nova análise via API...');
+    
+    // Mostra loading NO RADAR (não modal que bloqueia tudo)
+    const radarContainer = document.querySelector('.radar-container');
+    const radarBackup = radarContainer.innerHTML;
+    radarContainer.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px;">
+            <div class="analyzing-spinner"></div>
+            <div style="color: #d4af37; font-weight: 600; margin-top: 20px; font-size: 1.1em;">
+                Analisando coleção...
+            </div>
+            <div style="color: #999; font-size: 0.9em; margin-top: 8px;">
+                Classificando via Fragantica
+            </div>
+        </div>
+    `;
+    
+    // Mostra loading na aba Missão também
+    const resultContainer = document.getElementById('result-container');
+    resultContainer.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px;">
+            <div class="analyzing-spinner"></div>
+            <div style="color: #d4af37; font-weight: 600; margin-top: 20px; font-size: 1.3em;">
+                Gerando sua missão...
+            </div>
+            <div style="color: #999; font-size: 1em; margin-top: 8px;">
+                Analisando perfumes e criando sugestões personalizadas
+            </div>
+        </div>
+    `;
+    
+    try {
+        const blacklist = JSON.parse(localStorage.getItem('perfumesBlacklist') || '[]');
+        const naoSugerir = minhaColecao.concat(blacklist);
+        
+        const diagnostico = `
+PERFIL DO USUÁRIO:
+Clima: ${perfil.clima || 'Temperado'}
+Ambiente: ${perfil.ambiente || 'Ambos'}
+Idade: ${perfil.idade || '25-35'} anos
+Orçamento: ${perfil.orcamento || 'R$ 300-500'}
+
+COLEÇÃO ATUAL (${minhaColecao.length} perfumes):
+${minhaColecao.map((p, i) => {
+    const nome = typeof p === 'string' ? p : p.nome;
+    const concentracao = typeof p === 'string' ? 'EDP' : p.concentracao;
+    return `${i + 1}. ${nome} (${concentracao})`;
+}).join('\n')}
+
+⚠️ NUNCA SUGERIR (usuário já tem OU não gostou):
+${naoSugerir.map(p => typeof p === 'string' ? p : p.nome).join(', ')}
+
+⚠️ PERFUMES JÁ SUGERIDOS ANTES (NÃO REPITA):
+${window.perfumesJaSugeridos && window.perfumesJaSugeridos.length > 0 ? window.perfumesJaSugeridos.join(', ') : 'Nenhum ainda'}
+
+INSTRUÇÕES CRÍTICAS:
+
+===========================================================
+📊 PARTE 1: CLASSIFICAÇÃO FRAGANTICA (OBRIGATÓRIO)
+===========================================================
+
+Para CADA perfume acima, você DEVE:
+
+1. Consultar a página do perfume no Fragantica
+2. Olhar a seção "Main Accords" (Principais Acordes)
+3. Usar a PRIMEIRA família listada nos acordes
+
+EXEMPLO CORRETO:
+- "Nishane Hacivat" → Main Accords: woody, citrus, mossy
+  → FAMÍLIA: Amadeirado (porque "woody" é o primeiro)
+  
+- "Parfums de Marly Percival" → Main Accords: woody, aromatic, citrus
+  → FAMÍLIA: Amadeirado (porque "woody" é o primeiro)
+  
+- "Dior Sauvage" → Main Accords: fresh spicy, aromatic, citrus
+  → FAMÍLIA: Aromático/Verde (porque "fresh spicy" + "aromatic")
+
+MAPEAMENTO DOS ACORDES PARA FAMÍLIAS:
+- woody, cedar, sandalwood → Amadeirado
+- fresh spicy, aromatic, green → Aromático/Verde
+- sweet, vanilla, caramel, gourmand → Doce/Gourmand
+- citrus, bergamot, lemon → Fresco/Cítrico
+- spicy, oriental, amber → Especiado/Oriental
+- aquatic, marine, ozonic → Aquático
+- powdery, lavender, fougere → Talco/Fougère
+- floral, rose, jasmine → Floral
+- fruity, apple, pineapple → Frutado
+
+IMPORTANTE: Use conhecimento REAL do Fragantica, não invente!
+
+As famílias possíveis são APENAS estas 9:
+1. Fresco/Cítrico
+2. Aromático/Verde
+3. Doce/Gourmand
+4. Amadeirado
+5. Especiado/Oriental
+6. Aquático
+7. Talco/Fougère
+8. Floral
+9. Frutado
+
+Conte quantos perfumes há em cada família e identifique as 3 famílias com MENOS perfumes.
+
+===========================================================
+🚨 PARTE 2: SUGESTÕES - MARCAS DIFERENTES (OBRIGATÓRIO!) 🚨
+===========================================================
+
+Sugira EXATAMENTE 3 perfumes onde:
+
+1️⃣ CADA perfume é de uma MARCA TOTALMENTE DIFERENTE
+2️⃣ NUNCA repita a mesma marca entre os 3 perfumes
+3️⃣ Preencham as MAIORES LACUNAS da coleção
+
+❌ EXEMPLOS PROIBIDOS (ERRADO):
+- Dior Sauvage, Dior Homme, Versace Eros (Dior repetiu!)
+- Paco Rabanne Invictus, Paco Rabanne 1 Million, Dior Sauvage (Paco Rabanne repetiu!)
+- Versace Eros, Versace Dylan Blue, Armani Code (Versace repetiu!)
+
+✅ EXEMPLOS CORRETOS:
+- Dior Sauvage, Versace Eros, Paco Rabanne Invictus (3 marcas diferentes!)
+- Creed Aventus, Tom Ford Oud Wood, Yves Saint Laurent La Nuit (3 marcas diferentes!)
+- Montblanc Explorer, Carolina Herrera Bad Boy, Azzaro Wanted (3 marcas diferentes!)
+
+===========================================================
+💰 PARTE 3: ORÇAMENTO - RESPEITE RIGOROSAMENTE! 💰
+===========================================================
+
+O usuário definiu orçamento de: ${perfil.orcamento || 'R$ 300-500'}
+
+REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
+- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 300-500 (toda a faixa média)
+- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900 (topo)
+- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700 (topo)
+- Se orçamento é "Acima de R$ 1500" → Sugira perfumes premium acima de R$ 1500
+
+⚠️ R$ 300-500: ACEITE toda a faixa (inclui nacionais e importados acessíveis)
+⚠️ R$ 500+: PRIORIZE o TOPO da faixa!
+⚠️ NUNCA sugira abaixo do mínimo!
+
+EXEMPLOS:
+- Orçamento "R$ 300-500" → ✅ O Boticário Malbec (R$ 280), Phebo Vetiver (R$ 350), Hugo Boss (R$ 450)
+- Orçamento "R$ 800-1500" → ✅ Creed Aventus (R$ 1400), Tom Ford Oud Wood (R$ 1600)
+- Orçamento "R$ 800-1500" → ❌ Mont Blanc Legend (R$ 350) - MUITO ABAIXO!
+
+===========================================================
+
+REGRAS ADICIONAIS:
+4️⃣ Considere clima e ambiente do usuário
+5️⃣ VARIEDADE DE MARCAS: Misture marcas conhecidas (Dior, Chanel, YSL, Versace) com nicho acessível (Montblanc, Mancera, Lattafa)
+6️⃣ NÃO foque apenas em hidden gems - inclua best-sellers também
+7️⃣ EVITE repetir perfumes já sugeridos: ${window.perfumesJaSugeridos && window.perfumesJaSugeridos.length > 0 ? window.perfumesJaSugeridos.join(', ') : 'nenhum ainda'}
+8️⃣ **CONCENTRAÇÃO OBRIGATÓRIA**: Para CADA perfume sugerido, informe a concentração mais comum (EDT, EDP, Parfum ou Elixir). Exemplo: "Dior Sauvage EDT" ou "Creed Aventus EDP"
+
+EXEMPLOS DE BOA VARIEDADE:
+✅ Dior Sauvage EDT (mainstream), Mancera Cedrat Boise EDP (nicho), Montblanc Explorer EDP (intermediário)
+✅ Bleu de Chanel EDP (conhecido), Lattafa Khamrah EDP (nicho), Paco Rabanne Invictus EDT (popular)
+
+❌ EVITE sugestões só de marcas obscuras:
+❌ Todas as 3 de marcas desconhecidas (Phebo, Lalique, Rochas sempre)
+❌ Repetir sempre os mesmos perfumes de nicho
+
+IMPORTANTE: Classificação PRECISA + 3 MARCAS DIFERENTES + RESPEITAR ORÇAMENTO + VARIEDADE!
+
+===========================================================
+📦 FORMATO DE RESPOSTA OBRIGATÓRIO
+===========================================================
+
+Você DEVE retornar um JSON com este formato EXATO:
+
+{
+  "analise_colecao": {
+    "perfumes_por_familia": {...},
+    "familia_dominante": "...",
+    "top3_faltando": [...]
+  },
+  "recomendacoes": [
+    {
+      "nome": "Dior Sauvage",
+      "concentracao": "EDT",
+      "familia": "Aromático/Verde",
+      "faixa_preco": "R$ 400-600",
+      "por_que": "Complementa sua coleção com frescor",
+      "quando_usar": "Dia a dia, trabalho"
+    },
+    {
+      "nome": "Creed Aventus",
+      "concentracao": "EDP",
+      "familia": "Frutado",
+      "faixa_preco": "R$ 1.200-1.600",
+      "por_que": "Adiciona sofisticação",
+      "quando_usar": "Eventos, noite"
+    },
+    {
+      "nome": "Tom Ford Oud Wood",
+      "concentracao": "Parfum",
+      "familia": "Amadeirado",
+      "faixa_preco": "R$ 1.400-1.800",
+      "por_que": "Perfume de assinatura único",
+      "quando_usar": "Noite, inverno"
+    }
+  ]
+}
+
+⚠️⚠️⚠️ CRÍTICO: O campo "concentracao" é OBRIGATÓRIO em TODAS as 3 recomendações!
+Valores aceitos: "EDT", "EDP", "Parfum", "Elixir"
+
+Se você esquecer o campo "concentracao", o sistema VAI QUEBRAR!
+
+Analise e retorne análise detalhada + recomendações COM CONCENTRAÇÃO.
+`;
+        
+        console.log('📡 Chamando API Perfumista...');
+        
+        const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ diagnostico })
+        });
+        
+        console.log('📥 Resposta recebida:', response.status);
+        
+        const data = await response.json();
+        
+        console.log('📦 Dados parseados:');
+        console.log('  - analise_colecao:', data.analise_colecao ? 'existe' : 'NÃO EXISTE');
+        if (data.analise_colecao) {
+            console.log('  - perfumes_por_familia:', data.analise_colecao.perfumes_por_familia);
+            console.log('  - familia_dominante:', data.analise_colecao.familia_dominante);
+            console.log('  - top3_faltando:', data.analise_colecao.top3_faltando);
+        }
+        console.log('  - recomendacoes:', data.recomendacoes?.length || 0, 'perfumes');
+        
+        // Se API não retornou classificação
+        if (!data.analise_colecao || !data.analise_colecao.perfumes_por_familia) {
+            console.log('⚠️ API não retornou análise de famílias');
+            radarContainer.innerHTML = radarBackup;
+            alert('❌ Erro: A API não conseguiu classificar os perfumes. Tente novamente.');
+            return;
+        }
+        
+        console.log('✅ Usando classificação validada pela API');
+        
+        // Salva classificações
+        localStorage.setItem('classificacoesValidadas', JSON.stringify(data.analise_colecao.perfumes_por_familia));
+        
+        // ATUALIZA RADAR
+        atualizarRadarComAPI(data.analise_colecao);
+        
+        // Salva cache COM PERFIL
+        localStorage.setItem('ultimaAnalise', JSON.stringify({
+            colecao: colecaoAtualString,
+            perfil: perfilAtualString,
+            dados: data,
+            timestamp: Date.now()
+        }));
+        
+        // Salva globalmente
+        window.dadosAnaliseAtual = data;
+        window.missaoAtualIndex = 0;
+        
+        // 🔒 MARCA coleção como analisada
+        const colecaoAtual = minhaColecao.sort().join('|');
+        localStorage.setItem('ultimaColecaoAnalisada', colecaoAtual);
+        console.log('✅ Coleção marcada como analisada');
+        
+        // 📊 REGISTRA uso do Rate Limit
+        if (window.rateLimiter) {
+            window.rateLimiter.registrarUso('analise');
+            const status = window.rateLimiter.podeExecutar('analise');
+            console.log(`📊 Rate Limit: ${status.restante} análises restantes este mês`);
+            atualizarContadores(); // Atualiza contador visual
+        }
+        
+        // 💾 SALVA radar no localStorage
+        salvarRadarNoStorage(data.analise_colecao);
+        
+        // Tracking
+        const nivelAtual = calcularNivelAtual();
+        trackCollection(minhaColecao, data.analise_colecao);
+        trackAnalysis(data.analise_colecao, nivelAtual, data.recomendacoes);
+        
+        // Renderiza missão (mas NÃO muda aba)
+        renderizarMissaoGameficada(data);
+        
+        // Salva perfumes recomendados no histórico
+        if (data.recomendacoes && data.recomendacoes.length > 0) {
+            if (!window.perfumesJaSugeridos) {
+                window.perfumesJaSugeridos = [];
+            }
+            data.recomendacoes.forEach(rec => {
+                if (!window.perfumesJaSugeridos.includes(rec.nome)) {
+                    window.perfumesJaSugeridos.push(rec.nome);
+                }
+            });
+            console.log('📝 Histórico atualizado:', window.perfumesJaSugeridos);
+        }
+        
+        // Adiciona glow na aba Missão
+        adicionarGlowMissao();
+        
+        // Toast
+        mostrarToast('✅ Análise completa!', 'Vá na aba Missão para ver suas sugestões', 'success');
+        
+    } catch (error) {
+        console.error('Erro:', error);
+        radarContainer.innerHTML = radarBackup;
+        alert('❌ Erro ao analisar coleção. Tente novamente.');
+    }
+}
+
+function mostrarToast(titulo, subtitulo, tipo = 'success') {
+    const cor = tipo === 'success' ? '#4caf50' : '#ff6666';
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, ${cor}, ${cor}dd);
+        color: white;
+        padding: 20px 30px;
+        border-radius: 12px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        z-index: 10001;
+        font-weight: 600;
+        animation: fadeIn 0.3s ease-out;
+        max-width: 350px;
+    `;
+    toast.innerHTML = `
+        <div style="font-size: 1.1em; margin-bottom: 5px;">${titulo}</div>
+        ${subtitulo ? '<div style="font-size: 0.9em; opacity: 0.95;">' + subtitulo + '</div>' : ''}
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.transition = 'opacity 0.5s';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 500);
+    }, 3500);
+}
+
+function adicionarGlowMissao() {
+    const abaMissao = Array.from(document.querySelectorAll('.nav-item')).find(
+        item => item.getAttribute('data-section') === 'missao'
+    );
+    
+    if (abaMissao && !abaMissao.classList.contains('active')) {
+        // Usa nova animação que pisca amarelo
+        abaMissao.style.animation = 'missionPulse 1.5s ease-in-out infinite';
+        abaMissao.style.transition = 'all 0.3s ease';
+        
+        // Remove glow quando clicar na aba
+        abaMissao.addEventListener('click', function removeGlow() {
+            abaMissao.style.animation = '';
+            abaMissao.style.background = '';
+            abaMissao.style.boxShadow = '';
+            abaMissao.removeEventListener('click', removeGlow);
+        }, { once: true });
+    }
+}
+
+function limparCache() {
+    localStorage.removeItem('ultimaAnalise');
+    console.log('🗑️ Cache limpo! Próxima análise será nova.');
+    alert('✅ Cache limpo! Clique em "Analisar" para gerar nova análise.');
+}
+
+async function trocarSugestaoIndividual(indice) {
+    const dadosAnalise = window.dadosAnaliseAtual;
+    
+    if (!dadosAnalise) {
+        alert('❌ Erro: faça uma análise primeiro.');
+        return;
+    }
+    
+    const card = document.getElementById(`candidato-${indice}`);
+    if (!card) return;
+    
+    // Mostra loading no card
+    const conteudoOriginal = card.innerHTML;
+    card.innerHTML = `
+        <div style="text-align: center; padding: 40px 20px; color: #999;">
+            <div class="analyzing-spinner" style="margin: 0 auto 15px;"></div>
+            <div>🔍 Buscando nova sugestão...</div>
+        </div>
+    `;
+    
+    try {
+        const analise = dadosAnalise.analise_colecao || dadosAnalise.analise;
+        const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
+        const missaoIndex = window.missaoAtualIndex || 0;
+        
+        // Pega família alvo
+        const top3_faltando = analise.top3_faltando || [];
+        let familiaAlvo;
+        if (top3_faltando.length > missaoIndex) {
+            familiaAlvo = top3_faltando[missaoIndex];
+        } else {
+            familiaAlvo = getFamiliaComMenosPerfumes(analise.perfumes_por_familia);
+        }
+        
+        // Pega perfumes já sugeridos + blacklist para não repetir
+        const sugestoesAtuais = [];
+        for (let i = 0; i < 3; i++) {
+            const cardAtual = document.getElementById(`candidato-${i}`);
+            if (cardAtual && i !== indice) {
+                const nome = cardAtual.querySelector('.candidate-name')?.textContent.replace(/^\d+\.\s*/, '');
+                if (nome) sugestoesAtuais.push(nome);
+            }
+        }
+        
+        // Adiciona blacklist de perfumes que o usuário não gostou
+        const blacklist = JSON.parse(localStorage.getItem('perfumesBlacklist') || '[]');
+        const naoSugerir = minhaColecao.concat(sugestoesAtuais).concat(window.perfumesJaSugeridos || []).concat(blacklist);
+        
+        const prompt = `
+PERFIL DO USUÁRIO:
+Clima: ${perfil.clima || 'Temperado'}
+Ambiente: ${perfil.ambiente || 'Ambos'}
+Idade: ${perfil.idade || '25-35'} anos
+Orçamento: ${perfil.orcamento || 'R$ 300-500'}
+
+COLEÇÃO ATUAL (${minhaColecao.length} perfumes):
+${minhaColecao.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+
+⚠️ NÃO SUGERIR (usuário já tem OU não gostou):
+${naoSugerir.join(', ')}
+
+===========================================================
+🎯 MISSÃO: Sugerir 1 ÚNICO perfume
+===========================================================
+
+REGRAS CRÍTICAS:
+1️⃣ Deve ser da família: ${familiaAlvo}
+2️⃣ NÃO sugerir NENHUM da lista acima
+3️⃣ Marca DIFERENTE das outras sugestões
+
+===========================================================
+💰 ORÇAMENTO - RESPEITE RIGOROSAMENTE! 💰
+===========================================================
+
+O usuário definiu orçamento de: ${perfil.orcamento || 'R$ 300-500'}
+
+REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
+- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 300-500 (toda a faixa média)
+- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900 (topo)
+- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700 (topo)
+- Se orçamento é "Acima de R$ 1500" → Sugira perfumes premium acima de R$ 1500
+
+⚠️ R$ 300-500: ACEITE toda a faixa (nacionais e importados OK)
+⚠️ R$ 500+: PRIORIZE o TOPO!
+
+===========================================================
+
+VARIEDADE: Misture marcas conhecidas com nicho. NÃO foque só em hidden gems.
+
+Retorne APENAS 1 perfume com: nome, família, faixa_preco, por_que, quando_usar
+`;
+        
+        const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ diagnostico: prompt })
+        });
+        
+        const data = await response.json();
+        const novaSugestao = data.recomendacoes?.[0];
+        
+        if (!novaSugestao) {
+            card.innerHTML = conteudoOriginal;
+            alert('❌ Não foi possível gerar nova sugestão. Tente novamente.');
+            return;
+        }
+        
+        // Atualiza card
+        card.innerHTML = `
+            <div class="candidate-name">${indice + 1}. ${novaSugestao.nome}</div>
+            <div class="candidate-family">🌿 ${novaSugestao.familia} • 💰 ${novaSugestao.faixa_preco}</div>
+            <div class="candidate-why"><strong>Por quê:</strong> ${novaSugestao.por_que}</div>
+            <div class="candidate-when"><strong>Quando usar:</strong> ${novaSugestao.quando_usar}</div>
+            <div style="display: flex; gap: 8px; margin-top: 12px;">
+                <button 
+                    onclick="trocarSugestaoIndividual(${indice})"
+                    style="
+                        flex: 1;
+                        padding: 8px 16px;
+                        background: rgba(212, 175, 55, 0.1);
+                        border: 1px solid rgba(212, 175, 55, 0.3);
+                        border-radius: 8px;
+                        color: #d4af37;
+                        font-size: 0.9em;
+                        cursor: pointer;
+                        transition: all 0.3s;
+                    "
+                    onmouseover="this.style.background='rgba(212, 175, 55, 0.2)'"
+                    onmouseout="this.style.background='rgba(212, 175, 55, 0.1)'"
+                >
+                    🔄 Trocar esta
+                </button>
+                <button 
+                    onclick="naoGostoDesta('${novaSugestao.nome.replace(/'/g, "\\'")}', ${indice})"
+                    style="
+                        flex: 1;
+                        padding: 8px 16px;
+                        background: rgba(255, 68, 68, 0.1);
+                        border: 1px solid rgba(255, 68, 68, 0.3);
+                        border-radius: 8px;
+                        color: #ff4444;
+                        font-size: 0.9em;
+                        cursor: pointer;
+                        transition: all 0.3s;
+                    "
+                    onmouseover="this.style.background='rgba(255, 68, 68, 0.2)'"
+                    onmouseout="this.style.background='rgba(255, 68, 68, 0.1)'"
+                >
+                    👎 Não gosto
+                </button>
+            </div>
+        `;
+        
+        console.log(`✅ Sugestão ${indice + 1} trocada:`, novaSugestao.nome);
+        
+    } catch (error) {
+        console.error('Erro:', error);
+        card.innerHTML = conteudoOriginal;
+        alert('❌ Erro ao trocar sugestão. Tente novamente.');
+    }
+}
+
+function naoGostoDesta(nomePerfume, indice) {
+    // Adiciona à blacklist
+    let blacklist = JSON.parse(localStorage.getItem('perfumesBlacklist') || '[]');
+    if (!blacklist.includes(nomePerfume)) {
+        blacklist.push(nomePerfume);
+        localStorage.setItem('perfumesBlacklist', JSON.stringify(blacklist));
+        console.log('🚫 Adicionado à blacklist:', nomePerfume);
+        console.log('📋 Blacklist atual:', blacklist);
+    }
+    
+    // Remove da lista de sugeridos para não contar como "já mostrado"
+    if (window.perfumesJaSugeridos) {
+        window.perfumesJaSugeridos = window.perfumesJaSugeridos.filter(p => p !== nomePerfume);
+    }
+    
+    // Troca automaticamente por outro
+    mostrarToast('👎 Entendi!', `${nomePerfume} não será mais sugerido`, 'success');
+    trocarSugestaoIndividual(indice);
+}
+
+// ===================================
+// SUGESTÕES (CHAT)
+// ===================================
+
+async function enviarPergunta() {
+    const input = document.getElementById('chat-input');
+    const pergunta = input.value.trim();
+    
+    if (!pergunta) {
+        alert('Digite sua pergunta');
+        return;
+    }
+    
+    // 🔒 RATE LIMITING: Verifica se pode enviar
+    if (window.rateLimiter) {
+        const check = window.rateLimiter.podeExecutar('chat');
+        
+        if (!check.pode) {
+            mostrarPopupLimite('chat', window.rateLimiter.limits.basico.chat.max, check.proximoReset);
+            return;
+        }
+        
+        console.log(`✅ Rate Limit OK: ${check.restante} perguntas restantes este mês`);
+    }
+    
+    const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
+    
+    // Adiciona mensagem do usuário
+    adicionarMensagemChat('user', pergunta);
+    
+    input.value = '';
+    document.getElementById('chat-send-button').disabled = true;
+    
+    // Adiciona mensagem de loading
+    adicionarMensagemChat('assistant', '🔍 Analisando...');
+    
+    try {
+        const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                pergunta: pergunta + `\n\n[INSTRUÇÃO CRÍTICA: O usuário tem orçamento de ${perfil.orcamento || 'R$ 300-500'}. Se for "R$ 800-1500", sugira perfumes de R$ 700-1700, PRIORIZANDO os mais próximos de R$ 1500-1700. NUNCA sugira abaixo da faixa! IMPORTANTE: NÃO REPITA NENHUM DESTES PERFUMES já sugeridos antes: ${window.perfumesJaSugeridos || []}]`,
+                colecao: minhaColecao,
+                clima: perfil.clima || 'Temperado',
+                ambiente: perfil.ambiente || 'Ambos',
+                idade: perfil.idade || '25-35',
+                orcamento: perfil.orcamento || 'R$ 300-500'
+            })
+        });
+        
+        const data = await response.json();
+        
+        // Remove mensagem de loading
+        const messages = document.getElementById('chat-messages');
+        messages.removeChild(messages.lastChild);
+        
+        // Adiciona resposta
+        let resposta = data.resposta || '';
+        
+        // Se não tem resposta mas tem sugestões, cria resposta padrão
+        if (!resposta && data.sugestoes && data.sugestoes.length > 0) {
+            resposta = '✨ Aqui estão minhas recomendações baseadas no seu perfil e orçamento:';
+        }
+        
+        if (data.sugestoes && data.sugestoes.length > 0) {
+            resposta += '<div class="suggestions-grid" style="margin-top: 20px;">';
+            
+            data.sugestoes.forEach(sug => {
+                resposta += `
+                    <div class="suggestion-card">
+                        <div class="suggestion-name">${sug.nome}${sug.concentracao ? ' <span style="color: #d4af37;">(' + sug.concentracao + ')</span>' : ''}</div>
+                        <div class="suggestion-familia">${sug.familia}</div>
+                        <div class="suggestion-preco">${sug.faixa_preco}</div>
+                        <div class="suggestion-por-que">${sug.por_que}</div>
+                        <div class="suggestion-quando">${sug.quando_usar}</div>
+                    </div>
+                `;
+            });
+            
+            resposta += '</div>';
+            
+            // Salva perfumes sugeridos no histórico global
+            if (!window.perfumesJaSugeridos) {
+                window.perfumesJaSugeridos = [];
+            }
+            data.sugestoes.forEach(sug => {
+                if (!window.perfumesJaSugeridos.includes(sug.nome)) {
+                    window.perfumesJaSugeridos.push(sug.nome);
+                }
+            });
+            console.log('📝 Histórico de sugestões:', window.perfumesJaSugeridos);
+            
+            // Adiciona botão WhatsApp
+            resposta += `
+                <button 
+                    onclick="enviarSugestoesWhatsApp(${JSON.stringify(data.sugestoes).replace(/"/g, '&quot;')})"
+                    style="
+                        width: 100%;
+                        margin-top: 20px;
+                        padding: 14px;
+                        background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+                        border: none;
+                        border-radius: 10px;
+                        color: white;
+                        font-size: 1em;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s;
+                        box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
+                    "
+                    onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(37, 211, 102, 0.5)'"
+                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(37, 211, 102, 0.3)'"
+                >
+                    📱 Enviar pro meu WhatsApp
+                </button>
+            `;
+        }
+        
+        adicionarMensagemChat('assistant', resposta);
+        
+        // 📊 REGISTRA uso do Rate Limit
+        if (window.rateLimiter) {
+            window.rateLimiter.registrarUso('chat');
+            const status = window.rateLimiter.podeExecutar('chat');
+            console.log(`📊 Rate Limit: ${status.restante} perguntas restantes este mês`);
+            atualizarContadores(); // Atualiza contador visual
+        }
+        
+    } catch (error) {
+        console.error('Erro:', error);
+        
+        // Remove mensagem de loading
+        const messages = document.getElementById('chat-messages');
+        messages.removeChild(messages.lastChild);
+        
+        adicionarMensagemChat('assistant', '❌ Erro ao processar pergunta. Tente novamente.');
+    }
+    
+    document.getElementById('chat-send-button').disabled = false;
+}
+
+function adicionarMensagemChat(tipo, conteudo) {
+    const messagesContainer = document.getElementById('chat-messages');
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chat-message ${tipo}`;
+    
+    const header = tipo === 'user' ? '👤 Você' : '🧪 Perfumista';
+    
+    messageDiv.innerHTML = `
+        <div class="chat-message-header">${header}</div>
+        <div class="chat-message-content">${conteudo}</div>
+    `;
+    
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// ===================================
+// SISTEMA DE NÍVEIS E GAMIFICAÇÃO
+// ===================================
+
+function calcularNivelAtual() {
+    if (minhaColecao.length === 0) return null;
+    
+    // Tenta pegar análise do cache (da API)
+    const ultimaAnalise = JSON.parse(localStorage.getItem('ultimaAnalise') || '{}');
+    const analise = ultimaAnalise.dados?.analise_colecao;
+    
+    if (!analise || !analise.perfumes_por_familia) {
+        // Se não tem análise da API, retorna nível básico baseado só na quantidade
+        const pontosBasico = Math.min(minhaColecao.length * 4, 40);
+        return {
+            nome: pontosBasico < 25 ? "Iniciante" : "Explorador",
+            emoji: pontosBasico < 25 ? "🌱" : "🔍",
+            pontos: pontosBasico,
+            proximo: pontosBasico < 25 ? "Explorador" : "Colecionador",
+            pontosProximo: pontosBasico < 25 ? 25 : 50,
+            faixaInicio: pontosBasico < 25 ? 0 : 25,
+            cor: pontosBasico < 25 ? "#4caf50" : "#2196f3",
+            percentual: 0,
+            faltam: (pontosBasico < 25 ? 25 : 50) - pontosBasico,
+            total_perfumes: minhaColecao.length,
+            familias: 0
+        };
+    }
+    
+    const total = analise.total_perfumes;
+    const familias = analise.familias_representadas || Object.keys(analise.perfumes_por_familia).length;
+    
+    let pontos = 0;
+    
+    // 1. Quantidade (40 pontos máx)
+    pontos += Math.min(total * 4, 40);
+    
+    // 2. Diversidade (30 pontos máx)
+    pontos += Math.round((familias / 9) * 30);
+    
+    // 3. Equilíbrio (30 pontos máx)
+    const dominante = analise.familia_dominante?.porcentagem || 0;
+    if (dominante < 30) pontos += 30;
+    else if (dominante < 40) pontos += 25;
+    else if (dominante < 50) pontos += 15;
+    else if (dominante < 60) pontos += 5;
+    
+    // Total arredondado
+    pontos = Math.round(pontos);
+    pontos = Math.min(100, Math.max(0, pontos));
+    
+    // Define nível
+    let nivel = {};
+    if (pontos < 25) {
+        nivel = {
+            nome: "Iniciante",
+            emoji: "🌱",
+            pontos: pontos,
+            proximo: "Explorador",
+            pontosProximo: 25,
+            faixaInicio: 0,
+            cor: "#4caf50"
+        };
+    } else if (pontos < 50) {
+        nivel = {
+            nome: "Explorador",
+            emoji: "🔍",
+            pontos: pontos,
+            proximo: "Colecionador",
+            pontosProximo: 50,
+            faixaInicio: 25,
+            cor: "#2196f3"
+        };
+    } else if (pontos < 75) {
+        nivel = {
+            nome: "Colecionador",
+            emoji: "⭐",
+            pontos: pontos,
+            proximo: "Expert",
+            pontosProximo: 75,
+            faixaInicio: 50,
+            cor: "#9c27b0"
+        };
+    } else if (pontos < 90) {
+        nivel = {
+            nome: "Expert",
+            emoji: "💎",
+            pontos: pontos,
+            proximo: "Mestre",
+            pontosProximo: 90,
+            faixaInicio: 75,
+            cor: "#ff9800"
+        };
+    } else {
+        nivel = {
+            nome: "Mestre",
+            emoji: "👑",
+            pontos: pontos,
+            proximo: "Máximo",
+            pontosProximo: 100,
+            faixaInicio: 90,
+            cor: "#d4af37"
+        };
+    }
+    
+    // Calcula percentual CORRETO
+    const naFaixa = pontos - nivel.faixaInicio;
+    const totalFaixa = nivel.pontosProximo - nivel.faixaInicio;
+    nivel.percentual = Math.round((naFaixa / totalFaixa) * 100);
+    
+    // Calcula pontos faltantes
+    nivel.faltam = nivel.pontosProximo - pontos;
+    
+    // Adiciona dados da análise
+    nivel.total_perfumes = total;
+    nivel.familias = familias;
+    
+    return nivel;
+}
+
+// Analisa coleção localmente (classificação instantânea)
+// ===================================
+// CLASSIFICAÇÃO LOCAL (DESABILITADA - USA APENAS API AGORA)
+// ===================================
+
+/*
+function analisarColecaoLocal(perfumes) {
+    const familias = {};
+    
+    perfumes.forEach(nome => {
+        const familia = identificarFamiliaLocal(nome);
+        familias[familia] = (familias[familia] || 0) + 1;
+    });
+    
+    const total = perfumes.length;
+    const familias_representadas = Object.keys(familias).length;
+    
+    // Família dominante
+    let dominante = { nome: '', quantidade: 0, porcentagem: 0 };
+    for (const [fam, qtd] of Object.entries(familias)) {
+        if (qtd > dominante.quantidade) {
+            dominante = {
+                nome: fam,
+                quantidade: qtd,
+                porcentagem: Math.round((qtd / total) * 100)
+            };
+        }
+    }
+    
+    return {
+        total_perfumes: total,
+        familias_representadas,
+        perfumes_por_familia: familias,
+        familia_dominante: dominante
+    };
+}
+*/
+
+async function identificarFamiliaFragrantica(nomePerfume) {
+    try {
+        // Monta URL de busca do Fragantica
+        const searchQuery = encodeURIComponent(nomePerfume);
+        const fraganticaSearchURL = `https://www.fragrantica.com/search/`;
+        
+        // Tenta buscar via web search tool (se disponível)
+        console.log(`🔍 Buscando ${nomePerfume} no Fragantica...`);
+        
+        // Como não temos acesso direto ao Fragantica aqui, vamos usar a API
+        // para fazer uma busca inteligente que retorne a família
+        const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                pergunta: `Qual a família olfativa principal do perfume "${nomePerfume}"? Responda APENAS com uma das opções: Fresco/Cítrico, Aromático/Verde, Doce/Gourmand, Amadeirado, Especiado/Oriental, Aquático, Talco/Fougère, Floral, ou Frutado. Responda apenas o nome da família, sem explicações.`
+            })
+        });
+        
+        const data = await response.json();
+        const resposta = data.resposta || '';
+        
+        // Mapeia resposta para família com emoji
+        const familiaMap = {
+            'fresco': '🍋 Fresco/Cítrico',
+            'citrico': '🍋 Fresco/Cítrico',
+            'aromatico': '🌳 Aromático/Verde',
+            'verde': '🌳 Aromático/Verde',
+            'doce': '🍯 Doce/Gourmand',
+            'gourmand': '🍯 Doce/Gourmand',
+            'amadeirado': '🪵 Amadeirado',
+            'especiado': '🌶️ Especiado/Oriental',
+            'oriental': '🌶️ Especiado/Oriental',
+            'aquatico': '💧 Aquático',
+            'aquático': '💧 Aquático',
+            'talco': '🧼 Talco/Fougère',
+            'fougere': '🧼 Talco/Fougère',
+            'fougère': '🧼 Talco/Fougère',
+            'floral': '🌸 Floral',
+            'frutado': '🍇 Frutado'
+        };
+        
+        const respostaLower = resposta.toLowerCase();
+        for (const [key, familia] of Object.entries(familiaMap)) {
+            if (respostaLower.includes(key)) {
+                console.log(`✅ ${nomePerfume} → ${familia} (via API)`);
+                return familia;
+            }
+        }
+        
+        // Fallback para sistema local se API falhar
+        console.log(`⚠️ API não retornou família clara, usando sistema local`);
+        return identificarFamiliaLocal(nomePerfume);
+        
+    } catch (error) {
+        console.error('❌ Erro ao buscar no Fragantica:', error);
+        // Fallback para sistema local
+        return identificarFamiliaLocal(nomePerfume);
+    }
+}
+
+// Mantém função local como backup
+/*
+function identificarFamiliaLocal(nome) {
+    nome = nome.toLowerCase();
+    
+    // Sistema de pontuação para cada família
+    let scores = {
+        '🍋 Fresco/Cítrico': 0,
+        '🌳 Aromático/Verde': 0,
+        '🍯 Doce/Gourmand': 0,
+        '🪵 Amadeirado': 0,
+        '🌶️ Especiado/Oriental': 0,
+        '💧 Aquático': 0,
+        '🧼 Talco/Fougère': 0,
+        '🌸 Floral': 0,
+        '🍇 Frutado': 0
+    };
+    
+    // FRESCO/CÍTRICO - palavras-chave
+    const frescoKeywords = [
+        'acqua', 'agua', 'light blue', 'citrus', 'citron', 'limão', 'bergamot', 
+        'bergamota', 'lemon', 'orange', 'laranja', 'grapefruit', 'mandarin', 
+        'tangerine', 'cologne', 'colonia', 'fresh', 'fresco', 'azzaro', 'chrome',
+        'ck one', 'ck be', 'eternity', 'escape'
+    ];
+    
+    // AROMÁTICO/VERDE - palavras-chave
+    const aromaticoKeywords = [
+        'sauvage', 'bleu', 'blue', 'polo', 'green', 'verde', 'lavanda', 'lavender',
+        'sage', 'salvia', 'mint', 'menta', 'basil', 'manjericão', 'herbal',
+        'aromatic', 'aromatico', 'dior homme', 'allure homme', 'prada homme',
+        'armani', 'givenchy', 'sport', 'esporte'
+    ];
+    
+    // DOCE/GOURMAND - palavras-chave
+    const doceKeywords = [
+        'one million', '1 million', 'ultra male', 'wanted', 'scandal', '212 vip',
+        'vanilla', 'baunilha', 'caramel', 'caramelo', 'chocolate', 'tonka',
+        'praline', 'honey', 'mel', 'sweet', 'doce', 'candy', 'good girl',
+        'bombshell', 'pink sugar', 'angel', 'la vie est belle'
+    ];
+    
+    // AMADEIRADO - palavras-chave
+    const amadeiradoKeywords = [
+        'terre', 'wood', 'oud', 'aoud', 'cedro', 'cedar', 'sandalwood', 'sandalo',
+        'vetiver', 'patchouli', 'individuel', 'encre noire', 'tobacco', 'tabaco',
+        'leather', 'couro', 'suede', 'iris', 'homme intense', 'tuscan leather',
+        'terre d', 'voyage', 'antaeus'
+    ];
+    
+    // ESPECIADO/ORIENTAL - palavras-chave
+    const especiadoKeywords = [
+        'spice', 'spicebomb', 'eros', 'noir', 'black', 'intense', 'extreme',
+        'cardamom', 'cardamomo', 'pepper', 'pimenta', 'cinnamon', 'canela',
+        'clove', 'cravo', 'nutmeg', 'noz moscada', 'oriental', 'ambre', 'amber',
+        'âmbar', 'opium', 'obsession', 'interlude', 'jubilation'
+    ];
+    
+    // AQUÁTICO - palavras-chave
+    const aquaticoKeywords = [
+        'invictus', 'aqua', 'ocean', 'oceano', 'sea', 'mar', 'marine', 'marinho',
+        'cool water', 'davidoff', 'nautica', 'voyage', 'azz', 'azzaro',
+        'light blue intense', 'dylan blue', 'y eau fraiche', 'legend spirit'
+    ];
+    
+    // TALCO/FOUGÈRE - palavras-chave
+    const talcoKeywords = [
+        'royal', 'malbec', 'kouros', 'heritage', 'pasha', 'bvlgari pour homme',
+        'fahrenheit', 'habit rouge', 'brut', 'old spice', 'joop', 'grey flannel',
+        'drakkar', 'azzaro pour homme', 'pino silvestre', 'silvestre'
+    ];
+    
+    // FLORAL - palavras-chave
+    const floralKeywords = [
+        'rose', 'rosa', 'jasmine', 'jasmim', 'lily', 'lirio', 'violet', 'violeta',
+        'iris', 'geranium', 'geranio', 'neroli', 'ylang', 'magnolia', 'peony',
+        'peonia', 'flowerbomb', 'amor amor', 'la nuit tresor'
+    ];
+    
+    // FRUTADO - palavras-chave
+    const frutadoKeywords = [
+        'apple', 'maça', 'pear', 'pera', 'peach', 'pessego', 'plum', 'ameixa',
+        'berry', 'mirtilo', 'blackberry', 'raspberry', 'morango', 'strawberry',
+        'cherry', 'cereja', 'pineapple', 'abacaxi', 'mango', 'manga', 'melon',
+        'melancia', 'watermelon', 'passion fruit', 'maracuja'
+    ];
+    
+    // Conta pontos para cada família
+    frescoKeywords.forEach(kw => { if (nome.includes(kw)) scores['🍋 Fresco/Cítrico'] += 2; });
+    aromaticoKeywords.forEach(kw => { if (nome.includes(kw)) scores['🌳 Aromático/Verde'] += 2; });
+    doceKeywords.forEach(kw => { if (nome.includes(kw)) scores['🍯 Doce/Gourmand'] += 2; });
+    amadeiradoKeywords.forEach(kw => { if (nome.includes(kw)) scores['🪵 Amadeirado'] += 2; });
+    especiadoKeywords.forEach(kw => { if (nome.includes(kw)) scores['🌶️ Especiado/Oriental'] += 2; });
+    aquaticoKeywords.forEach(kw => { if (nome.includes(kw)) scores['💧 Aquático'] += 2; });
+    talcoKeywords.forEach(kw => { if (nome.includes(kw)) scores['🧼 Talco/Fougère'] += 2; });
+    floralKeywords.forEach(kw => { if (nome.includes(kw)) scores['🌸 Floral'] += 2; });
+    frutadoKeywords.forEach(kw => { if (nome.includes(kw)) scores['🍇 Frutado'] += 2; });
+    
+    // Padrões específicos de marcas (ajuste fino)
+    if (nome.includes('dior')) {
+        if (nome.includes('sauvage')) scores['🌳 Aromático/Verde'] += 3;
+        else if (nome.includes('homme intense')) scores['🪵 Amadeirado'] += 3;
+        else if (nome.includes('fahrenheit')) scores['🧼 Talco/Fougère'] += 3;
+    }
+    
+    if (nome.includes('chanel')) {
+        if (nome.includes('bleu')) scores['🌳 Aromático/Verde'] += 3;
+        else if (nome.includes('allure homme sport')) scores['🍋 Fresco/Cítrico'] += 3;
+    }
+    
+    if (nome.includes('versace')) {
+        if (nome.includes('eros')) scores['🌶️ Especiado/Oriental'] += 3;
+        else if (nome.includes('dylan blue')) scores['💧 Aquático'] += 3;
+        else if (nome.includes('pour homme')) scores['🍋 Fresco/Cítrico'] += 3;
+    }
+    
+    if (nome.includes('paco rabanne')) {
+        if (nome.includes('invictus')) scores['💧 Aquático'] += 3;
+        else if (nome.includes('1 million') || nome.includes('one million')) scores['🍯 Doce/Gourmand'] += 3;
+    }
+    
+    if (nome.includes('ysl') || nome.includes('saint laurent')) {
+        if (nome.includes('y ')) scores['🌳 Aromático/Verde'] += 3;
+        else if (nome.includes('la nuit')) scores['🌶️ Especiado/Oriental'] += 3;
+    }
+    
+    if (nome.includes('armani')) {
+        if (nome.includes('acqua di gio')) scores['💧 Aquático'] += 3;
+        else if (nome.includes('code')) scores['🌶️ Especiado/Oriental'] += 3;
+    }
+    
+    if (nome.includes('jean paul gaultier')) {
+        if (nome.includes('le male') || nome.includes('ultra male')) scores['🍯 Doce/Gourmand'] += 3;
+    }
+    
+    // Encontra a família com maior pontuação
+    let maxScore = 0;
+    let familiaVencedora = '🌳 Aromático/Verde'; // default mais neutro
+    
+    for (const [familia, score] of Object.entries(scores)) {
+        if (score > maxScore) {
+            maxScore = score;
+            familiaVencedora = familia;
+        }
+    }
+    
+    // Se nenhum padrão bateu (score 0), tenta inferir por palavras comuns
+    if (maxScore === 0) {
+        // Perfumes com "homme" geralmente são aromáticos
+        if (nome.includes('homme') || nome.includes('man') || nome.includes('men')) {
+            return '🌳 Aromático/Verde';
+        }
+        // Perfumes com "eau" ou "summer" geralmente são frescos
+        if (nome.includes('eau fraiche') || nome.includes('summer') || nome.includes('soleil')) {
+            return '🍋 Fresco/Cítrico';
+        }
+        // Perfumes com "nuit" ou "night" geralmente são orientais
+        if (nome.includes('nuit') || nome.includes('night') || nome.includes('midnight')) {
+            return '🌶️ Especiado/Oriental';
+        }
+    }
+    
+    console.log(`🔍 ${nome} → ${familiaVencedora} (score: ${maxScore}) [LOCAL]`);
+    return familiaVencedora;
+}
+*/
+
+function renderizarBarraNivel(nivel) {
+    if (!nivel) return '';
+    
+    const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
+    const nomeUsuario = perfil.nome || 'Colecionador';
+    
+    return `
+        <div style="
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
+            border: 2px solid ${nivel.cor};
+            border-radius: 15px;
+            padding: 20px;
+            margin: 0 auto 20px auto;
+            max-width: 1400px;
+            animation: fadeIn 0.5s ease-out;
+        ">
+            <!-- Nome do Usuário -->
+            <div style="
+                color: #d4af37;
+                font-size: 1.5em;
+                font-weight: 700;
+                margin-bottom: 15px;
+                text-align: center;
+            ">
+                👋 Olá, ${nomeUsuario}!
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <div style="color: ${nivel.cor}; font-size: 1.3em; font-weight: 700; margin-bottom: 4px;">
+                        ${nivel.emoji} ${nivel.nome}
+                    </div>
+                    <div style="color: #ccc; font-size: 0.85em;">
+                        ${nivel.total_perfumes} perfumes • ${nivel.familias}/9 famílias
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="color: ${nivel.cor}; font-size: 1.8em; font-weight: 700;">
+                        ${nivel.pontos}
+                    </div>
+                    <div style="color: #999; font-size: 0.8em;">pontos</div>
+                </div>
+            </div>
+            
+            <div style="
+                background: rgba(0, 0, 0, 0.3);
+                border-radius: 8px;
+                height: 24px;
+                overflow: hidden;
+                position: relative;
+                margin-bottom: 8px;
+            ">
+                <div style="
+                    background: linear-gradient(90deg, ${nivel.cor}, ${nivel.cor}aa);
+                    height: 100%;
+                    width: ${nivel.percentual}%;
+                    transition: width 0.8s ease-out;
+                    display: flex;
+                    align-items: center;
+                    justify-content: flex-end;
+                    padding-right: 8px;
+                ">
+                    <span style="color: white; font-weight: 700; font-size: 0.85em;">
+                        ${nivel.percentual}%
+                    </span>
+                </div>
+            </div>
+            
+            <div style="color: #ccc; font-size: 0.85em; text-align: center;">
+                ${nivel.proximo === "Máximo" 
+                    ? "🎉 Você atingiu o nível máximo!" 
+                    : "Você tem " + nivel.pontos + " pontos • Faltam " + nivel.faltam + " para " + (nivel.proximo === "Explorador" ? "🔍" : nivel.proximo === "Colecionador" ? "⭐" : nivel.proximo === "Expert" ? "💎" : "👑") + " " + nivel.proximo
+                }
+            </div>
+        </div>
+    `;
+}
+
+function atualizarNivelDOM() {
+    const nivel = calcularNivelAtual();
+    const container = document.getElementById('nivel-fixo-container');
+    
+    if (!container) return;
+    
+    if (nivel) {
+        container.innerHTML = renderizarBarraNivel(nivel);
+        container.style.display = 'block';
+    } else {
+        // Se não tem nível, mostra só o nome
+        const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
+        const nomeUsuario = perfil.nome || 'Colecionador';
+        
+        container.innerHTML = `
+            <div style="
+                background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
+                border: 2px solid rgba(212, 175, 55, 0.3);
+                border-radius: 15px;
+                padding: 20px;
+                margin: 0 auto 20px auto;
+                max-width: 1400px;
+                text-align: center;
+            ">
+                <div style="
+                    color: #d4af37;
+                    font-size: 1.5em;
+                    font-weight: 700;
+                ">
+                    👋 Olá, ${nomeUsuario}!
+                </div>
+                <div style="
+                    color: #999;
+                    font-size: 0.95em;
+                    margin-top: 8px;
+                ">
+                    Adicione perfumes à sua coleção para começar sua jornada
+                </div>
+            </div>
+        `;
+        container.style.display = 'block';
+    }
+}
+
+// ===================================
+// GAMIFICAÇÃO - RENDERIZAÇÃO DE MISSÕES
+// ===================================
+
+function renderizarMissaoGameficada(data, tituloCustomizado = null) {
+    const analise = data.analise_colecao || data.analise;
+    const recomendacoes = data.recomendacoes;
+    const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
+    
+    const contexto_aplicado = {
+        clima: perfil.clima || 'Temperado',
+        ambiente: perfil.ambiente || 'Ambos',
+        idade: perfil.idade || '25-35',
+        orcamento: perfil.orcamento || 'R$ 300-500'
+    };
+    
+    // Pega índice atual da missão (default 0)
+    const missaoIndex = window.missaoAtualIndex || 0;
+    
+    // Gera missão baseada na análise
+    const missao = gerarMissao(analise, contexto_aplicado, missaoIndex);
+    
+    // Usa título customizado se fornecido
+    const titulo = tituloCustomizado || missao.titulo;
+    const badge = tituloCustomizado ? '💎 ESPECIAL' : `🎯 MISSÃO ${missaoIndex + 1} de 3`;
+    
+    // HTML da missão
+    const missaoHTML = `
+        <div class="mission-container" id="missionContainer">
+            <!-- Card Principal da Missão -->
+            <div class="mission-card">
+                <div class="mission-badge">${badge}</div>
+                
+                <h2 class="mission-title">${titulo}</h2>
+                
+                <div class="mission-details">
+                    <div class="detail-row">
+                        <strong>Alvo:</strong> ${missao.alvo}
+                    </div>
+                    <div class="detail-row">
+                        <strong>Uso:</strong> ${missao.uso}
+                    </div>
+                    <div class="detail-row">
+                        <strong>Clima:</strong> ${missao.clima}
+                    </div>
+                    <div class="detail-row">
+                        <strong>Faixa ideal:</strong> ${missao.faixa_preco}
+                    </div>
+                </div>
+                
+                <div class="mission-why">
+                    <strong>Por quê?</strong><br>
+                    ${missao.justificativa}
+                </div>
+                
+                <div class="mission-progress">
+                    ✅ Você está <strong>${missao.compras_faltantes} ${missao.compras_faltantes === 1 ? 'compra' : 'compras'}</strong> de ter uma coleção redonda
+                </div>
+                
+                <div class="mission-actions">
+                    <button class="btn-mission-secondary" onclick="gerarNovaMissao()" style="width: 100%;">
+                        🔄 Quero outra missão
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Card de Candidatos (sempre visível) -->
+            <div class="candidates-card" style="display: block;">
+                <h3 style="color: #d4af37; font-size: 1.5em; margin-bottom: 20px;">
+                    🎁 Seus Candidatos Perfeitos
+                </h3>
+                
+                <div id="sugestoesContainer">
+                    ${recomendacoes.map((rec, i) => `
+                        <div class="candidate-item" id="candidato-${i}">
+                            <div class="candidate-name">${i + 1}. ${rec.nome}${rec.concentracao ? ' <span style="color: #d4af37;">(' + rec.concentracao + ')</span>' : ''}</div>
+                            <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
+                            <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
+                            <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <!-- Botão WhatsApp -->
+                <button 
+                    id="btn-whatsapp"
+                    style="
+                        width: 100%;
+                        margin-top: 25px;
+                        padding: 16px;
+                        background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+                        border: none;
+                        border-radius: 12px;
+                        color: white;
+                        font-size: 1.1em;
+                        font-weight: 700;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        box-shadow: 0 5px 20px rgba(37, 211, 102, 0.3);
+                    " 
+                    onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 30px rgba(37, 211, 102, 0.5)'"
+                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 5px 20px rgba(37, 211, 102, 0.3)'"
+                >
+                    📱 Enviar pro meu WhatsApp
+                </button>
+            </div>
+        </div>
+    `;
+    
+    const resultContainer = document.getElementById('result-container');
+    resultContainer.innerHTML = missaoHTML;
+    
+    // Adiciona listener ao botão WhatsApp DEPOIS de renderizar
+    const btnWhatsapp = document.getElementById('btn-whatsapp');
+    if (btnWhatsapp) {
+        btnWhatsapp.addEventListener('click', () => enviarSugestoesWhatsApp(recomendacoes));
+    }
+}
+
+function gerarMissao(analise, contexto, missaoIndex = 0) {
+    const { familia_dominante, top3_faltando, perfumes_por_familia } = analise;
+    
+    // Determina qual família atacar baseado no índice de rotação
+    let familiaAlvo;
+    if (top3_faltando && top3_faltando.length > missaoIndex) {
+        familiaAlvo = top3_faltando[missaoIndex];
+    } else {
+        familiaAlvo = getFamiliaComMenosPerfumes(perfumes_por_familia);
+    }
+    
+    // Calcula compras faltantes
+    const totalPerfumes = Object.values(perfumes_por_familia).reduce((a, b) => a + b, 0);
+    const comprasFaltantes = totalPerfumes < 7 ? (7 - totalPerfumes) : 
+                             totalPerfumes < 12 ? (12 - totalPerfumes) : 
+                             (20 - totalPerfumes);
+    
+    // Gera título da missão
+    const titulo = gerarTituloMissao(familiaAlvo, familia_dominante, contexto, missaoIndex);
+    
+    // Gera alvo específico
+    const alvo = getAlvoEspecifico(familiaAlvo);
+    
+    // Gera uso sugerido
+    const uso = getUsoSugerido(familiaAlvo, contexto);
+    
+    // Justificativa
+    const porcentagemDominante = familia_dominante.porcentagem;
+    const justificativa = porcentagemDominante > 50 
+        ? `Você tem ${porcentagemDominante}% de ${familia_dominante.nome} e quase nada de ${familiaAlvo}`
+        : `Falta ${familiaAlvo} para equilibrar sua coleção`;
+    
+    return {
+        titulo,
+        alvo,
+        uso,
+        clima: contexto.clima || 'Temperado',
+        faixa_preco: contexto.orcamento || 'R$ 300-800',
+        justificativa,
+        compras_faltantes: Math.max(1, comprasFaltantes)
+    };
+}
+
+function gerarTituloMissao(familiaAlvo, familiaDominante, contexto, missaoIndex = 0) {
+    const ambiente = contexto.ambiente ? contexto.ambiente.toLowerCase() : 'trabalho';
+    const prefixo = missaoIndex === 0 ? '' : missaoIndex === 1 ? 'Alternativa: ' : 'Opção extra: ';
+    
+    const titulos = {
+        '🍋 Fresco/Cítrico': `Adicionar frescor ${ambiente === 'aberto' ? 'para ambientes abertos' : 'discreto ao seu arsenal'}`,
+        '🌳 Aromático/Verde': `Equilibrar com aromáticos ${ambiente === 'fechado' ? 'para trabalho' : 'versáteis'}`,
+        '🍯 Doce/Gourmand': 'Adicionar doçura sem ficar enjoativo',
+        '🪵 Amadeirado': `Conquistar elegância amadeirada para ${ambiente === 'fechado' ? 'TRABALHO' : 'NOITE'}`,
+        '🌶️ Especiado/Oriental': 'Dominar especiarias orientais marcantes',
+        '💧 Aquático': 'Completar com aquático fresco e moderno',
+        '🧼 Talco/Fougère': 'Adicionar clássico talcado atemporal',
+        '🌸 Floral': 'Equilibrar com floral masculino',
+        '🍇 Frutado': 'Adicionar frutado jovial e energético'
+    };
+    
+    const tituloBase = titulos[familiaAlvo] || `Equilibrar sua coleção com ${familiaAlvo}`;
+    return prefixo + tituloBase;
+}
+
+function getAlvoEspecifico(familia) {
+    const alvos = {
+        '🍋 Fresco/Cítrico': '🍋 Cítrico limpo / Bergamota fresca',
+        '🌳 Aromático/Verde': '🌳 Aromático verde / Lavanda',
+        '🍯 Doce/Gourmand': '🍯 Doce equilibrado / Baunilha + madeira',
+        '🪵 Amadeirado': '🪵 Amadeirado seco / Âmbar discreto',
+        '🌶️ Especiado/Oriental': '🌶️ Especiaria oriental / Cardamomo + âmbar',
+        '💧 Aquático': '💧 Aquático moderno / Sal marinho',
+        '🧼 Talco/Fougère': '🧼 Fougère clássico / Talco + lavanda',
+        '🌸 Floral': '🌸 Floral masculino / Gerânio + vetiver',
+        '🍇 Frutado': '🍇 Frutado fresco / Maçã + bergamota'
+    };
+    
+    return alvos[familia] || familia;
+}
+
+function getUsoSugerido(familia, contexto) {
+    const usos = {
+        '🍋 Fresco/Cítrico': 'Dia • trabalho • verão',
+        '🌳 Aromático/Verde': 'Trabalho • casual • dia a dia',
+        '🍯 Doce/Gourmand': 'Noite • encontros • inverno',
+        '🪵 Amadeirado': 'Noite • eventos • ambientes fechados',
+        '🌶️ Especiado/Oriental': 'Noite • ocasiões especiais • clima frio',
+        '💧 Aquático': 'Verão • esportes • casual',
+        '🧼 Talco/Fougère': 'Trabalho • formal • qualquer ocasião',
+        '🌸 Floral': 'Primavera • casual • dia',
+        '🍇 Frutado': 'Casual • dia • verão'
+    };
+    
+    return usos[familia] || 'Diversas ocasiões';
+}
+
+function getFamiliaComMenosPerfumes(perfumesPorFamilia) {
+    let minFamilia = null;
+    let minCount = Infinity;
+    
+    for (const [familia, count] of Object.entries(perfumesPorFamilia)) {
+        if (count < minCount) {
+            minCount = count;
+            minFamilia = familia;
+        }
+    }
+    
+    return minFamilia || '🪵 Amadeirado';
+}
+
+
+function enviarSugestoesWhatsApp(sugestoes) {
+    let mensagem = '🎯 *Minha Missão - Mapa de Perfumes*\n\n';
+    mensagem += '*Perfumes Recomendados:*\n\n';
+    
+    sugestoes.forEach((sug, i) => {
+        const concentracao = sug.concentracao ? ` (${sug.concentracao})` : '';
+        mensagem += `${i + 1}. *${sug.nome}${concentracao}*\n`;
+        mensagem += `   🌿 ${sug.familia}\n`;
+        mensagem += `   💰 ${sug.faixa_preco}\n`;
+        mensagem += `   📝 ${sug.por_que}\n`;
+        mensagem += `   ⏰ ${sug.quando_usar}\n\n`;
+    });
+    
+    mensagem += '---\n';
+    mensagem += '💡 Gerado por mapadeperfumes.com.br';
+    
+    const whatsappURL = `https://wa.me/?text=${encodeURIComponent(mensagem)}`;
+    window.open(whatsappURL, '_blank');
+    
+    // Track evento
+    trackEvent('whatsapp_compartilhado', {
+        total_sugestoes: sugestoes.length
+    });
+}
+
+async function gerarNovasSugestoes() {
+    const dadosAnalise = window.dadosAnaliseAtual;
+    
+    if (!dadosAnalise) {
+        alert('❌ Erro: faça uma análise primeiro.');
+        return;
+    }
+    
+    // Incrementa contador (1 → 2 → 3 → 1...)
+    window.conjuntoSugestaoAtual = ((window.conjuntoSugestaoAtual || 1) % 3) + 1;
+    
+    const conjuntoAtual = window.conjuntoSugestaoAtual;
+    document.getElementById('conjuntoAtual').textContent = conjuntoAtual;
+    
+    console.log(`🔄 Gerando conjunto ${conjuntoAtual} de sugestões`);
+    
+    // Mostra loading
+    const container = document.getElementById('sugestoesContainer');
+    container.innerHTML = '<div class="loading">🔍 Buscando novas sugestões<span class="loading-dots"></span></div>';
+    
+    try {
+        const analise = dadosAnalise.analise_colecao || dadosAnalise.analise;
+        const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
+        const missaoIndex = window.missaoAtualIndex || 0;
+        
+        // Pega família alvo
+        const top3_faltando = analise.top3_faltando || [];
+        let familiaAlvo;
+        if (top3_faltando.length > missaoIndex) {
+            familiaAlvo = top3_faltando[missaoIndex];
+        } else {
+            familiaAlvo = getFamiliaComMenosPerfumes(analise.perfumes_por_familia);
+        }
+        
+        // Monta prompt com REGRA DE MARCAS DIFERENTES
+        const promptNovasSugestoes = `
+PERFIL DO USUÁRIO:
+Clima: ${perfil.clima || 'Temperado'}
+Ambiente: ${perfil.ambiente || 'Ambos'}
+Idade: ${perfil.idade || '25-35'} anos
+Orçamento: ${perfil.orcamento || 'R$ 300-500'}
+
+COLEÇÃO ATUAL (${minhaColecao.length} perfumes):
+${minhaColecao.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+
+===========================================================
+🚨 REGRA CRÍTICA - MARCAS DIFERENTES (OBRIGATÓRIO!) 🚨
+===========================================================
+
+Você DEVE sugerir EXATAMENTE 3 perfumes onde:
+
+1️⃣ CADA perfume é de uma MARCA TOTALMENTE DIFERENTE
+2️⃣ NUNCA repita a mesma marca entre os 3 perfumes
+3️⃣ TODOS devem ser da família: ${familiaAlvo}
+
+❌ EXEMPLOS PROIBIDOS (ERRADO):
+- Dior Sauvage, Dior Homme, Versace Eros (Dior repetiu!)
+- Paco Rabanne Invictus, Paco Rabanne 1 Million, Dior Sauvage (Paco Rabanne repetiu!)
+- Versace Eros, Versace Dylan Blue, Armani Code (Versace repetiu!)
+
+✅ EXEMPLOS CORRETOS:
+- Dior Sauvage, Versace Eros, Paco Rabanne Invictus (3 marcas diferentes!)
+- Creed Aventus, Tom Ford Oud Wood, Yves Saint Laurent La Nuit (3 marcas diferentes!)
+- Montblanc Explorer, Carolina Herrera Bad Boy, Azzaro Wanted (3 marcas diferentes!)
+
+===========================================================
+
+===========================================================
+💰 ORÇAMENTO - RESPEITE RIGOROSAMENTE! 💰
+===========================================================
+
+O usuário definiu orçamento de: ${perfil.orcamento || 'R$ 300-500'}
+
+REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
+- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 300-500 (toda a faixa média)
+- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900 (topo)
+- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700 (topo)
+- Se orçamento é "Acima de R$ 1500" → Sugira perfumes premium acima de R$ 1500
+
+⚠️ R$ 300-500: ACEITE toda a faixa (nacionais e importados OK)
+⚠️ R$ 500+: PRIORIZE o TOPO!
+
+EXEMPLOS:
+- Orçamento "R$ 300-500" → ✅ O Boticário Malbec (R$ 280), Phebo (R$ 350), Hugo Boss (R$ 450)
+- Orçamento "R$ 800-1500" → ✅ Creed Aventus (R$ 1400), Tom Ford (R$ 1600)
+- Orçamento "R$ 800-1500" → ❌ Mont Blanc (R$ 350) - MUITO ABAIXO!
+
+===========================================================
+
+REGRAS ADICIONAIS:
+4️⃣ NÃO sugerir perfumes que o usuário já tem
+5️⃣ VARIEDADE: Misture marcas conhecidas com nicho acessível
+6️⃣ NÃO foque apenas em hidden gems - inclua best-sellers
+7️⃣ EVITE repetir: ${window.perfumesJaSugeridos && window.perfumesJaSugeridos.length > 0 ? window.perfumesJaSugeridos.join(', ') : 'nenhum'}
+
+EXEMPLOS DE VARIEDADE:
+✅ Dior + Mancera + Montblanc (mainstream + nicho + intermediário)
+❌ Phebo + Lalique + Rochas (só hidden gems)
+
+RESPONDA COM 3 PERFUMES DE MARCAS DIFERENTES COM BOA VARIEDADE!
+`;
+        
+        // Chama API
+        const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                diagnostico: promptNovasSugestoes
+            })
+        });
+        
+        const data = await response.json();
+        let novasSugestoes = data.recomendacoes || [];
+        
+        if (novasSugestoes.length === 0) {
+            container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">Não foi possível gerar novas sugestões. Tente novamente.</p>';
+            return;
+        }
+        
+        // 🔍 VALIDAÇÃO 1: Verifica se há marcas repetidas
+        const marcas = novasSugestoes.map(sug => {
+            // Extrai primeira palavra do nome (geralmente é a marca)
+            return sug.nome.split(' ')[0].toLowerCase();
+        });
+        
+        const marcasUnicas = new Set(marcas);
+        
+        if (marcasUnicas.size < novasSugestoes.length) {
+            console.warn('⚠️ API retornou marcas repetidas:', marcas);
+            // Mostra aviso mas continua
+        } else {
+            console.log('✅ Marcas diferentes validadas:', Array.from(marcasUnicas));
+        }
+        
+        // 🔍 VALIDAÇÃO 2: Verifica orçamento
+        const faixas = {
+            'R$ 300-500': { min: 250, max: 600 },
+            'R$ 500-800': { min: 400, max: 900 },
+            'R$ 800-1500': { min: 700, max: 1700 },
+            'Acima de R$ 1500': { min: 1500, max: 999999 }
+        };
+        
+        const faixaUsuario = perfil.orcamento || 'R$ 300-500';
+        const limites = faixas[faixaUsuario];
+        
+        if (limites) {
+            novasSugestoes.forEach(sug => {
+                // Extrai valores de faixa_preco (ex: "R$ 400-600")
+                const match = sug.faixa_preco?.match(/(\d+)/g);
+                if (match && match.length >= 1) {
+                    const precoMin = parseInt(match[0]);
+                    if (precoMin < limites.min || precoMin > limites.max) {
+                        console.warn(`⚠️ ${sug.nome}: R$ ${precoMin} está FORA do orçamento ${faixaUsuario}`);
+                    } else {
+                        console.log(`✅ ${sug.nome}: R$ ${precoMin} dentro do orçamento`);
+                    }
+                }
+            });
+        }
+        
+        // Renderiza sugestões
+        container.innerHTML = novasSugestoes.map((rec, i) => `
+            <div class="candidate-item">
+                <div class="candidate-name">${i + 1}. ${rec.nome}</div>
+                <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
+                <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
+                <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
+            </div>
+        `).join('');
+        
+        // Track evento
+        trackEvent('novas_sugestoes_geradas', {
+            conjunto: conjuntoAtual,
+            familia: familiaAlvo,
+            total_sugestoes: novasSugestoes.length
+        });
+        
+    } catch (error) {
+        console.error('Erro ao gerar novas sugestões:', error);
+        container.innerHTML = '<p style="color: #ff6666; text-align: center; padding: 20px;">❌ Erro ao gerar sugestões. Tente novamente.</p>';
+    }
+}
+
+async function gerarHiddenGems() {
+    const dadosAnalise = window.dadosAnaliseAtual;
+    
+    if (!dadosAnalise) {
+        alert('❌ Faça uma análise primeiro!');
+        return;
+    }
+    
+    const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
+    const analise = dadosAnalise.analise_colecao || dadosAnalise.analise;
+    
+    // Pega família alvo
+    const top3_faltando = analise.top3_faltando || [];
+    const missaoIndex = window.missaoAtualIndex || 0;
+    let familiaAlvo;
+    
+    if (top3_faltando.length > missaoIndex) {
+        familiaAlvo = top3_faltando[missaoIndex];
+    } else {
+        familiaAlvo = getFamiliaComMenosPerfumes(analise.perfumes_por_familia);
+    }
+    
+    console.log(`💎 Gerando Hidden Gems para família: ${familiaAlvo}`);
+    
+    const blacklist = JSON.parse(localStorage.getItem('perfumesBlacklist') || '[]');
+    const naoSugerir = minhaColecao.concat(blacklist).concat(window.perfumesJaSugeridos || []);
+    
+    // Mostra loading
+    document.getElementById('missionContent').innerHTML = `
+        <div style="text-align: center; padding: 60px 20px;">
+            <div class="analyzing-spinner" style="margin: 0 auto 20px;"></div>
+            <div style="color: #d4af37; font-size: 1.2em;">💎 Buscando Hidden Gems...</div>
+            <div style="color: #999; margin-top: 10px;">Perfumes incríveis que poucos conhecem</div>
+        </div>
+    `;
+    
+    try {
+        const prompt = `
+PERFIL DO USUÁRIO:
+Clima: ${perfil.clima || 'Temperado'}
+Ambiente: ${perfil.ambiente || 'Ambos'}
+Idade: ${perfil.idade || '25-35'} anos
+Orçamento: ${perfil.orcamento || 'R$ 300-500'}
+
+COLEÇÃO ATUAL (${minhaColecao.length} perfumes):
+${minhaColecao.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+
+⚠️ NÃO SUGERIR:
+${naoSugerir.join(', ')}
+
+===========================================================
+💎 MISSÃO ESPECIAL: HIDDEN GEMS
+===========================================================
+
+Sugira 3 HIDDEN GEMS (perfumes pouco conhecidos mas excelentes) da família: ${familiaAlvo}
+
+CRITÉRIOS PARA HIDDEN GEMS:
+✅ Perfumes de nicho ou independentes
+✅ Marcas menos conhecidas (Phebo, Lalique, Rochas, Nishane, Afnan, etc)
+✅ Menos de 5000 reviews no Fragantica
+✅ Alta qualidade mas baixa popularidade
+✅ Boa relação custo-benefício
+
+===========================================================
+💰 ORÇAMENTO - RESPEITE RIGOROSAMENTE! 💰
+===========================================================
+
+O usuário definiu orçamento de: ${perfil.orcamento || 'R$ 300-500'}
+
+REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
+- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 300-500 (toda a faixa média)
+- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900 (topo)
+- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700 (topo)
+- Se orçamento é "Acima de R$ 1500" → Sugira perfumes premium acima de R$ 1500
+
+⚠️ R$ 300-500: ACEITE toda a faixa (nacionais e importados OK)
+⚠️ R$ 500+: PRIORIZE o TOPO!
+
+===========================================================
+
+REGRAS:
+1. TODOS os 3 devem ser da família ${familiaAlvo}
+2. CADA perfume de MARCA DIFERENTE
+3. Foco em marcas de nicho/independentes
+4. Respeitar orçamento
+5. Alta qualidade comprovada
+
+Retorne 3 hidden gems incríveis!
+`;
+        
+        const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ diagnostico: prompt })
+        });
+        
+        const data = await response.json();
+        
+        if (!data.recomendacoes || data.recomendacoes.length === 0) {
+            throw new Error('Sem recomendações');
+        }
+        
+        // Salva no histórico
+        data.recomendacoes.forEach(rec => {
+            if (!window.perfumesJaSugeridos) window.perfumesJaSugeridos = [];
+            if (!window.perfumesJaSugeridos.includes(rec.nome)) {
+                window.perfumesJaSugeridos.push(rec.nome);
+            }
+        });
+        
+        // Renderiza as hidden gems
+        renderizarMissaoGameficada({
+            analise_colecao: analise,
+            recomendacoes: data.recomendacoes,
+            contexto_aplicado: {
+                clima: perfil.clima,
+                ambiente: perfil.ambiente,
+                orcamento: perfil.orcamento
+            }
+        }, '💎 Hidden Gems Especiais');
+        
+        console.log('✅ Hidden Gems geradas:', data.recomendacoes.map(r => r.nome));
+        
+    } catch (error) {
+        console.error('❌ Erro ao gerar hidden gems:', error);
+        document.getElementById('missionContent').innerHTML = `
+            <div style="text-align: center; padding: 60px 20px; color: #ff4444;">
+                ❌ Erro ao buscar hidden gems. Tente novamente.
+            </div>
+        `;
+    }
+}
+
+async function gerarNovaMissao() {
+    const dadosAnalise = window.dadosAnaliseAtual;
+    
+    if (!dadosAnalise) {
+        alert('❌ Erro: faça uma análise primeiro clicando em "Analisa minha Coleção" na aba Coleção.');
+        return;
+    }
+    
+    // Adiciona animação de mudança
+    const missionContainer = document.getElementById('missionContainer');
+    if (missionContainer) {
+        missionContainer.classList.add('mission-changing');
+    }
+    
+    // Pega índice atual e incrementa (0 → 1 → 2 → 0...)
+    const missaoAtual = window.missaoAtualIndex || 0;
+    const proximaMissao = (missaoAtual + 1) % 3;
+    window.missaoAtualIndex = proximaMissao;
+    
+    console.log(`🔄 Rotação: Missão ${missaoAtual} → Missão ${proximaMissao}`);
+    
+    // Mostra loading enquanto busca novas sugestões
+    const resultContainer = document.getElementById('result-container');
+    resultContainer.innerHTML = `
+        <div class="analyzing-animation">
+            <div class="analyzing-spinner"></div>
+            <div class="analyzing-text">🔄 Gerando nova missão<span class="loading-dots"></span></div>
+            <div class="analyzing-subtext">
+                Buscando os melhores perfumes para a nova família
+            </div>
+        </div>
+    `;
+    
+    try {
+        // Pega dados da análise
+        const analise = dadosAnalise.analise_colecao || dadosAnalise.analise;
+        const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
+        
+        // Identifica as 3 famílias mais deficitárias
+        const top3_faltando = analise.top3_faltando || [];
+        
+        // Seleciona a família alvo baseada no índice da missão
+        let familiaAlvo;
+        if (top3_faltando.length > proximaMissao) {
+            familiaAlvo = top3_faltando[proximaMissao];
+        } else {
+            familiaAlvo = getFamiliaComMenosPerfumes(analise.perfumes_por_familia);
+        }
+        
+        console.log(`🎯 Família alvo da Missão ${proximaMissao}: ${familiaAlvo}`);
+        
+        // Monta prompt específico para a família alvo
+        const promptNovaMissao = `
+PERFIL DO USUÁRIO:
+Clima: ${perfil.clima || 'Temperado'}
+Ambiente: ${perfil.ambiente || 'Ambos'}
+Idade: ${perfil.idade || '25-35'} anos
+Orçamento: ${perfil.orcamento || 'R$ 300-500'}
+
+COLEÇÃO ATUAL (${minhaColecao.length} perfumes):
+${minhaColecao.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+
+MISSÃO ESPECÍFICA:
+Sugira EXATAMENTE 3 perfumes APENAS da família: ${familiaAlvo}
+
+===========================================================
+💰 ORÇAMENTO - RESPEITE RIGOROSAMENTE! 💰
+===========================================================
+
+O usuário definiu orçamento de: ${perfil.orcamento || 'R$ 300-500'}
+
+REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
+- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 300-500 (toda a faixa média)
+- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900 (topo)
+- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700 (topo)
+- Se orçamento é "Acima de R$ 1500" → Sugira perfumes premium acima de R$ 1500
+
+⚠️⚠️⚠️ CRÍTICO: Se orçamento R$ 500+, pelo menos 2 dos 3 perfumes DEVEM estar no TOPO da faixa!
+
+EXEMPLOS:
+✅ R$ 800-1500: Creed Aventus (R$ 1.400), Tom Ford (R$ 1.600), Mancera (R$ 1.200)
+❌ R$ 800-1500: Dior Sauvage (R$ 450), Hugo Boss (R$ 400), Mont Blanc (R$ 350) - INACEITÁVEL!
+
+===========================================================
+
+REGRAS CRÍTICAS:
+1. TODOS os 3 perfumes devem ser da família ${familiaAlvo}
+2. CADA perfume deve ser de uma MARCA DIFERENTE
+3. NÃO sugira perfumes que o usuário já tem
+4. VARIEDADE: Misture marcas conhecidas com nicho acessível
+5. NÃO foque apenas em hidden gems - inclua best-sellers
+6. EVITE repetir: ${window.perfumesJaSugeridos && window.perfumesJaSugeridos.length > 0 ? window.perfumesJaSugeridos.slice(-10).join(', ') : 'nenhum'}
+
+EXEMPLOS DE VARIEDADE:
+✅ Dior + Mancera + Montblanc (mainstream + nicho + intermediário)
+❌ Só marcas desconhecidas (Phebo + Lalique + Rochas)
+
+===========================================================
+📦 FORMATO JSON OBRIGATÓRIO
+===========================================================
+
+Retorne JSON com este formato EXATO:
+{
+  "recomendacoes": [
+    {
+      "nome": "Dior Sauvage",
+      "concentracao": "EDT",
+      "familia": "${familiaAlvo}",
+      "faixa_preco": "R$ 400-600",
+      "por_que": "...",
+      "quando_usar": "..."
+    }
+  ]
+}
+
+⚠️⚠️⚠️ O campo "concentracao" é OBRIGATÓRIO! (EDT/EDP/Parfum/Elixir)
+
+IMPORTANTE: Missão focada em ${familiaAlvo} com BOA VARIEDADE DE MARCAS + CONCENTRAÇÃO!
+`;
+        
+        // Chama API para novas sugestões
+        const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                diagnostico: promptNovaMissao
+            })
+        });
+        
+        const data = await response.json();
+        
+        // Se API retornou recomendações, usa elas. Senão, mantém as originais
+        const novasRecomendacoes = data.recomendacoes || dadosAnalise.recomendacoes;
+        
+        // Atualiza dados globais com novas recomendações
+        window.dadosAnaliseAtual.recomendacoes = novasRecomendacoes;
+        
+        // Gera contexto
+        const contexto_aplicado = {
+            clima: perfil.clima || 'Temperado',
+            ambiente: perfil.ambiente || 'Ambos',
+            idade: perfil.idade || '25-35',
+            orcamento: perfil.orcamento || 'R$ 300-500'
+        };
+        
+        // Gera missão baseada no novo índice
+        const missao = gerarMissao(analise, contexto_aplicado, proximaMissao);
+        
+        // HTML da missão com badge de número
+        const missaoHTML = `
+            <div class="mission-container" id="missionContainer">
+                <!-- Card Principal da Missão -->
+                <div class="mission-card">
+                    <div class="mission-badge">🎯 MISSÃO ${proximaMissao + 1} de 3</div>
+                    
+                    <h2 class="mission-title">${missao.titulo}</h2>
+                    
+                    <div class="mission-details">
+                        <div class="detail-row">
+                            <strong>Alvo:</strong> ${missao.alvo}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Uso:</strong> ${missao.uso}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Clima:</strong> ${missao.clima}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Faixa ideal:</strong> ${missao.faixa_preco}
+                        </div>
+                    </div>
+                    
+                    <div class="mission-why">
+                        <strong>Por quê?</strong><br>
+                        ${missao.justificativa}
+                    </div>
+                    
+                    <div class="mission-progress">
+                        ✅ Você está <strong>${missao.compras_faltantes} ${missao.compras_faltantes === 1 ? 'compra' : 'compras'}</strong> de ter uma coleção redonda
+                    </div>
+                    
+                    <div class="mission-actions">
+                        <button class="btn-mission-secondary" onclick="gerarNovaMissao()" style="width: 100%;">
+                            🔄 Quero outra missão
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Card de Candidatos (sempre visível) -->
+                <div class="candidates-card" style="display: block;">
+                    <h3 style="color: #d4af37; margin-bottom: 20px; font-size: 1.5em;">
+                        🎁 Candidatos Perfeitos para sua Missão
+                    </h3>
+                    ${novasRecomendacoes.map((rec, i) => `
+                        <div class="candidate-item">
+                            <div class="candidate-name">${i + 1}. ${rec.nome}${rec.concentracao ? ' <span style="color: #d4af37;">(' + rec.concentracao + ')</span>' : ''}</div>
+                            <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
+                            <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
+                            <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        
+        resultContainer.innerHTML = missaoHTML;
+        
+        // Scroll suave até o topo da missão
+        setTimeout(() => {
+            const newMissionContainer = document.getElementById('missionContainer');
+            if (newMissionContainer) {
+                newMissionContainer.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        }, 100);
+        
+    } catch (error) {
+        console.error('Erro ao gerar nova missão:', error);
+        
+        // Em caso de erro, gera missão sem buscar novas sugestões (fallback)
+        const analise = dadosAnalise.analise_colecao || dadosAnalise.analise;
+        const recomendacoes = dadosAnalise.recomendacoes;
+        const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
+        
+        const contexto_aplicado = {
+            clima: perfil.clima || 'Temperado',
+            ambiente: perfil.ambiente || 'Ambos',
+            idade: perfil.idade || '25-35',
+            orcamento: perfil.orcamento || 'R$ 300-500'
+        };
+        
+        const missao = gerarMissao(analise, contexto_aplicado, proximaMissao);
+        
+        const missaoHTML = `
+            <div class="mission-container" id="missionContainer">
+                <div class="mission-card">
+                    <div class="mission-badge">🎯 MISSÃO ${proximaMissao + 1} de 3</div>
+                    <h2 class="mission-title">${missao.titulo}</h2>
+                    <div class="mission-details">
+                        <div class="detail-row"><strong>Alvo:</strong> ${missao.alvo}</div>
+                        <div class="detail-row"><strong>Uso:</strong> ${missao.uso}</div>
+                        <div class="detail-row"><strong>Clima:</strong> ${missao.clima}</div>
+                        <div class="detail-row"><strong>Faixa ideal:</strong> ${missao.faixa_preco}</div>
+                    </div>
+                    <div class="mission-why">
+                        <strong>Por quê?</strong><br>
+                        ${missao.justificativa}
+                    </div>
+                    <div class="mission-progress">
+                        ✅ Você está <strong>${missao.compras_faltantes} ${missao.compras_faltantes === 1 ? 'compra' : 'compras'}</strong> de ter uma coleção redonda
+                    </div>
+                    <div class="mission-actions">
+                        <button class="btn-mission-secondary" onclick="gerarNovaMissao()" style="width: 100%;">
+                            🔄 Quero outra missão
+                        </button>
+                    </div>
+                </div>
+                <div class="candidates-card" style="display: block;">
+                    <h3 style="color: #d4af37; margin-bottom: 20px; font-size: 1.5em;">
+                        🎁 Candidatos para sua Missão
+                    </h3>
+                    ${recomendacoes.map((rec, i) => `
+                        <div class="candidate-item">
+                            <div class="candidate-name">${i + 1}. ${rec.nome}${rec.concentracao ? ' <span style="color: #d4af37;">(' + rec.concentracao + ')</span>' : ''}</div>
+                            <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
+                            <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
+                            <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        
+        resultContainer.innerHTML = missaoHTML;
+    }
+}
+
+// ===================================
+// INICIAR COLEÇÃO DO ZERO
+// ===================================
+
+async function iniciarColecaoDoZero() {
+    const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
+    
+    if (!perfil.clima || !perfil.ambiente || !perfil.idade || !perfil.orcamento) {
+        alert('⚠️ Por favor, preencha seu perfil primeiro na aba "Perfil"!');
+        // Muda para aba perfil
+        document.querySelector('.nav-item[data-section="perfil"]').click();
+        return;
+    }
+    
+    // 🔒 RATE LIMITING: Verifica se pode usar (3 vezes VITALÍCIO)
+    if (window.rateLimiter) {
+        const check = window.rateLimiter.podeExecutar('dicas');
+        
+        if (!check.pode) {
+            mostrarPopupLimite('dicas', 3, check.proximoReset);
+            return;
+        }
+        
+        console.log(`✅ Rate Limit OK: ${check.restante} dicas restantes (vitalício)`);
+    }
+    
+    // Muda para aba sugestões
+    document.querySelector('.nav-item[data-section="sugestoes"]').click();
+    
+    const chatMessages = document.getElementById('chat-messages');
+    chatMessages.innerHTML = `
+        <div class="analyzing-animation">
+            <div class="analyzing-spinner"></div>
+            <div class="analyzing-text">🌱 Criando sua coleção inicial<span class="loading-dots"></span></div>
+            <div class="analyzing-subtext">
+                Analisando seu perfil e selecionando os<br>
+                3 perfumes essenciais para começar
+            </div>
+        </div>
+    `;
+    
+    try {
+        const contextoInicio = `
+Quero COMEÇAR minha coleção de perfumes do zero.
+
+MEU CONTEXTO:
+- Clima: ${perfil.clima}
+- Ambiente de trabalho: ${perfil.ambiente}
+- Faixa etária: ${perfil.idade}
+- Orçamento: ${perfil.orcamento}
+
+===========================================================
+🎯 OBJETIVO: 3 PERFUMES ESSENCIAIS PARA COMEÇAR
+===========================================================
+
+Sugira 3 perfumes que cobrem as funções básicas:
+1. DIA/TRABALHO - Versátil, discreto, profissional
+2. NOITE/SOCIAL - Marcante, sofisticado, sexy  
+3. VERSÁTIL - Funciona em várias ocasiões
+
+===========================================================
+💰 ORÇAMENTO - RESPEITE RIGOROSAMENTE! 💰
+===========================================================
+
+O usuário definiu orçamento de: ${perfil.orcamento}
+
+REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
+- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 300-500 (toda a faixa média)
+- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900 (topo)
+- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700 (topo)
+- Se orçamento é "Acima de R$ 1500" → Sugira perfumes premium acima de R$ 1500
+
+⚠️ R$ 300-500: ACEITE toda a faixa (nacionais e importados OK)
+⚠️ R$ 500+: PRIORIZE o TOPO!
+
+===========================================================
+🎨 VARIEDADE DE MARCAS
+===========================================================
+
+PRIORIZE perfumes CONHECIDOS e ACESSÍVEIS para iniciantes:
+✅ Dior, Versace, Paco Rabanne, Calvin Klein, Hugo Boss
+✅ Armani, YSL, Carolina Herrera, Dolce & Gabbana
+✅ O Boticário, Natura, Phebo (nacionais OK para faixa baixa)
+
+NÃO sugira apenas nicho/hidden gems para iniciantes!
+Iniciantes precisam de clássicos confiáveis e fáceis de achar.
+
+IMPORTANTE: 3 marcas DIFERENTES + dentro do orçamento + adequados ao clima!
+        `.trim();
+        
+        const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                iniciar_colecao: true,
+                contexto: contextoInicio,
+                clima: perfil.clima,
+                ambiente: perfil.ambiente,
+                idade: perfil.idade,
+                orcamento: perfil.orcamento
+            })
+        });
+        
+        const data = await response.json();
+        
+        // Renderiza sugestões iniciais
+        let html = `
+            <div class="chat-message assistant">
+                <div class="chat-message-header">🧪 Perfumista</div>
+                <div class="chat-message-content">
+                    <strong>🌱 Sua Coleção Inicial Perfeita!</strong><br><br>
+                    Baseado no seu perfil, aqui estão 3 perfumes essenciais para começar:
+                    <div class="suggestions-grid" style="margin-top: 20px;">`;
+        
+        if (data.recomendacoes && data.recomendacoes.length > 0) {
+            data.recomendacoes.forEach(sug => {
+                html += `
+                    <div class="suggestion-card">
+                        <div class="suggestion-name">${sug.nome}${sug.concentracao ? ' <span style="color: #d4af37;">(' + sug.concentracao + ')</span>' : ''}</div>
+                        <div class="suggestion-familia">${sug.familia}</div>
+                        <div class="suggestion-preco">${sug.faixa_preco}</div>
+                        <div class="suggestion-por-que">${sug.por_que}</div>
+                        <div class="suggestion-quando">${sug.quando_usar}</div>
+                    </div>
+                `;
+            });
+        }
+        
+        html += `
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        chatMessages.innerHTML = html;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        // 📊 REGISTRA uso do Rate Limit (VITALÍCIO)
+        if (window.rateLimiter) {
+            window.rateLimiter.registrarUso('dicas');
+            const status = window.rateLimiter.podeExecutar('dicas');
+            console.log(`📊 Rate Limit: ${status.restante} dicas restantes (vitalício)`);
+            atualizarContadores(); // Atualiza contador visual
+        }
+        
+    } catch (error) {
+        console.error('Erro:', error);
+        chatMessages.innerHTML = `
+            <div class="chat-message assistant">
+                <div class="chat-message-header">🧪 Perfumista</div>
+                <div class="chat-message-content">
+                    ❌ Erro ao criar sugestões. Tente novamente.
+                </div>
+            </div>
+        `;
+    }
+}
+
+// ===================================
 // INICIALIZAÇÃO
-window.rateLimiter = new RateLimiter();
-console.log('✅ Rate Limiting System inicializado!');
-console.log('📊 Limites:', window.rateLimiter.limits.basico);
+// ===================================
+
+// ===================================
+// CONTADORES E POPUPS DE LIMITE
+// ===================================
+
+function atualizarContadores() {
+    if (!window.rateLimiter) return;
+    
+    // Análise
+    const checkAnalise = window.rateLimiter.podeExecutar('analise');
+    document.getElementById('contador-analise').textContent = `(${checkAnalise.restante}/8)`;
+    
+    // Chat
+    const checkChat = window.rateLimiter.podeExecutar('chat');
+    document.getElementById('contador-chat').textContent = `(${checkChat.restante}/12)`;
+    
+    // Dicas
+    const checkDicas = window.rateLimiter.podeExecutar('dicas');
+    document.getElementById('contador-dicas').textContent = `(${checkDicas.restante}/3)`;
+}
+
+function mostrarPopupLimite(tipo, limite, proximoReset) {
+    const titulos = {
+        'analise': 'Análises',
+        'chat': 'Perguntas',
+        'dicas': 'Dicas de Iniciante'
+    };
+    
+    const mensagens = {
+        'analise': `Você atingiu o limite de ${limite} análises por mês.`,
+        'chat': `Você atingiu o limite de ${limite} perguntas por mês.`,
+        'dicas': `Você atingiu o limite de ${limite} dicas (vitalício).`
+    };
+    
+    const resetTexto = tipo === 'dicas' 
+        ? 'Este limite não reseta.' 
+        : `Próximo reset: ${proximoReset.toLocaleDateString('pt-BR')}`;
+    
+    alert(`🔒 Limite de ${titulos[tipo]} Atingido!\n\n${mensagens[tipo]}\n\n${resetTexto}\n\n💡 Dica: Use a aba FAQ para dúvidas gerais!`);
+}
+
+// ===================================
+// SALVAR/CARREGAR RADAR E ANÁLISE
+// ===================================
+
+function salvarRadarNoStorage(dados) {
+    localStorage.setItem('radarSalvo', JSON.stringify({
+        dados: dados,
+        timestamp: Date.now(),
+        colecao: minhaColecao.slice() // Cópia da coleção atual
+    }));
+    console.log('💾 Radar salvo no localStorage');
+}
+
+function carregarRadarDoStorage() {
+    const radarSalvo = localStorage.getItem('radarSalvo');
+    if (!radarSalvo) {
+        console.log('❌ Nenhum radar salvo');
+        return null;
+    }
+    
+    try {
+        const { dados, timestamp, colecao } = JSON.parse(radarSalvo);
+        
+        if (!dados || !colecao) {
+            console.log('❌ Radar salvo inválido');
+            return null;
+        }
+        
+        // Normaliza coleções para comparação (suporta string e objeto)
+        const normalizarColecao = (col) => {
+            return col.map(p => {
+                const nome = typeof p === 'string' ? p : p.nome;
+                return nome.toLowerCase();
+            }).sort();
+        };
+        
+        const colecaoAtualNorm = normalizarColecao(minhaColecao);
+        const colecaoSalvaNorm = normalizarColecao(colecao);
+        
+        const colecaoAtual = JSON.stringify(colecaoAtualNorm);
+        const colecaoSalvaStr = JSON.stringify(colecaoSalvaNorm);
+        
+        if (colecaoAtual !== colecaoSalvaStr) {
+            console.log('❌ Coleção mudou, radar inválido');
+            console.log('  Atual:', colecaoAtualNorm);
+            console.log('  Salva:', colecaoSalvaNorm);
+            return null;
+        }
+        
+        console.log('✅ Radar carregado do localStorage');
+        return dados;
+    } catch (error) {
+        console.error('❌ Erro ao carregar radar:', error);
+        return null;
+    }
+}
+
+// Carrega dados ao iniciar
+carregarPerfil();
+renderizarLista();
+
+// Tenta carregar análise salva (radar + missão)
+const ultimaAnalise = JSON.parse(localStorage.getItem('ultimaAnalise') || '{}');
+console.log('🎯 Inicializando radar...');
+console.log('  Análise salva?', ultimaAnalise.dados ? 'SIM' : 'NÃO');
+console.log('  Coleção atual:', minhaColecao.length, 'perfumes');
+
+if (ultimaAnalise.dados && ultimaAnalise.dados.analise_colecao) {
+    console.log('📊 Carregando análise salva');
+    // Carrega radar
+    atualizarRadarComAPI(ultimaAnalise.dados.analise_colecao);
+    // Carrega missão
+    window.dadosAnaliseAtual = ultimaAnalise.dados;
+    renderizarMissaoGameficada(ultimaAnalise.dados);
+} else {
+    console.log('ℹ️ Sem análise salva. Clique em "Analisar" para gerar.');
+}
+
+atualizarNivelDOM();
+
+// Atualiza contadores quando rate limiter carregar
+setTimeout(() => {
+    atualizarContadores();
+}, 500);
+
+// Observer para mudanças no localStorage
+let ultimaColecao = localStorage.getItem('minhaColecao') || '[]';
+
+setInterval(() => {
+    const colecaoAtual = localStorage.getItem('minhaColecao') || '[]';
+    
+    if (colecaoAtual !== ultimaColecao) {
+        console.log('🔄 Coleção mudou, atualizando nível...');
+        ultimaColecao = colecaoAtual;
+        atualizarNivelDOM();
+    }
+}, 500);
+    </script>
+
+<!-- ============================================ -->
+<!-- ABA FAQ -->
+<!-- ============================================ -->
+
+
+<!-- Scripts de Otimização -->
+<script src="cache-inteligente.js"></script>
+<script src="rate-limiting-system.js"></script>
+
+</body>
+</html>
