@@ -2013,13 +2013,21 @@ function renderizarAnaliseGameficada(analise) {
 function renderizarRadarChart(familias, valores, analise) {
     const ctx = document.getElementById('radarChart');
     
+    if (!ctx) {
+        console.error('❌ Canvas radarChart não encontrado!');
+        return;
+    }
+    
     // Destrói chart anterior se existir
     if (radarChart) {
         radarChart.destroy();
     }
     
-    // Cria novo chart
-    radarChart = new Chart(ctx, {
+    // Aguarda canvas estar visível (se usuário está em outra aba)
+    setTimeout(() => {
+        try {
+            // Cria novo chart
+            radarChart = new Chart(ctx, {
         type: 'radar',
         data: {
             labels: familias,
@@ -2064,6 +2072,10 @@ function renderizarRadarChart(familias, valores, analise) {
             }
         }
     });
+        } catch (error) {
+            console.error('❌ Erro ao criar radar chart:', error);
+        }
+    }, 100); // Aguarda 100ms para garantir que canvas está visível
     
     // Grid de famílias foi substituído por análise gamificada
 }
@@ -3244,7 +3256,7 @@ function atualizarNivelDOM() {
 // GAMIFICAÇÃO - RENDERIZAÇÃO DE MISSÕES
 // ===================================
 
-function renderizarMissaoGameficada(data) {
+function renderizarMissaoGameficada(data, tituloCustomizado = null) {
     const analise = data.analise_colecao || data.analise;
     const recomendacoes = data.recomendacoes;
     const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
@@ -3262,14 +3274,18 @@ function renderizarMissaoGameficada(data) {
     // Gera missão baseada na análise
     const missao = gerarMissao(analise, contexto_aplicado, missaoIndex);
     
+    // Usa título customizado se fornecido
+    const titulo = tituloCustomizado || missao.titulo;
+    const badge = tituloCustomizado ? '💎 ESPECIAL' : `🎯 MISSÃO ${missaoIndex + 1} de 3`;
+    
     // HTML da missão
     const missaoHTML = `
         <div class="mission-container" id="missionContainer">
             <!-- Card Principal da Missão -->
             <div class="mission-card">
-                <div class="mission-badge">🎯 MISSÃO ${missaoIndex + 1} de 3</div>
+                <div class="mission-badge">${badge}</div>
                 
-                <h2 class="mission-title">${missao.titulo}</h2>
+                <h2 class="mission-title">${titulo}</h2>
                 
                 <div class="mission-details">
                     <div class="detail-row">
@@ -3301,6 +3317,13 @@ function renderizarMissaoGameficada(data) {
                     </button>
                     <button class="btn-mission-secondary" onclick="gerarNovaMissao()">
                         🔄 Quero outra missão
+                    </button>
+                    <button 
+                        class="btn-mission-secondary" 
+                        onclick="gerarHiddenGems()"
+                        style="background: linear-gradient(135deg, #9c27b0, #7b1fa2); border: none;"
+                    >
+                        💎 Hidden Gems pra mim!
                     </button>
                 </div>
             </div>
@@ -3734,6 +3757,139 @@ RESPONDA COM 3 PERFUMES DE MARCAS DIFERENTES COM BOA VARIEDADE!
     } catch (error) {
         console.error('Erro ao gerar novas sugestões:', error);
         container.innerHTML = '<p style="color: #ff6666; text-align: center; padding: 20px;">❌ Erro ao gerar sugestões. Tente novamente.</p>';
+    }
+}
+
+async function gerarHiddenGems() {
+    const dadosAnalise = window.dadosAnaliseAtual;
+    
+    if (!dadosAnalise) {
+        alert('❌ Faça uma análise primeiro!');
+        return;
+    }
+    
+    const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
+    const analise = dadosAnalise.analise_colecao || dadosAnalise.analise;
+    
+    // Pega família alvo
+    const top3_faltando = analise.top3_faltando || [];
+    const missaoIndex = window.missaoAtualIndex || 0;
+    let familiaAlvo;
+    
+    if (top3_faltando.length > missaoIndex) {
+        familiaAlvo = top3_faltando[missaoIndex];
+    } else {
+        familiaAlvo = getFamiliaComMenosPerfumes(analise.perfumes_por_familia);
+    }
+    
+    console.log(`💎 Gerando Hidden Gems para família: ${familiaAlvo}`);
+    
+    const blacklist = JSON.parse(localStorage.getItem('perfumesBlacklist') || '[]');
+    const naoSugerir = minhaColecao.concat(blacklist).concat(window.perfumesJaSugeridos || []);
+    
+    // Mostra loading
+    document.getElementById('missionContent').innerHTML = `
+        <div style="text-align: center; padding: 60px 20px;">
+            <div class="analyzing-spinner" style="margin: 0 auto 20px;"></div>
+            <div style="color: #d4af37; font-size: 1.2em;">💎 Buscando Hidden Gems...</div>
+            <div style="color: #999; margin-top: 10px;">Perfumes incríveis que poucos conhecem</div>
+        </div>
+    `;
+    
+    try {
+        const prompt = `
+PERFIL DO USUÁRIO:
+Clima: ${perfil.clima || 'Temperado'}
+Ambiente: ${perfil.ambiente || 'Ambos'}
+Idade: ${perfil.idade || '25-35'} anos
+Orçamento: ${perfil.orcamento || 'R$ 300-500'}
+
+COLEÇÃO ATUAL (${minhaColecao.length} perfumes):
+${minhaColecao.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+
+⚠️ NÃO SUGERIR:
+${naoSugerir.join(', ')}
+
+===========================================================
+💎 MISSÃO ESPECIAL: HIDDEN GEMS
+===========================================================
+
+Sugira 3 HIDDEN GEMS (perfumes pouco conhecidos mas excelentes) da família: ${familiaAlvo}
+
+CRITÉRIOS PARA HIDDEN GEMS:
+✅ Perfumes de nicho ou independentes
+✅ Marcas menos conhecidas (Phebo, Lalique, Rochas, Nishane, Afnan, etc)
+✅ Menos de 5000 reviews no Fragantica
+✅ Alta qualidade mas baixa popularidade
+✅ Boa relação custo-benefício
+
+===========================================================
+💰 ORÇAMENTO - RESPEITE RIGOROSAMENTE! 💰
+===========================================================
+
+O usuário definiu orçamento de: ${perfil.orcamento || 'R$ 300-500'}
+
+REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
+- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 450-600
+- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900
+- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700
+- Se orçamento é "Acima de R$ 1500" → Sugira perfumes premium acima de R$ 1500
+
+⚠️ SEMPRE PRIORIZE O TOPO DA FAIXA!
+⚠️ NUNCA sugira abaixo do mínimo!
+
+===========================================================
+
+REGRAS:
+1. TODOS os 3 devem ser da família ${familiaAlvo}
+2. CADA perfume de MARCA DIFERENTE
+3. Foco em marcas de nicho/independentes
+4. Respeitar orçamento (TOPO da faixa)
+5. Alta qualidade comprovada
+
+Retorne 3 hidden gems incríveis!
+`;
+        
+        const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ diagnostico: prompt })
+        });
+        
+        const data = await response.json();
+        
+        if (!data.recomendacoes || data.recomendacoes.length === 0) {
+            throw new Error('Sem recomendações');
+        }
+        
+        // Salva no histórico
+        data.recomendacoes.forEach(rec => {
+            if (!window.perfumesJaSugeridos) window.perfumesJaSugeridos = [];
+            if (!window.perfumesJaSugeridos.includes(rec.nome)) {
+                window.perfumesJaSugeridos.push(rec.nome);
+            }
+        });
+        
+        // Renderiza as hidden gems
+        renderizarMissaoGameficada({
+            analise_colecao: analise,
+            recomendacoes: data.recomendacoes,
+            contexto_aplicado: {
+                clima: perfil.clima,
+                ambiente: perfil.ambiente,
+                orcamento: perfil.orcamento
+            }
+        }, '💎 Hidden Gems Especiais');
+        
+        console.log('✅ Hidden Gems geradas:', data.recomendacoes.map(r => r.nome));
+        
+    } catch (error) {
+        console.error('❌ Erro ao gerar hidden gems:', error);
+        document.getElementById('missionContent').innerHTML = `
+            <div style="text-align: center; padding: 60px 20px; color: #ff4444;">
+                ❌ Erro ao buscar hidden gems. Tente novamente.
+            </div>
+        `;
     }
 }
 
