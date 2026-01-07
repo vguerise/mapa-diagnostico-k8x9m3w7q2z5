@@ -1840,6 +1840,7 @@ function salvarPerfil() {
 
 let minhaColecao = JSON.parse(localStorage.getItem('minhaColecao') || '[]');
 let radarChart = null;
+let radarRenderizando = false;
 
 function adicionarPerfume() {
     const input = document.getElementById('perfume-input');
@@ -2161,12 +2162,23 @@ function renderizarAnaliseGameficada(analise) {
     container.innerHTML = html;
 }
 
-function renderizarRadarChart(familias, valores, analise) {
+function renderizarRadarChart(familias, valores, analise, tentativa = 0) {
+    // Evita múltiplas chamadas simultâneas
+    if (radarRenderizando) {
+        console.log('⚠️ Radar já está sendo renderizado. Ignorando chamada duplicada.');
+        return;
+    }
+    
     const ctx = document.getElementById('radarChart');
     
     if (!ctx) {
-        console.error('❌ Canvas radarChart não encontrado!');
-        console.log('🔍 Tentando mudar para aba Coleção...');
+        // Máximo 3 tentativas para evitar loop infinito
+        if (tentativa >= 3) {
+            console.error('❌ Canvas radarChart não encontrado após 3 tentativas. Abortando.');
+            return;
+        }
+        
+        console.log(`🔍 Tentativa ${tentativa + 1}/3: Canvas não encontrado. Mudando para aba Coleção...`);
         
         // Força mudança para aba Coleção
         const abaColecao = document.querySelector('.nav-item[data-section="colecao"]');
@@ -2175,9 +2187,12 @@ function renderizarRadarChart(familias, valores, analise) {
         }
         
         // Tenta novamente após 500ms
-        setTimeout(() => renderizarRadarChart(familias, valores, analise), 500);
+        setTimeout(() => renderizarRadarChart(familias, valores, analise, tentativa + 1), 500);
         return;
     }
+    
+    console.log('✅ Canvas encontrado! Renderizando radar...');
+    radarRenderizando = true;
     
     // Destrói chart anterior se existir
     if (radarChart) {
@@ -2235,6 +2250,9 @@ function renderizarRadarChart(familias, valores, analise) {
     });
         } catch (error) {
             console.error('❌ Erro ao criar radar chart:', error);
+        } finally {
+            // Libera flag
+            radarRenderizando = false;
         }
     }, 300); // Aguarda 300ms para garantir que canvas está visível
     
