@@ -1917,6 +1917,20 @@ function adicionarPerfume() {
     
     localStorage.setItem('minhaColecao', JSON.stringify(minhaColecao));
     
+    // 🔓 INVALIDA cache ANTES de atualizar nível
+    if (window.cacheInteligente) {
+        window.cacheInteligente.invalidarAnalise();
+        console.log('🗑️ Cache invalidado - nova análise necessária');
+    }
+    localStorage.removeItem('ultimaColecaoAnalisada');
+    localStorage.removeItem('ultimaAnalise');
+    
+    // 🗑️ Limpa cards gamificados (força aviso de desatualização)
+    const container = document.getElementById('analise-gamificada');
+    if (container) {
+        renderizarAnaliseGameficada(null);  // null = mostra aviso
+    }
+    
     // 📊 TRACKING: Perfume adicionado
     trackEvent('perfume_adicionado', {
         perfume: nome,
@@ -1925,15 +1939,7 @@ function adicionarPerfume() {
     
     input.value = '';
     renderizarLista();
-    atualizarNivelDOM();
-    
-    // 🔓 INVALIDA cache - força nova análise
-    if (window.cacheInteligente) {
-        window.cacheInteligente.invalidarAnalise();
-        console.log('🗑️ Cache invalidado - nova análise necessária');
-    }
-    localStorage.removeItem('ultimaColecaoAnalisada');
-    localStorage.removeItem('ultimaAnalise');
+    atualizarNivelDOM();  // Agora recalcula com cache limpo
     
     // ✨ Adiciona GLOW no botão Analisar
     const btnAnalisar = document.getElementById('btn-analisar');
@@ -1976,6 +1982,20 @@ function removerPerfume(index) {
     minhaColecao.splice(index, 1);
     localStorage.setItem('minhaColecao', JSON.stringify(minhaColecao));
     
+    // 🔓 INVALIDA cache ANTES de atualizar nível (importante!)
+    if (window.cacheInteligente) {
+        window.cacheInteligente.invalidarAnalise();
+    }
+    localStorage.removeItem('ultimaColecaoAnalisada');
+    localStorage.removeItem('ultimaAnalise');
+    console.log('🗑️ Cache invalidado - pontos serão recalculados');
+    
+    // 🗑️ Limpa cards gamificados
+    const container = document.getElementById('analise-gamificada');
+    if (container) {
+        renderizarAnaliseGameficada(null);
+    }
+    
     // 📊 TRACKING: Perfume removido
     trackEvent('perfume_removido', {
         perfume: perfumeRemovido,
@@ -1983,14 +2003,7 @@ function removerPerfume(index) {
     });
     
     renderizarLista();
-    atualizarNivelDOM();
-    
-    // 🔓 INVALIDA cache
-    if (window.cacheInteligente) {
-        window.cacheInteligente.invalidarAnalise();
-    }
-    localStorage.removeItem('ultimaColecaoAnalisada');
-    localStorage.removeItem('ultimaAnalise');
+    atualizarNivelDOM();  // Agora vai recalcular com análise limpa
     
     // ✨ Glow no botão Analisar
     const btnAnalisar = document.getElementById('btn-analisar');
@@ -2159,6 +2172,27 @@ function renderizarAnaliseGameficada(analise) {
     const container = document.getElementById('analise-gamificada');
     if (!container) return;
     
+    // Se não tem análise válida, limpa cards
+    if (!analise || !analise.perfumes_por_familia) {
+        container.innerHTML = `
+            <div style="
+                text-align: center;
+                padding: 40px;
+                color: #999;
+                background: rgba(255, 152, 0, 0.1);
+                border: 2px solid #ff9800;
+                border-radius: 15px;
+            ">
+                <div style="font-size: 2em; margin-bottom: 10px;">⚠️</div>
+                <div style="font-size: 1.2em; margin-bottom: 10px;">Análise desatualizada</div>
+                <div style="font-size: 0.9em;">
+                    Clique no botão <strong style="color: #d4af37;">Analisar</strong> (que está piscando) para atualizar os cards
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
     const nivel = analise.nivel || {};
     const equilibrio = analise.equilibrio || {};
     const dominante = analise.familia_dominante || {};
@@ -2265,8 +2299,8 @@ function renderizarRadarChart(familias, valores, analise, tentativa = 0) {
             console.log('👆 Clicou na aba Coleção');
         }
         
-        // Tenta novamente após 800ms (mais tempo para renderizar)
-        setTimeout(() => renderizarRadarChart(familias, valores, analise, tentativa + 1), 800);
+        // Tenta novamente após 1500ms (tempo generoso para renderizar)
+        setTimeout(() => renderizarRadarChart(familias, valores, analise, tentativa + 1), 1500);
         return;
     }
     
@@ -2274,7 +2308,7 @@ function renderizarRadarChart(familias, valores, analise, tentativa = 0) {
     const isVisible = ctx.offsetParent !== null;
     if (!isVisible && tentativa < 3) {
         console.log(`⚠️ Canvas existe mas não está visível. Tentativa ${tentativa + 1}/3`);
-        setTimeout(() => renderizarRadarChart(familias, valores, analise, tentativa + 1), 800);
+        setTimeout(() => renderizarRadarChart(familias, valores, analise, tentativa + 1), 1500);
         return;
     }
     
@@ -2286,7 +2320,7 @@ function renderizarRadarChart(familias, valores, analise, tentativa = 0) {
         radarChart.destroy();
     }
     
-    // Aguarda canvas estar completamente renderizado
+    // Aguarda canvas estar completamente renderizado (1500ms)
     setTimeout(() => {
         try {
             // Cria novo chart
@@ -2341,12 +2375,67 @@ function renderizarRadarChart(familias, valores, analise, tentativa = 0) {
             // Libera flag
             radarRenderizando = false;
         }
-    }, 300); // Aguarda 300ms para garantir que canvas está visível
+    }, 1500); // Aguarda 1500ms para garantir que canvas está completamente renderizado
     
     // Grid de famílias foi substituído por análise gamificada
 }
 
 // Função atualizarColecao removida - agora usamos apenas analisarColecao
+
+// ===================================
+// 🎯 SISTEMA LOCALSTORAGE-FIRST
+// ===================================
+
+/**
+ * Função central que renderiza TUDO a partir do localStorage
+ * Chamada em:
+ * - Inicialização do app
+ * - Após análise da API
+ * - Ao mudar de aba
+ */
+function renderizarTudoDoLocalStorage() {
+    console.log('🎯 renderizarTudoDoLocalStorage() chamada');
+    
+    const ultimaAnalise = JSON.parse(localStorage.getItem('ultimaAnalise') || '{}');
+    
+    if (!ultimaAnalise.dados) {
+        console.log('❌ Sem dados no localStorage');
+        
+        // Limpa tudo
+        const container = document.getElementById('analise-gamificada');
+        if (container) {
+            renderizarAnaliseGameficada(null);
+        }
+        
+        return;
+    }
+    
+    const dados = ultimaAnalise.dados;
+    console.log('✅ Dados encontrados, renderizando tudo...');
+    
+    // 1. RADAR
+    if (dados.analise_colecao) {
+        console.log('📊 Renderizando radar...');
+        atualizarRadarComAPI(dados.analise_colecao);
+    }
+    
+    // 2. CARDS GAMIFICADOS
+    if (dados.analise_colecao) {
+        console.log('🎮 Renderizando cards...');
+        renderizarAnaliseGameficada(dados.analise_colecao);
+    }
+    
+    // 3. MISSÃO + SUGESTÕES
+    console.log('🎯 Renderizando missão...');
+    window.dadosAnaliseAtual = dados;
+    renderizarMissaoGameficada(dados);
+    
+    // 4. RANKING/PONTOS
+    console.log('🏆 Atualizando ranking...');
+    atualizarNivelDOM();
+    
+    console.log('✅ Tudo renderizado do localStorage!');
+}
 
 // ===================================
 // MISSÃO (ANÁLISE)
@@ -2479,48 +2568,63 @@ ${window.perfumesJaSugeridos && window.perfumesJaSugeridos.length > 0 ? window.p
 INSTRUÇÕES CRÍTICAS:
 
 ===========================================================
-📊 PARTE 1: CLASSIFICAÇÃO FRAGANTICA (OBRIGATÓRIO)
+📊 PARTE 1: CLASSIFICAÇÃO DE FAMÍLIAS OLFATIVAS (OBRIGATÓRIO)
 ===========================================================
 
-Para CADA perfume acima, você DEVE:
+Para CADA perfume acima, você DEVE classificá-lo em UMA das 9 famílias abaixo.
 
-1. Consultar a página do perfume no Fragantica
-2. Olhar a seção "Main Accords" (Principais Acordes)
-3. Usar a PRIMEIRA família listada nos acordes
+Use seu conhecimento sobre perfumes masculinos e os acordes principais de cada fragrância.
 
-EXEMPLO CORRETO:
-- "Nishane Hacivat" → Main Accords: woody, citrus, mossy
-  → FAMÍLIA: Amadeirado (porque "woody" é o primeiro)
-  
-- "Parfums de Marly Percival" → Main Accords: woody, aromatic, citrus
-  → FAMÍLIA: Amadeirado (porque "woody" é o primeiro)
-  
-- "Dior Sauvage" → Main Accords: fresh spicy, aromatic, citrus
-  → FAMÍLIA: Aromático/Verde (porque "fresh spicy" + "aromatic")
+**FAMÍLIAS OLFATIVAS (escolha APENAS UMA por perfume):**
 
-MAPEAMENTO DOS ACORDES PARA FAMÍLIAS:
-- woody, cedar, sandalwood → Amadeirado
-- fresh spicy, aromatic, green → Aromático/Verde
-- sweet, vanilla, caramel, gourmand → Doce/Gourmand
-- citrus, bergamot, lemon → Fresco/Cítrico
-- spicy, oriental, amber → Especiado/Oriental
-- aquatic, marine, ozonic → Aquático
-- powdery, lavender, fougere → Talco/Fougère
-- floral, rose, jasmine → Floral
-- fruity, apple, pineapple → Frutado
+1. **Fresco/Cítrico**: Perfumes leves, cítricos, aquosos
+   - Exemplos: Acqua di Gio, Dolce & Gabbana Light Blue, Versace Man Eau Fraiche
+   - Acordes: citrus, bergamot, lemon, aquatic, marine
 
-IMPORTANTE: Use conhecimento REAL do Fragantica, não invente!
+2. **Aromático/Verde**: Perfumes frescos com ervas, lavanda, especiarias leves
+   - Exemplos: Dior Sauvage, Bleu de Chanel, Paco Rabanne Invictus
+   - Acordes: aromatic, fresh spicy, lavender, herbal, green
 
-As famílias possíveis são APENAS estas 9:
-1. Fresco/Cítrico
-2. Aromático/Verde
-3. Doce/Gourmand
-4. Amadeirado
-5. Especiado/Oriental
-6. Aquático
-7. Talco/Fougère
-8. Floral
-9. Frutado
+3. **Doce/Gourmand**: Perfumes doces, com baunilha, caramelo, açúcar
+   - Exemplos: Paco Rabanne 1 Million, JPG Le Male, Viktor & Rolf Spicebomb
+   - Acordes: sweet, vanilla, caramel, gourmand, tonka
+
+4. **Amadeirado**: Perfumes com madeiras (cedro, sândalo, patchouli)
+   - Exemplos: Dior Homme Intense, Tom Ford Oud Wood, Creed Aventus (base)
+   - Acordes: woody, cedar, sandalwood, patchouli, vetiver
+
+5. **Especiado/Oriental**: Perfumes com especiarias fortes, âmbar, resinas
+   - Exemplos: YSL La Nuit de L'Homme, Givenchy Gentleman, Dior Fahrenheit
+   - Acordes: spicy, oriental, amber, incense, cinnamon
+
+6. **Aquático**: Perfumes marinhos, ozônicos, com sal
+   - Exemplos: Nautica Voyage, Davidoff Cool Water, Issey Miyake L'Eau d'Issey
+   - Acordes: aquatic, marine, ozonic, sea notes
+
+7. **Talco/Fougère**: Perfumes clássicos com lavanda, cumarina, barbear
+   - Exemplos: Paco Rabanne Pour Homme, Azzaro Pour Homme, Guerlain Habit Rouge
+   - Acordes: powdery, lavender, fougere, coumarin
+
+8. **Floral**: Perfumes com flores (raro em masculinos, mas existe)
+   - Exemplos: Dior Homme, Chanel Allure Homme
+   - Acordes: floral, iris, rose, violet
+
+9. **Frutado**: Perfumes com frutas (abacaxi, maçã, pêra)
+   - Exemplos: Creed Aventus, Versace Eros, Carolina Herrera Bad Boy
+   - Acordes: fruity, pineapple, apple, blackcurrant
+
+**INSTRUÇÕES DE CLASSIFICAÇÃO:**
+- Use o acorde DOMINANTE do perfume
+- Se tiver dúvida entre 2, escolha a mais característica
+- NUNCA invente - use conhecimento real
+- Se não conhecer um perfume, classifique baseado em perfumes similares da mesma linha/marca
+
+**EXEMPLOS DE CLASSIFICAÇÃO CORRETA:**
+- Dior Sauvage → Aromático/Verde (fresh spicy dominante)
+- Paco Rabanne 1 Million → Doce/Gourmand (sweet/cinnamon)
+- Acqua di Gio → Fresco/Cítrico (citrus/marine)
+- Creed Aventus → Frutado (pineapple dominante, apesar da base amadeirada)
+- Tom Ford Oud Wood → Amadeirado (oud/woody)
 
 Conte quantos perfumes há em cada família e identifique as 3 famílias com MENOS perfumes.
 
@@ -2663,11 +2767,8 @@ Analise e retorne análise detalhada + recomendações COM CONCENTRAÇÃO.
         
         console.log('✅ Usando classificação validada pela API');
         
-        // Salva classificações
+        // Salva classificações (compatibilidade)
         localStorage.setItem('classificacoesValidadas', JSON.stringify(data.analise_colecao.perfumes_por_familia));
-        
-        // ATUALIZA RADAR
-        atualizarRadarComAPI(data.analise_colecao);
         
         // Salva cache COM PERFIL
         localStorage.setItem('ultimaAnalise', JSON.stringify({
@@ -2677,7 +2778,12 @@ Analise e retorne análise detalhada + recomendações COM CONCENTRAÇÃO.
             timestamp: Date.now()
         }));
         
-        // Salva globalmente
+        console.log('💾 Dados salvos no localStorage');
+        
+        // 🎯 RENDERIZA TUDO DO LOCALSTORAGE (fonte única)
+        renderizarTudoDoLocalStorage();
+        
+        // Salva globalmente (compatibilidade)
         window.dadosAnaliseAtual = data;
         window.missaoAtualIndex = 0;
         
@@ -2694,16 +2800,10 @@ Analise e retorne análise detalhada + recomendações COM CONCENTRAÇÃO.
             atualizarContadores(); // Atualiza contador visual
         }
         
-        // 💾 SALVA radar no localStorage
-        salvarRadarNoStorage(data.analise_colecao);
-        
         // Tracking
         const nivelAtual = calcularNivelAtual();
         trackCollection(minhaColecao, data.analise_colecao);
         trackAnalysis(data.analise_colecao, nivelAtual, data.recomendacoes);
-        
-        // Renderiza missão (mas NÃO muda aba)
-        renderizarMissaoGameficada(data);
         
         // Salva perfumes recomendados no histórico
         if (data.recomendacoes && data.recomendacoes.length > 0) {
@@ -4748,23 +4848,11 @@ carregarPerfil();
 renderizarLista();
 
 // Tenta carregar análise salva (radar + missão)
-const ultimaAnalise = JSON.parse(localStorage.getItem('ultimaAnalise') || '{}');
-console.log('🎯 Inicializando radar...');
-console.log('  Análise salva?', ultimaAnalise.dados ? 'SIM' : 'NÃO');
+console.log('🎯 Inicializando app...');
 console.log('  Coleção atual:', minhaColecao.length, 'perfumes');
 
-if (ultimaAnalise.dados && ultimaAnalise.dados.analise_colecao) {
-    console.log('📊 Carregando análise salva');
-    // Carrega radar
-    atualizarRadarComAPI(ultimaAnalise.dados.analise_colecao);
-    // Carrega missão
-    window.dadosAnaliseAtual = ultimaAnalise.dados;
-    renderizarMissaoGameficada(ultimaAnalise.dados);
-} else {
-    console.log('ℹ️ Sem análise salva. Clique em "Analisar" para gerar.');
-}
-
-atualizarNivelDOM();
+// 🎯 RENDERIZA TUDO DO LOCALSTORAGE (fonte única)
+renderizarTudoDoLocalStorage();
 
 // Atualiza contadores quando rate limiter carregar
 setTimeout(() => {
