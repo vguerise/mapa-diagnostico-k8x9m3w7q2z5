@@ -141,10 +141,12 @@
         
         @keyframes pulseGlow {
             0%, 100% {
-                box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+                box-shadow: 0 0 20px rgba(212, 175, 55, 0.6), 0 0 40px rgba(212, 175, 55, 0.3);
+                transform: scale(1);
             }
             50% {
-                box-shadow: 0 0 30px rgba(212, 175, 55, 0.8);
+                box-shadow: 0 0 40px rgba(212, 175, 55, 1), 0 0 80px rgba(212, 175, 55, 0.5);
+                transform: scale(1.05);
             }
         }
 
@@ -3201,7 +3203,7 @@ function renderizarBarraNivel(nivel) {
             <div style="color: #ccc; font-size: 0.85em; text-align: center;">
                 ${nivel.proximo === "Máximo" 
                     ? "🎉 Você atingiu o nível máximo!" 
-                    : "Faltam " + nivel.faltam + " pontos para " + (nivel.proximo === "Explorador" ? "🔍" : nivel.proximo === "Colecionador" ? "⭐" : nivel.proximo === "Expert" ? "💎" : "👑") + " " + nivel.proximo
+                    : "Você tem " + nivel.pontos + " pontos • Faltam " + nivel.faltam + " para " + (nivel.proximo === "Explorador" ? "🔍" : nivel.proximo === "Colecionador" ? "⭐" : nivel.proximo === "Expert" ? "💎" : "👑") + " " + nivel.proximo
                 }
             </div>
         </div>
@@ -3318,76 +3320,22 @@ function renderizarMissaoGameficada(data, tituloCustomizado = null) {
                     <button class="btn-mission-secondary" onclick="gerarNovaMissao()">
                         🔄 Quero outra missão
                     </button>
-                    <button 
-                        class="btn-mission-secondary" 
-                        onclick="gerarHiddenGems()"
-                        style="background: linear-gradient(135deg, #9c27b0, #7b1fa2); border: none;"
-                    >
-                        💎 Hidden Gems pra mim!
-                    </button>
                 </div>
             </div>
             
             <!-- Card de Candidatos (oculto inicialmente) -->
             <div class="candidates-card" id="candidatesCard">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
-                    <h3 style="color: #d4af37; font-size: 1.5em; margin: 0;">
-                        🎁 Conjunto <span id="conjuntoAtual">1</span> de 3
-                    </h3>
-                    <button 
-                        class="btn-mission-secondary" 
-                        onclick="gerarNovasSugestoes()"
-                        style="flex: initial; min-width: auto; padding: 12px 20px; font-size: 0.95em;"
-                    >
-                        🔄 Novas Sugestões
-                    </button>
-                </div>
+                <h3 style="color: #d4af37; font-size: 1.5em; margin-bottom: 20px;">
+                    🎁 Seus Candidatos Perfeitos
+                </h3>
                 
                 <div id="sugestoesContainer">
                     ${recomendacoes.map((rec, i) => `
-                        <div class="candidate-item" id="candidato-${i}" style="position: relative;">
+                        <div class="candidate-item" id="candidato-${i}">
                             <div class="candidate-name">${i + 1}. ${rec.nome}</div>
                             <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
                             <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
                             <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
-                            <div style="display: flex; gap: 8px; margin-top: 12px;">
-                                <button 
-                                    onclick="trocarSugestaoIndividual(${i})"
-                                    style="
-                                        flex: 1;
-                                        padding: 8px 16px;
-                                        background: rgba(212, 175, 55, 0.1);
-                                        border: 1px solid rgba(212, 175, 55, 0.3);
-                                        border-radius: 8px;
-                                        color: #d4af37;
-                                        font-size: 0.9em;
-                                        cursor: pointer;
-                                        transition: all 0.3s;
-                                    "
-                                    onmouseover="this.style.background='rgba(212, 175, 55, 0.2)'"
-                                    onmouseout="this.style.background='rgba(212, 175, 55, 0.1)'"
-                                >
-                                    🔄 Trocar esta
-                                </button>
-                                <button 
-                                    onclick="naoGostoDesta('${rec.nome.replace(/'/g, "\\'")}', ${i})"
-                                    style="
-                                        flex: 1;
-                                        padding: 8px 16px;
-                                        background: rgba(255, 68, 68, 0.1);
-                                        border: 1px solid rgba(255, 68, 68, 0.3);
-                                        border-radius: 8px;
-                                        color: #ff4444;
-                                        font-size: 0.9em;
-                                        cursor: pointer;
-                                        transition: all 0.3s;
-                                    "
-                                    onmouseover="this.style.background='rgba(255, 68, 68, 0.2)'"
-                                    onmouseout="this.style.background='rgba(255, 68, 68, 0.1)'"
-                                >
-                                    👎 Não gosto
-                                </button>
-                            </div>
                         </div>
                     `).join('')}
                 </div>
