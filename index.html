@@ -2029,14 +2029,23 @@ function limparColecao() {
         console.log('🔓 Análise invalidada - coleção limpa');
         
         // Limpa radar (sem regenerar, pois não há perfumes)
-        if (window.radarChart) {
-            window.radarChart.destroy();
-            window.radarChart = null;
+        if (radarChart) {
+            radarChart.destroy();
+            radarChart = null;
         }
         
+        // 🔄 FORÇA atualização IMEDIATA da lista
+        const container = document.getElementById('perfume-list');
+        const countSpan = document.getElementById('perfume-count');
+        if (container) container.innerHTML = '';
+        if (countSpan) countSpan.textContent = '0';
+        
+        // Atualiza tudo
         renderizarLista();
         atualizarRadar();
         atualizarNivelDOM();
+        
+        console.log('✅ Coleção limpa! Lista atualizada.');
     }
 }
 
@@ -2162,10 +2171,160 @@ function atualizarRadarComAPI(analiseAPI) {
     
     console.log('📊 Valores para radar:', valores);
     
+    // Tenta renderizar canvas (3 tentativas)
     renderizarRadarChart(familias, valores, analiseAPI);
+    
+    // FALLBACK: Se canvas falhar, renderiza barras CSS
+    setTimeout(() => {
+        const canvas = document.getElementById('radarChart');
+        if (!canvas || !radarChart) {
+            console.log('⚠️ Canvas falhou, usando visualização alternativa');
+            renderizarRadarAlternativo(analiseAPI);
+        }
+    }, 5000); // Aguarda 5s para ver se canvas renderizou
     
     // Renderiza análise gamificada
     renderizarAnaliseGameficada(analiseAPI);
+}
+
+function renderizarRadarAlternativo(analiseAPI) {
+    const radarContainer = document.querySelector('.radar-container');
+    if (!radarContainer) return;
+    
+    console.log('🎨 Renderizando visualização alternativa (barras CSS)');
+    
+    const familias = analiseAPI.perfumes_por_familia;
+    const total = Object.values(familias).reduce((a, b) => a + b, 0);
+    
+    const emojis = {
+        'Fresco/Cítrico': '🍋',
+        'Aromático/Verde': '🌳',
+        'Doce/Gourmand': '🍯',
+        'Amadeirado': '🪵',
+        'Especiado/Oriental': '🌶️',
+        'Aquático': '💧',
+        'Talco/Fougère': '🧼',
+        'Floral': '🌸',
+        'Frutado': '🍇'
+    };
+    
+    const cores = {
+        'Fresco/Cítrico': '#4CAF50',
+        'Aromático/Verde': '#2196F3',
+        'Doce/Gourmand': '#FF9800',
+        'Amadeirado': '#795548',
+        'Especiado/Oriental': '#E91E63',
+        'Aquático': '#00BCD4',
+        'Talco/Fougère': '#9C27B0',
+        'Floral': '#F06292',
+        'Frutado': '#9C27B0'
+    };
+    
+    let html = `
+        <div style="padding: 30px 20px;">
+            <h3 style="
+                color: #d4af37; 
+                text-align: center; 
+                margin-bottom: 25px;
+                font-size: 1.3em;
+                font-weight: 600;
+            ">
+                📊 Distribuição da Coleção
+            </h3>
+    `;
+    
+    // Ordena famílias por quantidade (maior primeiro)
+    const familiasOrdenadas = Object.entries(familias)
+        .sort(([, a], [, b]) => b - a);
+    
+    familiasOrdenadas.forEach(([familia, quantidade]) => {
+        const porcentagem = total > 0 ? Math.round((quantidade / total) * 100) : 0;
+        const emoji = emojis[familia] || '🎯';
+        const cor = cores[familia] || '#d4af37';
+        
+        html += `
+            <div style="margin-bottom: 18px;">
+                <div style="
+                    display: flex; 
+                    justify-content: space-between; 
+                    align-items: center;
+                    margin-bottom: 6px;
+                ">
+                    <span style="
+                        color: #ddd;
+                        font-size: 0.95em;
+                        font-weight: 500;
+                    ">
+                        ${emoji} ${familia}
+                    </span>
+                    <span style="
+                        color: ${quantidade > 0 ? cor : '#666'};
+                        font-weight: 600;
+                        font-size: 0.9em;
+                    ">
+                        ${quantidade} ${quantidade === 1 ? 'perfume' : 'perfumes'}
+                    </span>
+                </div>
+                <div style="
+                    width: 100%;
+                    height: 10px;
+                    background: rgba(255, 255, 255, 0.05);
+                    border-radius: 10px;
+                    overflow: hidden;
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                ">
+                    <div style="
+                        width: ${porcentagem}%;
+                        height: 100%;
+                        background: linear-gradient(90deg, ${cor}, ${cor}dd);
+                        border-radius: 10px;
+                        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+                        box-shadow: ${quantidade > 0 ? `0 0 10px ${cor}44` : 'none'};
+                    "></div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += `
+            <div style="
+                margin-top: 30px;
+                padding: 20px;
+                background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(212, 175, 55, 0.05));
+                border: 2px solid #d4af37;
+                border-radius: 15px;
+                text-align: center;
+            ">
+                <div style="
+                    color: #999; 
+                    font-size: 0.85em;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    margin-bottom: 8px;
+                ">
+                    Total na Coleção
+                </div>
+                <div style="
+                    color: #d4af37; 
+                    font-size: 2em; 
+                    font-weight: 700;
+                    text-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+                ">
+                    ${total}
+                </div>
+                <div style="
+                    color: #d4af37;
+                    font-size: 0.9em;
+                    margin-top: 5px;
+                ">
+                    ${total === 1 ? 'perfume' : 'perfumes'}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    radarContainer.innerHTML = html;
+    console.log('✅ Visualização alternativa renderizada!');
 }
 
 function renderizarAnaliseGameficada(analise) {
@@ -2413,10 +2572,10 @@ function renderizarTudoDoLocalStorage() {
     const dados = ultimaAnalise.dados;
     console.log('✅ Dados encontrados, renderizando tudo...');
     
-    // 1. RADAR
+    // 1. RADAR - Usa visualização ALTERNATIVA (barras CSS)
     if (dados.analise_colecao) {
-        console.log('📊 Renderizando radar...');
-        atualizarRadarComAPI(dados.analise_colecao);
+        console.log('📊 Renderizando radar (barras CSS)...');
+        renderizarRadarAlternativo(dados.analise_colecao);
     }
     
     // 2. CARDS GAMIFICADOS
