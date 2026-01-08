@@ -381,6 +381,28 @@ function atualizarBadgeUsuario() {
         badge.style.cursor = 'pointer';
         badge.onclick = mostrarModalIniciarTrial;
     }
+    
+    // Atualiza botão "Virar PRO" na aba Perfil
+    atualizarBotaoVirarPro(status);
+}
+
+// Mostra/esconde botão "Virar PRO" baseado no status
+function atualizarBotaoVirarPro(status) {
+    const botao = document.querySelector('.upgrade-button');
+    if (!botao) return;
+    
+    if (status.type === 'pro' || status.type === 'vip') {
+        // Já é PRO ou VIP - esconde botão
+        botao.style.display = 'none';
+    } else if (status.type === 'trial') {
+        // Em trial - mostra com texto especial
+        botao.style.display = 'block';
+        botao.innerHTML = `💎 Garantir PRO (${status.expiresIn}d restantes)`;
+    } else {
+        // Free - mostra botão normal
+        botao.style.display = 'block';
+        botao.innerHTML = '💎 Virar PRO!';
+    }
 }
 
 // Inicializa ao carregar
