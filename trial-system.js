@@ -405,17 +405,207 @@ function atualizarBotaoVirarPro(status) {
     }
 }
 
+// Sistema de lembretes diários
+function mostrarLembreteDiario() {
+    const status = window.trialManager.temAcesso();
+    
+    // Só para usuários em trial
+    if (status.type !== 'trial') return;
+    
+    const hoje = new Date().toDateString();
+    const ultimoLembrete = localStorage.getItem('ultimoLembrete');
+    
+    // Já mostrou hoje? Não mostra de novo
+    if (ultimoLembrete === hoje) return;
+    
+    const diasRestantes = status.expiresIn;
+    
+    // Define mensagens baseadas nos dias restantes
+    let mensagem = '';
+    let mostrar = false;
+    
+    if (diasRestantes === 7) {
+        // Primeiro dia - não incomoda
+        mostrar = false;
+    } else if (diasRestantes === 6 || diasRestantes === 5) {
+        // Dias 2-3: Lembrete suave
+        mensagem = `
+            <div style="text-align: center;">
+                <div style="font-size: 3em; margin-bottom: 15px;">⏰</div>
+                <h3 style="color: #d4af37; margin-bottom: 15px;">
+                    Restam ${diasRestantes} dias de trial
+                </h3>
+                <p style="color: #ccc; line-height: 1.6; margin-bottom: 20px;">
+                    Está gostando? Garanta seu acesso por apenas R$ 47/ano!
+                </p>
+                <button onclick="fecharLembrete(); irParaCheckout();" style="
+                    background: linear-gradient(135deg, #d4af37, #ffd700);
+                    color: #000;
+                    border: none;
+                    padding: 12px 30px;
+                    border-radius: 10px;
+                    font-weight: 700;
+                    cursor: pointer;
+                    margin-right: 10px;
+                ">
+                    💎 Garantir Acesso
+                </button>
+                <button onclick="fecharLembrete()" style="
+                    background: transparent;
+                    color: #999;
+                    border: 1px solid #444;
+                    padding: 12px 20px;
+                    border-radius: 10px;
+                    cursor: pointer;
+                ">
+                    Continuar testando
+                </button>
+            </div>
+        `;
+        mostrar = true;
+    } else if (diasRestantes === 4 || diasRestantes === 3) {
+        // Dias 4-5: Urgência moderada
+        mensagem = `
+            <div style="text-align: center;">
+                <div style="font-size: 3em; margin-bottom: 15px;">⏰</div>
+                <h3 style="color: #ffd700; margin-bottom: 15px;">
+                    Só ${diasRestantes} dias de trial!
+                </h3>
+                <p style="color: #ccc; line-height: 1.6; margin-bottom: 20px;">
+                    Não perca suas análises e sugestões personalizadas!<br>
+                    <strong style="color: #d4af37;">R$ 47/ano = R$ 3,92/mês</strong>
+                </p>
+                <button onclick="fecharLembrete(); irParaCheckout();" style="
+                    background: linear-gradient(135deg, #d4af37, #ffd700);
+                    color: #000;
+                    border: none;
+                    padding: 15px 40px;
+                    border-radius: 10px;
+                    font-size: 1.1em;
+                    font-weight: 700;
+                    cursor: pointer;
+                    margin-bottom: 10px;
+                ">
+                    🚀 Fazer Upgrade Agora
+                </button>
+                <br>
+                <button onclick="fecharLembrete()" style="
+                    background: transparent;
+                    color: #999;
+                    border: none;
+                    padding: 8px;
+                    cursor: pointer;
+                    font-size: 0.9em;
+                ">
+                    Lembrar amanhã
+                </button>
+            </div>
+        `;
+        mostrar = true;
+    } else if (diasRestantes === 2 || diasRestantes === 1) {
+        // Últimos 2 dias: URGÊNCIA MÁXIMA
+        mensagem = `
+            <div style="text-align: center;">
+                <div style="font-size: 4em; margin-bottom: 15px; animation: pulse 1s infinite;">🚨</div>
+                <h3 style="color: #ff4444; margin-bottom: 15px; font-size: 1.5em;">
+                    ${diasRestantes === 1 ? 'ÚLTIMO DIA DE TRIAL!' : 'SÓ 2 DIAS RESTANTES!'}
+                </h3>
+                <p style="color: #fff; line-height: 1.6; margin-bottom: 20px; font-size: 1.1em;">
+                    Seu acesso expira ${diasRestantes === 1 ? 'HOJE' : 'amanhã'}!<br>
+                    <strong style="color: #ffd700;">Não perca tudo que construiu!</strong>
+                </p>
+                <div style="
+                    background: rgba(212, 175, 55, 0.1);
+                    border: 2px solid #d4af37;
+                    border-radius: 10px;
+                    padding: 15px;
+                    margin-bottom: 20px;
+                ">
+                    <div style="color: #d4af37; font-size: 1.8em; font-weight: 700;">
+                        R$ 47/ano
+                    </div>
+                    <div style="color: #999; font-size: 0.9em;">
+                        Apenas R$ 3,92/mês
+                    </div>
+                </div>
+                <button onclick="fecharLembrete(); irParaCheckout();" style="
+                    background: linear-gradient(135deg, #ff4444, #ff6666);
+                    color: #fff;
+                    border: none;
+                    padding: 18px 50px;
+                    border-radius: 12px;
+                    font-size: 1.2em;
+                    font-weight: 700;
+                    cursor: pointer;
+                    box-shadow: 0 4px 15px rgba(255, 68, 68, 0.4);
+                    animation: pulse 2s infinite;
+                ">
+                    💎 GARANTIR ACESSO AGORA
+                </button>
+            </div>
+            <style>
+                @keyframes pulse {
+                    0%, 100% { transform: scale(1); }
+                    50% { transform: scale(1.05); }
+                }
+            </style>
+        `;
+        mostrar = true;
+    }
+    
+    if (mostrar && mensagem) {
+        // Salva que já mostrou hoje
+        localStorage.setItem('ultimoLembrete', hoje);
+        
+        // Mostra modal
+        const modal = `
+            <div id="lembrete-modal" style="
+                position: fixed;
+                top: 0; left: 0;
+                width: 100%; height: 100%;
+                background: rgba(0,0,0,0.95);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10001;
+                animation: fadeIn 0.3s ease;
+            ">
+                <div style="
+                    background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
+                    border: 2px solid #d4af37;
+                    border-radius: 20px;
+                    padding: 40px;
+                    max-width: 500px;
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+                ">
+                    ${mensagem}
+                </div>
+            </div>
+            <style>
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+            </style>
+        `;
+        
+        // Aguarda 2 segundos antes de mostrar (deixa página carregar)
+        setTimeout(() => {
+            document.body.insertAdjacentHTML('beforeend', modal);
+        }, 2000);
+    }
+}
+
+// Fecha lembrete
+function fecharLembrete() {
+    const modal = document.getElementById('lembrete-modal');
+    if (modal) modal.remove();
+}
+
 // Inicializa ao carregar
 window.addEventListener('load', () => {
     atualizarBadgeUsuario();
     
-    // Verifica se deve mostrar aviso de expiração
-    const status = window.trialManager.temAcesso();
-    
-    if (status.type === 'trial' && status.expiresIn <= 2) {
-        // Aviso nos últimos 2 dias do trial
-        setTimeout(() => {
-            alert(`⏰ Seu trial expira em ${status.expiresIn} dia(s)! Faça upgrade para não perder acesso.`);
-        }, 2000);
-    }
+    // Sistema de lembretes diários
+    mostrarLembreteDiario();
 });
