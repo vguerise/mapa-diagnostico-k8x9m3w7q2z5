@@ -2678,20 +2678,23 @@ async function analisarColecao() {
         return;
     }
     
-    // 🎁 VERIFICA TRIAL/PRO
-    if (window.trialManager) {
-        const status = window.trialManager.temAcesso();
+    // 🔒 VERIFICA SE É ASSINANTE (via Supabase)
+    const isAssinante = await verificarAssinatura();
+    if (!isAssinante) {
+        mostrarModalAssinatura();
+        return;
+    }
+    
+    // 🔒 RATE LIMITING: Verifica limites
+    if (window.rateLimiter) {
+        const check = window.rateLimiter.podeExecutar('analise');
         
-        if (!status.hasAccess) {
-            if (status.canStartTrial) {
-                mostrarModalIniciarTrial();
-            } else if (status.trialExpired) {
-                mostrarModalUpgrade();
-            }
+        if (!check.pode) {
+            mostrarPopupLimite('analise', window.rateLimiter.limits.basico.analise.max, check.proximoReset);
             return;
         }
         
-        console.log(`✅ Acesso OK: ${status.message}`);
+        console.log(`✅ Rate Limit OK: ${check.restante} análises restantes`);
     }
     
     // 🗑️ LIMPA CACHE ao clicar em Analisar (força nova análise)
@@ -3298,9 +3301,16 @@ async function enviarPergunta() {
         return;
     }
     
+    // 🔒 VERIFICA ASSINATURA
+    const isAssinante = await verificarAssinatura();
+    if (!isAssinante) {
+        mostrarModalAssinatura();
+        return;
+    }
+    
     // 🔒 RATE LIMITING: Verifica se pode enviar
     if (window.rateLimiter) {
-        const check = await window.rateLimiter.podeExecutar('chat');
+        const check = window.rateLimiter.podeExecutar('chat');
         
         if (!check.pode) {
             mostrarPopupLimite('chat', window.rateLimiter.limits.basico.chat.max, check.proximoReset);
@@ -4827,9 +4837,16 @@ async function iniciarColecaoDoZero() {
         return;
     }
     
+    // 🔒 VERIFICA ASSINATURA
+    const isAssinante = await verificarAssinatura();
+    if (!isAssinante) {
+        mostrarModalAssinatura();
+        return;
+    }
+    
     // 🔒 RATE LIMITING: Verifica se pode usar (3 vezes VITALÍCIO)
     if (window.rateLimiter) {
-        const check = await window.rateLimiter.podeExecutar('dicas');
+        const check = window.rateLimiter.podeExecutar('dicas');
         
         if (!check.pode) {
             mostrarPopupLimite('dicas', 3, check.proximoReset);
@@ -5096,7 +5113,190 @@ setInterval(() => {
 
 <!-- Scripts de Otimização -->
 <script src="cache-inteligente.js"></script>
-<script src="trial-system.js"></script>
+<script src="rate-limiting-system.js"></script>
+
+<script>
+// ===============================================
+// VERIFICAÇÃO DE ASSINATURA (Supabase)
+// ===============================================
+
+// Cache da verificação (5 minutos)
+let cacheAssinatura = null;
+let cacheTimestamp = 0;
+const CACHE_TIMEOUT = 5 * 60 * 1000; // 5 minutos
+
+async function verificarAssinatura() {
+    const email = localStorage.getItem('userEmail');
+    
+    // 1. Se não tem email, pede para entrar
+    if (!email) {
+        return false;
+    }
+    
+    // 2. VIP passa direto
+    if (email === 'vguerise@gmail.com') {
+        return true;
+    }
+    
+    // 3. Verifica cache
+    const now = Date.now();
+    if (cacheAssinatura !== null && (now - cacheTimestamp) < CACHE_TIMEOUT) {
+        console.log('✅ Cache: Assinatura ' + (cacheAssinatura ? 'ativa' : 'inativa'));
+        return cacheAssinatura;
+    }
+    
+    // 4. Consulta Supabase via API
+    try {
+        console.log('🔍 Verificando assinatura no Supabase...');
+        
+        const response = await fetch(
+            `https://operfumista-api-git-main-victors-projects-99f4b8c2.vercel.app/api/check-subscription?email=${encodeURIComponent(email)}`
+        );
+        
+        const data = await response.json();
+        
+        const isPro = data.isPro === true;
+        
+        // Atualiza cache
+        cacheAssinatura = isPro;
+        cacheTimestamp = now;
+        
+        console.log(isPro ? '✅ Assinatura ativa!' : '❌ Assinatura não encontrada');
+        
+        return isPro;
+        
+    } catch (error) {
+        console.error('❌ Erro ao verificar assinatura:', error);
+        
+        // Em caso de erro, bloqueia por segurança
+        return false;
+    }
+}
+
+// Modal de assinatura (quando não é assinante)
+function mostrarModalAssinatura() {
+    const modal = `
+        <div id="modal-assinatura" style="
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease;
+        ">
+            <div style="
+                background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
+                border: 2px solid #d4af37;
+                border-radius: 20px;
+                padding: 40px;
+                max-width: 500px;
+                text-align: center;
+            ">
+                <div style="font-size: 4em; margin-bottom: 20px;">🔒</div>
+                
+                <h2 style="color: #d4af37; margin-bottom: 15px; font-size: 2em;">
+                    Acesso Exclusivo
+                </h2>
+                
+                <p style="color: #ccc; margin-bottom: 25px; line-height: 1.6;">
+                    Esta ferramenta é exclusiva para assinantes.<br>
+                    Assine agora e tenha acesso completo!
+                </p>
+                
+                <div style="
+                    background: rgba(212, 175, 55, 0.1);
+                    border: 2px solid #d4af37;
+                    border-radius: 15px;
+                    padding: 30px;
+                    margin-bottom: 25px;
+                ">
+                    <div style="color: #d4af37; font-size: 3em; font-weight: 700;">
+                        R$ 47/ano
+                    </div>
+                    <div style="color: #999; font-size: 1em; margin-top: 5px;">
+                        Apenas R$ 3,92/mês
+                    </div>
+                </div>
+                
+                <ul style="
+                    text-align: left;
+                    color: #ccc;
+                    line-height: 2;
+                    margin-bottom: 30px;
+                    list-style: none;
+                    padding: 0;
+                ">
+                    <li>✅ 8 análises completas/mês</li>
+                    <li>✅ 12 conversas com IA</li>
+                    <li>✅ 3 dicas para iniciantes</li>
+                    <li>✅ Histórico completo</li>
+                    <li>✅ Sugestões personalizadas</li>
+                </ul>
+                
+                <button onclick="irParaCheckout()" style="
+                    background: linear-gradient(135deg, #d4af37, #ffd700);
+                    color: #000;
+                    border: none;
+                    padding: 18px 50px;
+                    border-radius: 12px;
+                    font-size: 1.2em;
+                    font-weight: 700;
+                    cursor: pointer;
+                    width: 100%;
+                    margin-bottom: 15px;
+                    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+                ">
+                    💎 Assinar Agora
+                </button>
+                
+                <button onclick="fecharModalAssinatura()" style="
+                    background: transparent;
+                    color: #999;
+                    border: 1px solid #444;
+                    padding: 12px;
+                    border-radius: 10px;
+                    cursor: pointer;
+                    width: 100%;
+                ">
+                    Voltar
+                </button>
+            </div>
+        </div>
+        <style>
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+        </style>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modal);
+}
+
+function fecharModalAssinatura() {
+    const modal = document.getElementById('modal-assinatura');
+    if (modal) modal.remove();
+}
+
+function irParaCheckout() {
+    const email = localStorage.getItem('userEmail') || '';
+    window.location.href = `https://pay.hotmart.com/G103674727A?checkoutMode=10&email=${email}`;
+}
+
+// Limpa cache (chamar após compra/login)
+function limparCacheAssinatura() {
+    cacheAssinatura = null;
+    cacheTimestamp = 0;
+    console.log('🔄 Cache de assinatura limpo');
+}
+
+// Disponibiliza no window
+window.verificarAssinatura = verificarAssinatura;
+window.limparCacheAssinatura = limparCacheAssinatura;
+</script>
 
 </body>
 </html>
