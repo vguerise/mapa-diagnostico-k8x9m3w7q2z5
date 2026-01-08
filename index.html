@@ -1378,9 +1378,28 @@
                             </select>
                         </div>
 
-                        <button class="save-profile-button" onclick="salvarPerfil()">
-                            💾 Salvar Perfil
-                        </button>
+                        <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                            <button class="save-profile-button" onclick="salvarPerfil()" style="flex: 1; min-width: 200px;">
+                                💾 Salvar Perfil
+                            </button>
+                            
+                            <button class="upgrade-button" onclick="irParaCheckout()" style="
+                                flex: 1;
+                                min-width: 200px;
+                                background: linear-gradient(135deg, #d4af37, #ffd700);
+                                color: #000;
+                                border: none;
+                                padding: 15px 30px;
+                                border-radius: 12px;
+                                font-size: 1.1em;
+                                font-weight: 700;
+                                cursor: pointer;
+                                transition: all 0.3s ease;
+                                box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+                            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(212, 175, 55, 0.5)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(212, 175, 55, 0.3)';">
+                                💎 Virar PRO!
+                            </button>
+                        </div>
 
                         <div id="profile-saved-message" style="display: none;" class="profile-saved">
                             ✅ Perfil salvo com sucesso!
@@ -1444,10 +1463,10 @@
                                 ➕ Adicionar
                             </button>
                             <button id="btn-analisar" class="analyze-button" onclick="analisarColecao()" style="flex: 1; min-width: 150px; margin: 0; padding: 12px 30px; font-size: 1em;">
-                                🔍 Analisar <span id="contador-analise">(8/8)</span>
+                                🔍 Analisar
                             </button>
                             <button id="btn-dicas" class="start-collection-button" onclick="iniciarColecaoDoZero()" style="flex: 1; min-width: 200px; margin: 0; padding: 12px 30px; font-size: 1em; background: linear-gradient(135deg, #d4af37, #f4c542); color: #1a1a1a; font-weight: 700;">
-                                🌱 Dicas Iniciante <span id="contador-dicas">(3/3)</span>
+                                🌱 Dicas Iniciante
                             </button>
                         </div>
                     </div>
@@ -1548,7 +1567,7 @@
                                 onkeypress="if(event.key === 'Enter') enviarPergunta()"
                             >
                             <button id="chat-send-button" class="chat-send-button" onclick="enviarPergunta()">
-                                📤 Enviar <span id="contador-chat">(12/12)</span>
+                                📤 Enviar
                             </button>
                         </div>
                         
@@ -4960,21 +4979,8 @@ IMPORTANTE: 3 marcas DIFERENTES + dentro do orçamento + adequados ao clima!
 // CONTADORES E POPUPS DE LIMITE
 // ===================================
 
-async function atualizarContadores() {
-    if (!window.rateLimiter) return;
-    
-    // Análise
-    const checkAnalise = await window.rateLimiter.podeExecutar('analise');
-    document.getElementById('contador-analise').textContent = `(${checkAnalise.restante}/8)`;
-    
-    // Chat
-    const checkChat = await window.rateLimiter.podeExecutar('chat');
-    document.getElementById('contador-chat').textContent = `(${checkChat.restante}/12)`;
-    
-    // Dicas
-    const checkDicas = await window.rateLimiter.podeExecutar('dicas');
-    document.getElementById('contador-dicas').textContent = `(${checkDicas.restante}/3)`;
-}
+// Função removida - não há mais limites (PRO é ilimitado)
+// async function atualizarContadores() { ... }
 
 function mostrarPopupLimite(tipo, limite, proximoReset) {
     const titulos = {
