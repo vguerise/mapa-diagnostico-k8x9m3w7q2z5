@@ -1940,6 +1940,7 @@ function adicionarPerfume() {
     input.value = '';
     renderizarLista();
     atualizarNivelDOM();  // Agora recalcula com cache limpo
+    atualizarMissoesSeExistir(); // ✨ NOVO: Atualiza missões
     
     // ✨ Adiciona GLOW no botão Analisar
     const btnAnalisar = document.getElementById('btn-analisar');
@@ -2004,6 +2005,7 @@ function removerPerfume(index) {
     
     renderizarLista();
     atualizarNivelDOM();  // Agora vai recalcular com análise limpa
+    atualizarMissoesSeExistir(); // ✨ NOVO: Atualiza missões
     
     // ✨ Glow no botão Analisar
     const btnAnalisar = document.getElementById('btn-analisar');
@@ -2136,9 +2138,9 @@ function atualizarRadarComAPI(analiseAPI) {
         '🍯 Doce',
         '🪵 Amadeirado',
         '🌶️ Especiado',
-        '💧 Aquático',
+        '💧 Aquático/Mineral',
         '🧼 Talco',
-        '🌸 Floral',
+        '🌸 Floral/Floral Branco',
         '🍇 Frutado'
     ];
     
@@ -2149,9 +2151,11 @@ function atualizarRadarComAPI(analiseAPI) {
         'Doce/Gourmand': '🍯 Doce',
         'Amadeirado': '🪵 Amadeirado',
         'Especiado/Oriental': '🌶️ Especiado',
-        'Aquático': '💧 Aquático',
+        'Aquático/Mineral': '💧 Aquático/Mineral',
+        'Aquático': '💧 Aquático/Mineral', // Retrocompatibilidade
         'Talco/Fougère': '🧼 Talco',
-        'Floral': '🌸 Floral',
+        'Floral/Floral Branco': '🌸 Floral/Floral Branco',
+        'Floral': '🌸 Floral/Floral Branco', // Retrocompatibilidade
         'Frutado': '🍇 Frutado'
     };
     
@@ -2204,7 +2208,8 @@ function renderizarRadarAlternativo(analiseAPI) {
         'Especiado/Oriental': '🌶️',
         'Aquático': '💧',
         'Talco/Fougère': '🧼',
-        'Floral': '🌸',
+        'Floral/Floral Branco': '🌸',
+        'Floral': '🌸', // Retrocompatibilidade
         'Frutado': '🍇'
     };
     
@@ -2214,9 +2219,11 @@ function renderizarRadarAlternativo(analiseAPI) {
         'Doce/Gourmand': '#FF9800',
         'Amadeirado': '#795548',
         'Especiado/Oriental': '#E91E63',
-        'Aquático': '#00BCD4',
+        'Aquático/Mineral': '#00BCD4',
+        'Aquático': '#00BCD4', // Retrocompatibilidade
         'Talco/Fougère': '#9C27B0',
-        'Floral': '#F06292',
+        'Floral/Floral Branco': '#F06292',
+        'Floral': '#F06292', // Retrocompatibilidade
         'Frutado': '#9C27B0'
     };
     
@@ -2805,17 +2812,19 @@ Use seu conhecimento sobre perfumes masculinos e os acordes principais de cada f
    - Exemplos: YSL La Nuit de L'Homme, Givenchy Gentleman, Dior Fahrenheit
    - Acordes: spicy, oriental, amber, incense, cinnamon
 
-6. **Aquático**: Perfumes marinhos, ozônicos, com sal
-   - Exemplos: Nautica Voyage, Davidoff Cool Water, Issey Miyake L'Eau d'Issey
-   - Acordes: aquatic, marine, ozonic, sea notes
+6. **Aquático/Mineral**: Perfumes marinhos, ozônicos, minerais
+   - AQUÁTICO: Notas marinhas, sal, brisa do mar (Davidoff Cool Water, Nautica Voyage)
+   - MINERAL: Pedra molhada, concreto, ozônio mineral (Lalique Encre Noire Sport, Comme des Garçons)
+   - Acordes: aquatic, marine, ozonic, mineral, metallic
 
-7. **Talco/Fougère**: Perfumes clássicos com lavanda, cumarina, barbear
-   - Exemplos: Paco Rabanne Pour Homme, Azzaro Pour Homme, Guerlain Habit Rouge
-   - Acordes: powdery, lavender, fougere, coumarin
+7. **Talco/Fougère**: Perfumes clássicos com lavanda, cumarina, talco, íris talcada
+   - Exemplos: Paco Rabanne Pour Homme, Prada L'Homme, Dior Homme
+   - Acordes: powdery, lavender, fougere, coumarin, iris
 
-8. **Floral**: Perfumes com flores (raro em masculinos, mas existe)
-   - Exemplos: Dior Homme, Chanel Allure Homme
-   - Acordes: floral, iris, rose, violet
+8. **Floral/Floral Branco**: Perfumes com flores (raro em masculinos)
+   - FLORAL: Rosa, gerânio, violeta
+   - FLORAL BRANCO: Jasmim, muguet, lírio, neroli (Tom Ford Neroli Portofino)
+   - Acordes: floral, white floral, jasmine, lily, neroli
 
 9. **Frutado**: Perfumes com frutas (abacaxi, maçã, pêra)
    - Exemplos: Creed Aventus, Versace Eros, Carolina Herrera Bad Boy
@@ -3620,7 +3629,7 @@ async function identificarFamiliaFragrantica(nomePerfume) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                pergunta: `Qual a família olfativa principal do perfume "${nomePerfume}"? Responda APENAS com uma das opções: Fresco/Cítrico, Aromático/Verde, Doce/Gourmand, Amadeirado, Especiado/Oriental, Aquático, Talco/Fougère, Floral, ou Frutado. Responda apenas o nome da família, sem explicações.`
+                pergunta: `Qual a família olfativa principal do perfume "${nomePerfume}"? Responda APENAS com uma das opções: Fresco/Cítrico, Aromático/Verde, Doce/Gourmand, Amadeirado, Especiado/Oriental, Aquático/Mineral, Talco/Fougère, Floral/Floral Branco, ou Frutado. Responda apenas o nome da família, sem explicações.`
             })
         });
         
@@ -3638,12 +3647,14 @@ async function identificarFamiliaFragrantica(nomePerfume) {
             'amadeirado': '🪵 Amadeirado',
             'especiado': '🌶️ Especiado/Oriental',
             'oriental': '🌶️ Especiado/Oriental',
-            'aquatico': '💧 Aquático',
-            'aquático': '💧 Aquático',
+            'aquatico': '💧 Aquático/Mineral',
+            'aquático': '💧 Aquático/Mineral',
+            'mineral': '💧 Aquático/Mineral',
             'talco': '🧼 Talco/Fougère',
             'fougere': '🧼 Talco/Fougère',
             'fougère': '🧼 Talco/Fougère',
-            'floral': '🌸 Floral',
+            'floral': '🌸 Floral/Floral Branco',
+            'branco': '🌸 Floral/Floral Branco',
             'frutado': '🍇 Frutado'
         };
         
@@ -3959,6 +3970,32 @@ function atualizarNivelDOM() {
 // GAMIFICAÇÃO - RENDERIZAÇÃO DE MISSÕES
 // ===================================
 
+// ✨ NOVA FUNÇÃO: Atualiza missões automaticamente se análise existe
+function atualizarMissoesSeExistir() {
+    // Verifica se tem análise salva
+    const ultimaAnalise = localStorage.getItem('ultimaAnalise');
+    
+    if (!ultimaAnalise) {
+        console.log('📭 Nenhuma análise salva - missões não atualizadas');
+        return;
+    }
+    
+    try {
+        const data = JSON.parse(ultimaAnalise);
+        const containerMissao = document.getElementById('missionContainer');
+        
+        // Só atualiza se o container de missão existir (usuário está na aba certa)
+        if (containerMissao) {
+            console.log('🔄 Atualizando missões com nova coleção...');
+            renderizarMissaoGameficada(data);
+        } else {
+            console.log('📋 Container de missão não visível - atualização adiada');
+        }
+    } catch (error) {
+        console.error('❌ Erro ao atualizar missões:', error);
+    }
+}
+
 function renderizarMissaoGameficada(data, tituloCustomizado = null) {
     const analise = data.analise_colecao || data.analise;
     const recomendacoes = data.recomendacoes;
@@ -4127,9 +4164,11 @@ function gerarTituloMissao(familiaAlvo, familiaDominante, contexto, missaoIndex 
         '🍯 Doce/Gourmand': 'Adicionar doçura sem ficar enjoativo',
         '🪵 Amadeirado': `Conquistar elegância amadeirada para ${ambiente === 'fechado' ? 'TRABALHO' : 'NOITE'}`,
         '🌶️ Especiado/Oriental': 'Dominar especiarias orientais marcantes',
-        '💧 Aquático': 'Completar com aquático fresco e moderno',
+        '💧 Aquático/Mineral': 'Completar com aquático mineral moderno',
+        '💧 Aquático': 'Completar com aquático mineral moderno', // Retrocompatibilidade
         '🧼 Talco/Fougère': 'Adicionar clássico talcado atemporal',
-        '🌸 Floral': 'Equilibrar com floral masculino',
+        '🌸 Floral/Floral Branco': 'Equilibrar com floral branco elegante',
+        '🌸 Floral': 'Equilibrar com floral branco elegante', // Retrocompatibilidade
         '🍇 Frutado': 'Adicionar frutado jovial e energético'
     };
     
@@ -4144,9 +4183,11 @@ function getAlvoEspecifico(familia) {
         '🍯 Doce/Gourmand': '🍯 Doce equilibrado / Baunilha + madeira',
         '🪵 Amadeirado': '🪵 Amadeirado seco / Âmbar discreto',
         '🌶️ Especiado/Oriental': '🌶️ Especiaria oriental / Cardamomo + âmbar',
-        '💧 Aquático': '💧 Aquático moderno / Sal marinho',
+        '💧 Aquático/Mineral': '💧 Aquático mineral / Ozônio + sal marinho',
+        '💧 Aquático': '💧 Aquático mineral / Ozônio + sal marinho', // Retrocompatibilidade
         '🧼 Talco/Fougère': '🧼 Fougère clássico / Talco + lavanda',
-        '🌸 Floral': '🌸 Floral masculino / Gerânio + vetiver',
+        '🌸 Floral/Floral Branco': '🌸 Floral branco / Jasmim + neroli',
+        '🌸 Floral': '🌸 Floral branco / Jasmim + neroli', // Retrocompatibilidade
         '🍇 Frutado': '🍇 Frutado fresco / Maçã + bergamota'
     };
     
@@ -4160,9 +4201,11 @@ function getUsoSugerido(familia, contexto) {
         '🍯 Doce/Gourmand': 'Noite • encontros • inverno',
         '🪵 Amadeirado': 'Noite • eventos • ambientes fechados',
         '🌶️ Especiado/Oriental': 'Noite • ocasiões especiais • clima frio',
-        '💧 Aquático': 'Verão • esportes • casual',
+        '💧 Aquático/Mineral': 'Verão • esportes • casual • moderno',
+        '💧 Aquático': 'Verão • esportes • casual • moderno', // Retrocompatibilidade
         '🧼 Talco/Fougère': 'Trabalho • formal • qualquer ocasião',
-        '🌸 Floral': 'Primavera • casual • dia',
+        '🌸 Floral/Floral Branco': 'Primavera • casual • dia • elegante',
+        '🌸 Floral': 'Primavera • casual • dia • elegante', // Retrocompatibilidade
         '🍇 Frutado': 'Casual • dia • verão'
     };
     
