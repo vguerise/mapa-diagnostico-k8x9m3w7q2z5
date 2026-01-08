@@ -1,6 +1,6 @@
 // ===============================================
 // RATE LIMITING - 100% PAGO
-// Todos usuários são assinantes (R$ 47/ano)
+// Todos usuários são assinantes (R$ 67/ano)
 // Sistema apenas controla limites de uso
 // ===============================================
 
