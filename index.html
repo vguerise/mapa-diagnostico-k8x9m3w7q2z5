@@ -5155,7 +5155,21 @@ async function verificarAssinatura() {
 }
 
 // Modal de assinatura (quando não é assinante)
-function mostrarModalAssinatura() {
+function mostrarModalAssinatura(permiteFechar = true) {
+    const botaoVoltar = permiteFechar ? `
+        <button onclick="fecharModalAssinatura()" style="
+            background: transparent;
+            color: #999;
+            border: 1px solid #444;
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+        ">
+            Voltar
+        </button>
+    ` : '';
+    
     const modal = `
         <div id="modal-assinatura" style="
             position: fixed;
@@ -5227,23 +5241,13 @@ function mostrarModalAssinatura() {
                     font-weight: 700;
                     cursor: pointer;
                     width: 100%;
-                    margin-bottom: 15px;
+                    margin-bottom: ${permiteFechar ? '15px' : '0'};
                     box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
                 ">
                     💎 Assinar Agora
                 </button>
                 
-                <button onclick="fecharModalAssinatura()" style="
-                    background: transparent;
-                    color: #999;
-                    border: 1px solid #444;
-                    padding: 12px;
-                    border-radius: 10px;
-                    cursor: pointer;
-                    width: 100%;
-                ">
-                    Voltar
-                </button>
+                ${botaoVoltar}
             </div>
         </div>
         <style>
@@ -5277,6 +5281,94 @@ function limparCacheAssinatura() {
 // Disponibiliza no window
 window.verificarAssinatura = verificarAssinatura;
 window.limparCacheAssinatura = limparCacheAssinatura;
+
+// ===============================================
+// VERIFICAÇÃO GLOBAL AO CARREGAR PÁGINA
+// ===============================================
+
+async function verificarAcessoGlobal() {
+    console.log('🔒 Verificando acesso global...');
+    
+    const email = localStorage.getItem('userEmail');
+    
+    // Se não tem email, mostra modal e bloqueia
+    if (!email) {
+        console.log('❌ Sem email - bloqueando acesso');
+        mostrarModalAssinatura(false); // false = não pode fechar
+        bloquearInterface();
+        return;
+    }
+    
+    // Verifica se é assinante
+    const isAssinante = await verificarAssinatura();
+    
+    if (!isAssinante) {
+        console.log('❌ Não é assinante - bloqueando acesso');
+        mostrarModalAssinatura(false); // false = não pode fechar
+        bloquearInterface();
+    } else {
+        console.log('✅ Assinante verificado - acesso liberado');
+        liberarInterface();
+    }
+}
+
+// Bloqueia interface
+function bloquearInterface() {
+    // Desabilita botões principais
+    const botoes = [
+        document.getElementById('btn-analisar'),
+        document.getElementById('chat-send-button'),
+        document.getElementById('btn-dicas')
+    ];
+    
+    botoes.forEach(btn => {
+        if (btn) {
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+        }
+    });
+    
+    // Adiciona overlay em todas as seções
+    const sections = document.querySelectorAll('.content-section');
+    sections.forEach(section => {
+        section.style.pointerEvents = 'none';
+        section.style.opacity = '0.6';
+    });
+}
+
+// Libera interface
+function liberarInterface() {
+    // Habilita botões
+    const botoes = [
+        document.getElementById('btn-analisar'),
+        document.getElementById('chat-send-button'),
+        document.getElementById('btn-dicas')
+    ];
+    
+    botoes.forEach(btn => {
+        if (btn) {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+        }
+    });
+    
+    // Remove overlay
+    const sections = document.querySelectorAll('.content-section');
+    sections.forEach(section => {
+        section.style.pointerEvents = 'auto';
+        section.style.opacity = '1';
+    });
+}
+
+// Executa ao carregar a página
+window.addEventListener('DOMContentLoaded', () => {
+    // Aguarda 500ms para garantir que DOM carregou
+    setTimeout(() => {
+        verificarAcessoGlobal();
+    }, 500);
+});
 </script>
 
 </body>
