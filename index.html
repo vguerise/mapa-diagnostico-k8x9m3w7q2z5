@@ -2659,16 +2659,20 @@ async function analisarColecao() {
         return;
     }
     
-    // 🔒 RATE LIMITING: Verifica se pode executar
-    if (window.rateLimiter) {
-        const check = window.rateLimiter.podeExecutar('analise');
+    // 🎁 VERIFICA TRIAL/PRO
+    if (window.trialManager) {
+        const status = window.trialManager.temAcesso();
         
-        if (!check.pode) {
-            mostrarPopupLimite('analise', window.rateLimiter.limits.basico.analise.max, check.proximoReset);
+        if (!status.hasAccess) {
+            if (status.canStartTrial) {
+                mostrarModalIniciarTrial();
+            } else if (status.trialExpired) {
+                mostrarModalUpgrade();
+            }
             return;
         }
         
-        console.log(`✅ Rate Limit OK: ${check.restante} análises restantes este mês`);
+        console.log(`✅ Acesso OK: ${status.message}`);
     }
     
     // 🗑️ LIMPA CACHE ao clicar em Analisar (força nova análise)
@@ -2993,14 +2997,6 @@ Analise e retorne análise detalhada + recomendações COM CONCENTRAÇÃO.
         localStorage.setItem('ultimaColecaoAnalisada', colecaoAtual);
         console.log('✅ Coleção marcada como analisada');
         
-        // 📊 REGISTRA uso do Rate Limit
-        if (window.rateLimiter) {
-            window.rateLimiter.registrarUso('analise');
-            const status = window.rateLimiter.podeExecutar('analise');
-            console.log(`📊 Rate Limit: ${status.restante} análises restantes este mês`);
-            atualizarContadores(); // Atualiza contador visual
-        }
-        
         // Tracking
         const nivelAtual = calcularNivelAtual();
         trackCollection(minhaColecao, data.analise_colecao);
@@ -3285,7 +3281,7 @@ async function enviarPergunta() {
     
     // 🔒 RATE LIMITING: Verifica se pode enviar
     if (window.rateLimiter) {
-        const check = window.rateLimiter.podeExecutar('chat');
+        const check = await window.rateLimiter.podeExecutar('chat');
         
         if (!check.pode) {
             mostrarPopupLimite('chat', window.rateLimiter.limits.basico.chat.max, check.proximoReset);
@@ -3393,7 +3389,7 @@ async function enviarPergunta() {
         // 📊 REGISTRA uso do Rate Limit
         if (window.rateLimiter) {
             window.rateLimiter.registrarUso('chat');
-            const status = window.rateLimiter.podeExecutar('chat');
+            const status = await window.rateLimiter.podeExecutar('chat');
             console.log(`📊 Rate Limit: ${status.restante} perguntas restantes este mês`);
             atualizarContadores(); // Atualiza contador visual
         }
@@ -4814,7 +4810,7 @@ async function iniciarColecaoDoZero() {
     
     // 🔒 RATE LIMITING: Verifica se pode usar (3 vezes VITALÍCIO)
     if (window.rateLimiter) {
-        const check = window.rateLimiter.podeExecutar('dicas');
+        const check = await window.rateLimiter.podeExecutar('dicas');
         
         if (!check.pode) {
             mostrarPopupLimite('dicas', 3, check.proximoReset);
@@ -4938,7 +4934,7 @@ IMPORTANTE: 3 marcas DIFERENTES + dentro do orçamento + adequados ao clima!
         // 📊 REGISTRA uso do Rate Limit (VITALÍCIO)
         if (window.rateLimiter) {
             window.rateLimiter.registrarUso('dicas');
-            const status = window.rateLimiter.podeExecutar('dicas');
+            const status = await window.rateLimiter.podeExecutar('dicas');
             console.log(`📊 Rate Limit: ${status.restante} dicas restantes (vitalício)`);
             atualizarContadores(); // Atualiza contador visual
         }
@@ -4964,19 +4960,19 @@ IMPORTANTE: 3 marcas DIFERENTES + dentro do orçamento + adequados ao clima!
 // CONTADORES E POPUPS DE LIMITE
 // ===================================
 
-function atualizarContadores() {
+async function atualizarContadores() {
     if (!window.rateLimiter) return;
     
     // Análise
-    const checkAnalise = window.rateLimiter.podeExecutar('analise');
+    const checkAnalise = await window.rateLimiter.podeExecutar('analise');
     document.getElementById('contador-analise').textContent = `(${checkAnalise.restante}/8)`;
     
     // Chat
-    const checkChat = window.rateLimiter.podeExecutar('chat');
+    const checkChat = await window.rateLimiter.podeExecutar('chat');
     document.getElementById('contador-chat').textContent = `(${checkChat.restante}/12)`;
     
     // Dicas
-    const checkDicas = window.rateLimiter.podeExecutar('dicas');
+    const checkDicas = await window.rateLimiter.podeExecutar('dicas');
     document.getElementById('contador-dicas').textContent = `(${checkDicas.restante}/3)`;
 }
 
@@ -5094,7 +5090,7 @@ setInterval(() => {
 
 <!-- Scripts de Otimização -->
 <script src="cache-inteligente.js"></script>
-<script src="rate-limiting-system.js"></script>
+<script src="trial-system.js"></script>
 
 </body>
 </html>
