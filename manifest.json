@@ -2,59 +2,59 @@
   "name": "Mapa da Coleção Perfeita",
   "short_name": "Mapa Perfumes",
   "description": "Análise inteligente de coleção de perfumes masculinos com IA",
-  "start_url": "/",
+  "start_url": "/mapa-diagnostico-k8x9m3w7q2z5/",
   "display": "standalone",
   "background_color": "#1e1e1e",
   "theme_color": "#d4af37",
   "orientation": "portrait",
-  "scope": "/",
+  "scope": "/mapa-diagnostico-k8x9m3w7q2z5/",
   "lang": "pt-BR",
   "dir": "ltr",
   "icons": [
     {
-      "src": "/icons/icon-72x72.png",
+      "src": "/mapa-diagnostico-k8x9m3w7q2z5/icons/icon-72x72.png",
       "sizes": "72x72",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-96x96.png",
+      "src": "/mapa-diagnostico-k8x9m3w7q2z5/icons/icon-96x96.png",
       "sizes": "96x96",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-128x128.png",
+      "src": "/mapa-diagnostico-k8x9m3w7q2z5/icons/icon-128x128.png",
       "sizes": "128x128",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-144x144.png",
+      "src": "/mapa-diagnostico-k8x9m3w7q2z5/icons/icon-144x144.png",
       "sizes": "144x144",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-152x152.png",
+      "src": "/mapa-diagnostico-k8x9m3w7q2z5/icons/icon-152x152.png",
       "sizes": "152x152",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-192x192.png",
+      "src": "/mapa-diagnostico-k8x9m3w7q2z5/icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-384x384.png",
+      "src": "/mapa-diagnostico-k8x9m3w7q2z5/icons/icon-384x384.png",
       "sizes": "384x384",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-512x512.png",
+      "src": "/mapa-diagnostico-k8x9m3w7q2z5/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
@@ -62,7 +62,7 @@
   ],
   "screenshots": [
     {
-      "src": "/screenshots/screenshot1.png",
+      "src": "/mapa-diagnostico-k8x9m3w7q2z5/screenshots/screenshot1.png",
       "sizes": "540x720",
       "type": "image/png"
     }
@@ -73,10 +73,10 @@
       "name": "Analisar Coleção",
       "short_name": "Analisar",
       "description": "Analise sua coleção de perfumes",
-      "url": "/?action=analyze",
+      "url": "/mapa-diagnostico-k8x9m3w7q2z5/?action=analyze",
       "icons": [
         {
-          "src": "/icons/icon-96x96.png",
+          "src": "/mapa-diagnostico-k8x9m3w7q2z5/icons/icon-96x96.png",
           "sizes": "96x96"
         }
       ]
@@ -85,23 +85,13 @@
       "name": "Iniciar Coleção",
       "short_name": "Iniciar",
       "description": "Comece sua coleção do zero",
-      "url": "/?action=start",
+      "url": "/mapa-diagnostico-k8x9m3w7q2z5/?action=start",
       "icons": [
         {
-          "src": "/icons/icon-96x96.png",
+          "src": "/mapa-diagnostico-k8x9m3w7q2z5/icons/icon-96x96.png",
           "sizes": "96x96"
         }
       ]
     }
-  ],
-  "share_target": {
-    "action": "/share",
-    "method": "POST",
-    "enctype": "multipart/form-data",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url"
-    }
-  }
+  ]
 }
