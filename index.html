@@ -475,8 +475,9 @@
         }
 
         .add-button {
-            background: linear-gradient(135deg, #d4af37, #f4e5b1);
-            color: #1e1e1e;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            font-weight: 700;
         }
 
         .add-button:hover {
@@ -485,13 +486,14 @@
         }
 
         .analyze-button {
-            background: linear-gradient(135deg, #4caf50, #66bb6a);
-            color: white;
+            background: linear-gradient(135deg, #d4af37, #f4e5b1);
+            color: #1e1e1e;
+            font-weight: 700;
         }
 
         .analyze-button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
+            box-shadow: 0 5px 20px rgba(212, 175, 55, 0.4);
         }
 
         .clear-button {
@@ -1490,13 +1492,13 @@
                             </select>
                         </div>
                         <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
-                            <button class="add-button" onclick="adicionarPerfume()" style="flex: 1; min-width: 150px; background: linear-gradient(135deg, #4CAF50, #45a049); color: white; font-weight: 700;">
+                            <button class="add-button" onclick="adicionarPerfume()" style="flex: 1; min-width: 150px;">
                                 ➕ Adicionar
                             </button>
                             <button id="btn-analisar" class="analyze-button" onclick="analisarColecao()" style="flex: 1; min-width: 150px; margin: 0; padding: 12px 30px; font-size: 1em;">
                                 🔍 Analisar
                             </button>
-                            <button id="btn-dicas" class="start-collection-button" onclick="iniciarColecaoDoZero()" style="flex: 1; min-width: 200px; margin: 0; padding: 12px 30px; font-size: 1em; background: linear-gradient(135deg, #2196F3, #1976D2); color: white; font-weight: 700;">
+                            <button id="btn-dicas" class="start-collection-button" onclick="iniciarColecaoDoZero()" style="flex: 1; min-width: 150px; margin: 0; padding: 12px 30px; font-size: 1em; background: linear-gradient(135deg, #2196F3, #1976D2); color: white; font-weight: 700;">
                                 🌱 Dicas Iniciante
                             </button>
                         </div>
