@@ -5198,6 +5198,235 @@ async function verificarAssinatura() {
 }
 
 // Modal de assinatura (quando não é assinante)
+// ===============================================
+// MODAL DE LOGIN (primeiro acesso)
+// ===============================================
+
+function mostrarModalLogin() {
+    // Verifica se tem email na URL (vindo do Hotmart)
+    const urlParams = new URLSearchParams(window.location.search);
+    const emailFromUrl = urlParams.get('email');
+    
+    const modal = `
+        <div id="modal-login" style="
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease;
+        ">
+            <div style="
+                background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
+                border: 2px solid #d4af37;
+                border-radius: 20px;
+                padding: 40px;
+                max-width: 500px;
+                text-align: center;
+            ">
+                <div style="font-size: 4em; margin-bottom: 20px;">🔑</div>
+                
+                <h2 style="color: #d4af37; margin-bottom: 15px; font-size: 2em;">
+                    ${emailFromUrl ? 'Confirme seu Acesso' : 'Bem-vindo ao Mapa da Coleção Perfeita'}
+                </h2>
+                
+                <p style="color: #ccc; margin-bottom: 25px; line-height: 1.6;">
+                    ${emailFromUrl 
+                        ? 'Detectamos seu email! Clique em Acessar para entrar:'
+                        : 'Para acessar, digite o email que você usou<br>na compra do produto no Hotmart:'
+                    }
+                </p>
+                
+                <input 
+                    type="email" 
+                    id="input-email-login" 
+                    placeholder="seu@email.com"
+                    value="${emailFromUrl || ''}"
+                    style="
+                        width: 100%;
+                        padding: 15px;
+                        border: 2px solid #d4af37;
+                        border-radius: 10px;
+                        background: rgba(212, 175, 55, 0.1);
+                        color: #fff;
+                        font-size: 1.1em;
+                        text-align: center;
+                        margin-bottom: 20px;
+                    "
+                    onkeypress="if(event.key === 'Enter') fazerLogin()"
+                />
+                
+                <button onclick="fazerLogin()" style="
+                    background: linear-gradient(135deg, #d4af37, #ffd700);
+                    color: #000;
+                    border: none;
+                    padding: 18px 50px;
+                    border-radius: 12px;
+                    font-size: 1.2em;
+                    font-weight: 700;
+                    cursor: pointer;
+                    width: 100%;
+                    margin-bottom: 15px;
+                    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+                ">
+                    🔓 Acessar
+                </button>
+                
+                <div style="
+                    margin-top: 20px;
+                    padding-top: 20px;
+                    border-top: 1px solid #444;
+                ">
+                    <p style="color: #999; font-size: 0.9em; margin-bottom: 10px;">
+                        Ainda não é assinante?
+                    </p>
+                    <button onclick="irParaCheckoutDireto()" style="
+                        background: transparent;
+                        color: #d4af37;
+                        border: 2px solid #d4af37;
+                        padding: 12px 30px;
+                        border-radius: 10px;
+                        cursor: pointer;
+                        width: 100%;
+                        font-weight: 600;
+                    ">
+                        💎 Assinar por R$ 67/ano
+                    </button>
+                </div>
+            </div>
+        </div>
+        <style>
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            #input-email-login:focus {
+                outline: none;
+                border-color: #ffd700;
+                box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+            }
+        </style>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modal);
+    
+    // Se tem email da URL, já faz login automaticamente
+    if (emailFromUrl) {
+        console.log('📧 Email detectado na URL, fazendo login automático...');
+        setTimeout(() => {
+            fazerLogin();
+        }, 1000); // 1 segundo para o usuário ver
+    } else {
+        // Senão, foco no input
+        setTimeout(() => {
+            document.getElementById('input-email-login')?.focus();
+        }, 300);
+    }
+}
+
+async function fazerLogin() {
+    const input = document.getElementById('input-email-login');
+    const email = input?.value.trim().toLowerCase();
+    
+    if (!email) {
+        alert('⚠️ Digite seu email');
+        return;
+    }
+    
+    // Validação básica de email
+    if (!email.includes('@') || !email.includes('.')) {
+        alert('⚠️ Digite um email válido');
+        return;
+    }
+    
+    console.log(`📧 Tentando login com: ${email}`);
+    
+    // Salva email
+    localStorage.setItem('userEmail', email);
+    
+    // Remove modal de login
+    document.getElementById('modal-login')?.remove();
+    
+    // Mostra loading
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'loading-verificacao';
+    loadingDiv.innerHTML = `
+        <div style="
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+        ">
+            <div style="text-align: center;">
+                <div style="
+                    border: 4px solid #d4af37;
+                    border-top: 4px solid transparent;
+                    border-radius: 50%;
+                    width: 50px;
+                    height: 50px;
+                    animation: spin 1s linear infinite;
+                    margin: 0 auto 20px auto;
+                "></div>
+                <div style="color: #d4af37; font-size: 1.2em;">
+                    Verificando sua assinatura...
+                </div>
+            </div>
+        </div>
+        <style>
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        </style>
+    `;
+    document.body.appendChild(loadingDiv);
+    
+    // Verifica assinatura
+    const isAssinante = await verificarAssinatura();
+    
+    // Remove loading
+    loadingDiv.remove();
+    
+    if (isAssinante) {
+        console.log('✅ Login bem-sucedido!');
+        liberarInterface();
+        
+        // Mensagem de sucesso
+        const sucessoDiv = document.createElement('div');
+        sucessoDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            z-index: 10002;
+            animation: slideIn 0.3s ease;
+        `;
+        sucessoDiv.innerHTML = '✅ Acesso liberado! Bem-vindo!';
+        document.body.appendChild(sucessoDiv);
+        
+        setTimeout(() => sucessoDiv.remove(), 3000);
+    } else {
+        console.log('❌ Email não encontrado como assinante');
+        localStorage.removeItem('userEmail');
+        mostrarModalAssinatura(false);
+    }
+}
+
+function irParaCheckoutDireto() {
+    window.location.href = 'https://pay.hotmart.com/G103674727A?checkoutMode=10';
+}
+
 function mostrarModalAssinatura(permiteFechar = true) {
     const botaoVoltar = permiteFechar ? `
         <button onclick="fecharModalAssinatura()" style="
@@ -5334,10 +5563,10 @@ async function verificarAcessoGlobal() {
     
     const email = localStorage.getItem('userEmail');
     
-    // Se não tem email, mostra modal e bloqueia
+    // Se não tem email, mostra MODAL DE LOGIN
     if (!email) {
-        console.log('❌ Sem email - bloqueando acesso');
-        mostrarModalAssinatura(false); // false = não pode fechar
+        console.log('📧 Sem email - mostrando tela de login');
+        mostrarModalLogin();
         bloquearInterface();
         return;
     }
@@ -5407,12 +5636,202 @@ function liberarInterface() {
 
 // Executa ao carregar a página
 window.addEventListener('DOMContentLoaded', () => {
-    // Aguarda 500ms para garantir que DOM carregou
+    // PRIORIDADE 1: Verifica se tem token na URL (magic link)
+    verificarMagicLink();
+    
+    // PRIORIDADE 2: Aguarda 500ms para garantir que DOM carregou
     setTimeout(() => {
         verificarAcessoGlobal();
     }, 500);
 });
+
+// ===============================================
+// MAGIC LINK - Detecta token na URL
+// ===============================================
+
+async function verificarMagicLink() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    
+    if (!token) {
+        console.log('🔍 Sem magic link na URL');
+        return;
+    }
+    
+    console.log(`🔑 Magic link detectado: ${token}`);
+    
+    // Mostra loading
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'loading-magic-link';
+    loadingDiv.innerHTML = `
+        <div style="
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+        ">
+            <div style="text-align: center;">
+                <div style="font-size: 4em; margin-bottom: 20px;">🔓</div>
+                <div style="
+                    border: 4px solid #d4af37;
+                    border-top: 4px solid transparent;
+                    border-radius: 50%;
+                    width: 60px;
+                    height: 60px;
+                    animation: spin 1s linear infinite;
+                    margin: 0 auto 20px auto;
+                "></div>
+                <div style="color: #d4af37; font-size: 1.3em; font-weight: 700;">
+                    Validando seu acesso...
+                </div>
+                <div style="color: #999; font-size: 0.9em; margin-top: 10px;">
+                    Aguarde alguns segundos
+                </div>
+            </div>
+        </div>
+        <style>
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        </style>
+    `;
+    document.body.appendChild(loadingDiv);
+    
+    try {
+        // Valida token no backend
+        const response = await fetch(
+            `https://operfumista-api-git-main-victors-projects-99f4b8c2.vercel.app/api/validate-magic-link?token=${token}`
+        );
+        
+        const data = await response.json();
+        
+        // Remove loading
+        loadingDiv.remove();
+        
+        if (data.valid && data.email) {
+            console.log(`✅ Magic link válido! Email: ${data.email}`);
+            
+            // Salva email no localStorage
+            localStorage.setItem('userEmail', data.email);
+            
+            // Remove token da URL (limpa histórico)
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            // Limpa cache para forçar nova verificação
+            if (window.limparCacheAssinatura) {
+                window.limparCacheAssinatura();
+            }
+            
+            // Libera interface
+            liberarInterface();
+            
+            // Mensagem de sucesso
+            mostrarNotificacaoSucesso('🎉 Acesso liberado com sucesso! Bem-vindo!');
+            
+        } else {
+            console.log('❌ Magic link inválido ou expirado');
+            
+            // Mostra mensagem de erro
+            mostrarNotificacaoErro(
+                data.message || 'Link inválido ou expirado. Por favor, faça login com seu email.'
+            );
+            
+            // Remove token inválido da URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro ao validar magic link:', error);
+        loadingDiv.remove();
+        
+        mostrarNotificacaoErro(
+            'Erro ao validar link. Por favor, tente fazer login com seu email.'
+        );
+        
+        // Remove token da URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+}
+
+function mostrarNotificacaoSucesso(mensagem) {
+    const notif = document.createElement('div');
+    notif.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #4CAF50, #45a049);
+        color: white;
+        padding: 20px 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        z-index: 10002;
+        animation: slideInRight 0.3s ease;
+        max-width: 350px;
+        font-weight: 600;
+    `;
+    notif.innerHTML = mensagem;
+    document.body.appendChild(notif);
+    
+    setTimeout(() => {
+        notif.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => notif.remove(), 300);
+    }, 4000);
+}
+
+function mostrarNotificacaoErro(mensagem) {
+    const notif = document.createElement('div');
+    notif.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #f44336, #d32f2f);
+        color: white;
+        padding: 20px 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        z-index: 10002;
+        animation: slideInRight 0.3s ease;
+        max-width: 350px;
+        font-weight: 600;
+    `;
+    notif.innerHTML = mensagem;
+    document.body.appendChild(notif);
+    
+    setTimeout(() => {
+        notif.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => notif.remove(), 300);
+    }, 5000);
+}
 </script>
+
+<style>
+@keyframes slideInRight {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+</style>
 
 </body>
 </html>
