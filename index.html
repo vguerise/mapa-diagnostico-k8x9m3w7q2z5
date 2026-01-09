@@ -1985,14 +1985,15 @@ function adicionarPerfume() {
     // Capitaliza primeira letra de cada palavra
     nome = capitalizarPerfume(nome);
     
-    // Verifica se perfume já existe (mesmo nome, qualquer concentração)
+    // Verifica se perfume já existe COM A MESMA CONCENTRAÇÃO
     const jaExiste = minhaColecao.some(p => {
         const perfumeNome = typeof p === 'string' ? p : p.nome;
-        return perfumeNome === nome;
+        const perfumeConc = typeof p === 'string' ? 'Eau de Parfum' : p.concentracao;
+        return perfumeNome === nome && perfumeConc === concentracao;
     });
     
     if (jaExiste) {
-        alert('Este perfume já está na sua coleção');
+        alert(`${nome} (${concentracao}) já está na sua coleção`);
         return;
     }
     
@@ -2159,11 +2160,34 @@ function renderizarLista() {
     container.innerHTML = minhaColecao.map((perfume, index) => {
         // Compatibilidade: suporta tanto string quanto objeto
         const nome = typeof perfume === 'string' ? perfume : perfume.nome;
-        const concentracao = typeof perfume === 'string' ? 'EDP' : perfume.concentracao;
+        const concentracao = typeof perfume === 'string' ? 'Eau de Parfum' : perfume.concentracao;
+        
+        // Abreviações para display
+        const concAbrev = {
+            'Eau de Parfum': 'EDP',
+            'Eau de Toilette': 'EDT',
+            'Eau de Cologne': 'EDC',
+            'Parfum': 'Parfum',
+            'Elixir': 'Elixir',
+            'Extrait': 'Extrait'
+        };
+        
+        const displayConc = concAbrev[concentracao] || concentracao;
         
         return `
             <div class="perfume-item">
-                <span class="perfume-name">${nome} <span style="color: #d4af37; font-size: 0.85em;">(${concentracao})</span></span>
+                <span class="perfume-name">
+                    ${nome} 
+                    <span style="
+                        color: #d4af37; 
+                        font-size: 0.8em; 
+                        font-weight: 600;
+                        background: rgba(212, 175, 55, 0.15);
+                        padding: 2px 8px;
+                        border-radius: 12px;
+                        margin-left: 8px;
+                    ">${displayConc}</span>
+                </span>
                 <button class="remove-button" onclick="removerPerfume(${index})">🗑️ Remover</button>
             </div>
         `;
