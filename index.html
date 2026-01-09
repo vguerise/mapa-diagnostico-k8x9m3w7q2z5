@@ -5174,7 +5174,7 @@ async function verificarAssinatura() {
         console.log('🔍 Verificando assinatura no Supabase DIRETO...');
         
         const SUPABASE_URL = 'https://frivahuiffxrxzcjrlom.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZyaXZhaHVpaWZ4cnh6Y2pybG9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU5NTE5ODksImV4cCI6MjA1MTUyNzk4OX0.jOLlqIAEZCjn74ZGpnJ-QrfgOoOZPNQzn_VV2x0nE_I';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZyaXZhaHVpZmZ4cnh6Y2pybG9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzgxMTAsImV4cCI6MjA4MzA1NDExMH0.9cIQs8qhctqZsiNlh4hOVHCjOBMR7UBFpBXiVST6iL4';
         
         const response = await fetch(
             `${SUPABASE_URL}/rest/v1/entitlements?email=eq.${email.toLowerCase()}&status=eq.active&select=*`,
