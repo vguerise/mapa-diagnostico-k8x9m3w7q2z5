@@ -5169,23 +5169,45 @@ async function verificarAssinatura() {
         return cacheAssinatura;
     }
     
-    // 4. Consulta Supabase via API
+    // 4. Consulta DIRETO no Supabase (SEM API!)
     try {
-        console.log('🔍 Verificando assinatura no Supabase...');
+        console.log('🔍 Verificando assinatura no Supabase DIRETO...');
+        
+        const SUPABASE_URL = 'https://frivahuiffxrxzcjrlom.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZyaXZhaHVpaWZ4cnh6Y2pybG9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU5NTE5ODksImV4cCI6MjA1MTUyNzk4OX0.jOLlqIAEZCjn74ZGpnJ-QrfgOoOZPNQzn_VV2x0nE_I';
         
         const response = await fetch(
-            `https://operfumista-api-git-main-victors-projects-99f4b8c2.vercel.app/api/check-subscription?email=${encodeURIComponent(email)}`
+            `${SUPABASE_URL}/rest/v1/entitlements?email=eq.${email.toLowerCase()}&status=eq.active&select=*`,
+            {
+                method: 'GET',
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=representation'
+                }
+            }
         );
+        
+        if (!response.ok) {
+            console.error('❌ Erro HTTP:', response.status);
+            return false;
+        }
         
         const data = await response.json();
         
-        const isPro = data.isPro === true;
+        const isPro = data && data.length > 0;
+        
+        if (isPro) {
+            console.log('✅ Assinatura ativa encontrada!');
+            console.log('📦 Product ID:', data[0].product_id);
+        } else {
+            console.log('❌ Nenhuma assinatura ativa');
+        }
         
         // Atualiza cache
         cacheAssinatura = isPro;
         cacheTimestamp = now;
-        
-        console.log(isPro ? '✅ Assinatura ativa!' : '❌ Assinatura não encontrada');
         
         return isPro;
         
