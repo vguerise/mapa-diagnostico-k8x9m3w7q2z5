@@ -5970,5 +5970,59 @@ function mostrarNotificacaoErro(mensagem) {
 }
 </style>
 
+<!-- ==========================================
+     REGISTRO DE SERVICE WORKER PARA PWA
+     ========================================== -->
+<script>
+// Registra Service Worker para funcionalidade PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    const swPath = '/mapa-diagnostico-k8x9m3w7q2z5/service-worker.js';
+    
+    navigator.serviceWorker.register(swPath)
+      .then((registration) => {
+        console.log('✅ ServiceWorker registrado com sucesso!');
+        console.log('📍 Scope:', registration.scope);
+        
+        // Verifica atualizações
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          console.log('🔄 Nova versão do ServiceWorker encontrada!');
+          
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('✨ Nova versão disponível! Recarregue a página.');
+              // Opcional: Mostrar notificação para usuário recarregar
+            }
+          });
+        });
+      })
+      .catch((error) => {
+        console.error('❌ Erro ao registrar ServiceWorker:', error);
+        console.error('Path tentado:', swPath);
+        console.error('Verifique se o arquivo service-worker.js existe em:', swPath);
+      });
+  });
+  
+  // Escuta mudanças no Service Worker
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    console.log('🔄 ServiceWorker controller mudou - recarregando página...');
+    window.location.reload();
+  });
+  
+  // Verifica se já está controlado por SW
+  navigator.serviceWorker.ready.then(() => {
+    if (navigator.serviceWorker.controller) {
+      console.log('✅ Página controlada por ServiceWorker');
+    } else {
+      console.log('⚠️ ServiceWorker registrado mas ainda não controlando a página');
+      console.log('💡 Recarregue a página para ativar o ServiceWorker');
+    }
+  });
+} else {
+  console.warn('⚠️ ServiceWorker não suportado neste browser');
+}
+</script>
+
 </body>
 </html>
