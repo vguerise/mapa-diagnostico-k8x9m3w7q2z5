@@ -892,40 +892,82 @@
 
         @media (max-width: 768px) {
             .sidebar {
-                width: 70px;
+                position: fixed;
+                left: -250px; /* Escondida por padrão */
+                width: 250px;
+                height: 100%;
+                transition: left 0.3s ease;
+                z-index: 1000;
+            }
+            
+            .sidebar.open {
+                left: 0; /* Aparece quando aberta */
+            }
+            
+            .sidebar-toggle {
+                display: block !important;
+                position: fixed;
+                top: 20px;
+                left: 10px;
+                width: 40px;
+                height: 40px;
+                background: linear-gradient(135deg, #d4af37, #ffd700);
+                border: none;
+                border-radius: 50%;
+                color: #000;
+                font-size: 1.5em;
+                cursor: pointer;
+                z-index: 999;
+                box-shadow: 0 2px 10px rgba(212, 175, 55, 0.5);
+                animation: pulseGlow 2s ease-in-out infinite;
+            }
+            
+            @keyframes pulseGlow {
+                0%, 100% {
+                    box-shadow: 0 2px 10px rgba(212, 175, 55, 0.5);
+                    transform: scale(1);
+                }
+                50% {
+                    box-shadow: 0 0 20px rgba(212, 175, 55, 0.8);
+                    transform: scale(1.05);
+                }
+            }
+            
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 998;
+            }
+            
+            .sidebar-overlay.active {
+                display: block;
             }
             
             .sidebar-header {
-                padding: 10px;
+                padding: 20px;
             }
             
             .sidebar-logo {
-                font-size: 1.2em;
-                text-align: center;
-            }
-            
-            .sidebar-subtitle {
-                display: none;
-            }
-            
-            .nav-item {
-                flex-direction: column;
-                gap: 5px;
-                padding: 15px 10px;
-            }
-            
-            .nav-item-text {
-                font-size: 0.75em;
-                text-align: center;
-            }
-            
-            .nav-item-icon {
                 font-size: 1.5em;
             }
             
+            .sidebar-subtitle {
+                display: block;
+                font-size: 0.9em;
+            }
+            
+            .nav-item {
+                padding: 15px 20px;
+            }
+            
             .main-content {
-                margin-left: 70px;
-                padding: 15px;
+                margin-left: 0; /* Sem margem em mobile */
+                padding: 70px 15px 15px 15px; /* Espaço pra seta no topo */
             }
             
             h1 {
@@ -1270,11 +1312,19 @@
 </head>
 <body>
 
+    <!-- Botão Toggle Sidebar Mobile (escondido em desktop) -->
+    <button id="sidebar-toggle" class="sidebar-toggle" style="display: none;" onclick="toggleSidebar()">
+        ⬅️
+    </button>
+    
+    <!-- Overlay para fechar sidebar ao clicar fora (mobile) -->
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+
     <!-- Layout com Sidebar -->
     <div class="app-container">
         
         <!-- Sidebar Lateral -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-logo">Mapa Perfumes</div>
                 <div class="sidebar-subtitle">Coleção Perfeita</div>
@@ -1440,13 +1490,13 @@
                             </select>
                         </div>
                         <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
-                            <button class="add-button" onclick="adicionarPerfume()" style="flex: 1; min-width: 150px;">
+                            <button class="add-button" onclick="adicionarPerfume()" style="flex: 1; min-width: 150px; background: linear-gradient(135deg, #4CAF50, #45a049); color: white; font-weight: 700;">
                                 ➕ Adicionar
                             </button>
                             <button id="btn-analisar" class="analyze-button" onclick="analisarColecao()" style="flex: 1; min-width: 150px; margin: 0; padding: 12px 30px; font-size: 1em;">
                                 🔍 Analisar
                             </button>
-                            <button id="btn-dicas" class="start-collection-button" onclick="iniciarColecaoDoZero()" style="flex: 1; min-width: 200px; margin: 0; padding: 12px 30px; font-size: 1em; background: linear-gradient(135deg, #d4af37, #f4c542); color: #1a1a1a; font-weight: 700;">
+                            <button id="btn-dicas" class="start-collection-button" onclick="iniciarColecaoDoZero()" style="flex: 1; min-width: 200px; margin: 0; padding: 12px 30px; font-size: 1em; background: linear-gradient(135deg, #2196F3, #1976D2); color: white; font-weight: 700;">
                                 🌱 Dicas Iniciante
                             </button>
                         </div>
@@ -1643,6 +1693,47 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
+// ===================================
+// SIDEBAR MOBILE - TOGGLE
+// ===================================
+
+let sidebarTimeout;
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const isOpen = sidebar.classList.contains('open');
+    
+    if (isOpen) {
+        closeSidebar();
+    } else {
+        openSidebar();
+    }
+}
+
+function openSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    
+    sidebar.classList.add('open');
+    overlay.classList.add('active');
+    
+    // Fecha automaticamente após 5 segundos
+    clearTimeout(sidebarTimeout);
+    sidebarTimeout = setTimeout(() => {
+        closeSidebar();
+    }, 5000);
+}
+
+function closeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    
+    sidebar.classList.remove('open');
+    overlay.classList.remove('active');
+    clearTimeout(sidebarTimeout);
+}
+
 // ===================================
 // CONFIGURAÇÃO SUPABASE (TRACKING)
 // ===================================
