@@ -1,10 +1,11 @@
 const CACHE_NAME = 'mapa-perfumes-v1';
+const BASE_PATH = '/mapa-diagnostico-k8x9m3w7q2z5';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png'
+  `${BASE_PATH}/`,
+  `${BASE_PATH}/index.html`,
+  `${BASE_PATH}/manifest.json`,
+  `${BASE_PATH}/icons/icon-192x192.png`,
+  `${BASE_PATH}/icons/icon-512x512.png`
 ];
 
 // Instalar service worker e fazer cache dos assets
@@ -85,14 +86,14 @@ self.addEventListener('fetch', (event) => {
             
             // Se não tem no cache e é uma navegação, retorna página offline
             if (event.request.mode === 'navigate') {
-              return caches.match('/');
+              return caches.match(`${BASE_PATH}/`);
             }
             
             return new Response('Offline - Conteúdo não disponível', {
               status: 503,
               statusText: 'Service Unavailable',
               headers: new Headers({
-                'Content-Type': 'text/plain'
+                'Content-Type': 'text/plain; charset=utf-8'
               })
             });
           });
@@ -137,8 +138,8 @@ async function syncData() {
 self.addEventListener('push', (event) => {
   const options = {
     body: event.data ? event.data.text() : 'Nova atualização disponível!',
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-72x72.png',
+    icon: `${BASE_PATH}/icons/icon-192x192.png`,
+    badge: `${BASE_PATH}/icons/icon-72x72.png`,
     vibrate: [100, 50, 100],
     data: {
       dateOfArrival: Date.now(),
@@ -157,6 +158,6 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   
   event.waitUntil(
-    clients.openWindow('/')
+    clients.openWindow(`${BASE_PATH}/`)
   );
 });
