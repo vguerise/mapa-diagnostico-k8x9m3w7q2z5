@@ -67,7 +67,10 @@
       "type": "image/png"
     }
   ],
-  "categories": ["lifestyle", "utilities"],
+  "categories": [
+    "lifestyle",
+    "utilities"
+  ],
   "shortcuts": [
     {
       "name": "Analisar Coleção",
