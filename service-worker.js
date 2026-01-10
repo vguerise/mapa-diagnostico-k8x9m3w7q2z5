@@ -1,21 +1,38 @@
-const CACHE_NAME = 'mapa-perfumes-v2';
-const BASE_PATH = '/mapa-diagnostico-k8x9m3w7q2z5';
+const CACHE_NAME = 'mapa-perfumes-v3';
+const BASE_PATH = '';
 
-// Instalar service worker SEM cachear na instalação
+// Lista de arquivos essenciais para cachear
+const ESSENTIAL_FILES = [
+  './',
+  './index.html',
+  './manifest.json'
+];
+
+// Instalar service worker e cachear arquivos essenciais
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Instalando...');
+  console.log('[ServiceWorker] Instalando versão:', CACHE_NAME);
+  
   event.waitUntil(
-    Promise.resolve()
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('[ServiceWorker] Cacheando arquivos essenciais...');
+        // Tenta cachear mas não falha se algum arquivo não existir
+        return cache.addAll(ESSENTIAL_FILES).catch(err => {
+          console.warn('[ServiceWorker] Alguns arquivos não foram cacheados:', err);
+          return Promise.resolve();
+        });
+      })
       .then(() => {
-        console.log('[ServiceWorker] Instalado com sucesso (sem cache inicial)');
+        console.log('[ServiceWorker] Instalado com sucesso!');
         return self.skipWaiting();
       })
   );
 });
 
-// Ativar service worker
+// Ativar service worker e limpar caches antigos
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Ativando...');
+  console.log('[ServiceWorker] Ativando versão:', CACHE_NAME);
+  
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
@@ -27,61 +44,60 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('[ServiceWorker] Ativado');
+      console.log('[ServiceWorker] Ativado!');
       return self.clients.claim();
     })
   );
 });
 
-// Cache dinâmico: cacheia conforme usa
+// Estratégia: Network First (sempre tenta buscar online primeiro)
 self.addEventListener('fetch', (event) => {
   // Ignora requisições que não são GET
   if (event.request.method !== 'GET') {
     return;
   }
 
-  // Ignora requisições para APIs externas
   const url = new URL(event.request.url);
+  
+  // Ignora requisições para APIs externas
   if (url.origin !== self.location.origin) {
-    event.respondWith(fetch(event.request));
     return;
   }
 
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Cacheia dinamicamente recursos estáticos
-        if (response && response.status === 200 && response.type === 'basic') {
+        // Se conseguiu buscar, cacheia dinamicamente
+        if (response && response.status === 200) {
           const responseToCache = response.clone();
-          caches.open(CACHE_NAME)
-            .then((cache) => {
-              cache.put(event.request, responseToCache);
-              console.log('[ServiceWorker] Cacheado:', event.request.url);
-            });
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
         }
         return response;
       })
       .catch(() => {
-        // Se offline, tenta buscar do cache
-        return caches.match(event.request)
-          .then((response) => {
-            if (response) {
-              console.log('[ServiceWorker] Servindo do cache:', event.request.url);
-              return response;
-            }
-            
-            if (event.request.mode === 'navigate') {
-              return caches.match(`${BASE_PATH}/`);
-            }
-            
-            return new Response('Offline - Conteúdo não disponível', {
-              status: 503,
-              statusText: 'Service Unavailable',
-              headers: new Headers({
-                'Content-Type': 'text/plain; charset=utf-8'
-              })
-            });
+        // Se offline, busca do cache
+        return caches.match(event.request).then((response) => {
+          if (response) {
+            console.log('[ServiceWorker] Servindo do cache:', event.request.url);
+            return response;
+          }
+          
+          // Se é uma navegação e não tem no cache, mostra a página principal
+          if (event.request.mode === 'navigate') {
+            return caches.match('./');
+          }
+          
+          // Retorna resposta de offline
+          return new Response('Offline - Conteúdo não disponível', {
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: new Headers({
+              'Content-Type': 'text/plain; charset=utf-8'
+            })
           });
+        });
       })
   );
 });
@@ -104,3 +120,5 @@ self.addEventListener('message', (event) => {
     );
   }
 });
+
+console.log('[ServiceWorker] Script carregado - Versão:', CACHE_NAME);
