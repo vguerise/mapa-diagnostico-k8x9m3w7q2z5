@@ -30,7 +30,7 @@ class SupabaseSync {
             console.log('📥 Carregando coleção da nuvem para:', email);
             
             const response = await fetch(
-                `${this.SUPABASE_URL}/rest/v1/user_collections?email=eq.${email.toLowerCase()}&select=*&order=last_sync.desc&limit=1`,
+                `${this.SUPABASE_URL}/rest/v1/user_collections?user_email=eq.${email.toLowerCase()}&select=*&order=last_sync.desc&limit=1`,
                 {
                     method: 'GET',
                     headers: {
@@ -95,7 +95,7 @@ class SupabaseSync {
             
             // Verifica se já existe registro para este email
             const existingResponse = await fetch(
-                `${this.SUPABASE_URL}/rest/v1/user_collections?email=eq.${email.toLowerCase()}&select=id`,
+                `${this.SUPABASE_URL}/rest/v1/user_collections?user_email=eq.${email.toLowerCase()}&select=id`,
                 {
                     method: 'GET',
                     headers: {
@@ -110,7 +110,7 @@ class SupabaseSync {
             const exists = existing && existing.length > 0;
             
             const payload = {
-                email: email.toLowerCase(),
+                user_email: email.toLowerCase(),
                 collection: collection,
                 profile: profile || {},
                 last_sync: new Date().toISOString()
@@ -122,7 +122,7 @@ class SupabaseSync {
                 // UPDATE - Atualiza registro existente
                 console.log('🔄 Atualizando coleção existente...');
                 response = await fetch(
-                    `${this.SUPABASE_URL}/rest/v1/user_collections?email=eq.${email.toLowerCase()}`,
+                    `${this.SUPABASE_URL}/rest/v1/user_collections?user_email=eq.${email.toLowerCase()}`,
                     {
                         method: 'PATCH',
                         headers: {
@@ -356,7 +356,7 @@ class SupabaseSync {
             console.log('🗑️ Limpando dados da nuvem...');
             
             const response = await fetch(
-                `${this.SUPABASE_URL}/rest/v1/user_collections?email=eq.${email.toLowerCase()}`,
+                `${this.SUPABASE_URL}/rest/v1/user_collections?user_email=eq.${email.toLowerCase()}`,
                 {
                     method: 'DELETE',
                     headers: {
