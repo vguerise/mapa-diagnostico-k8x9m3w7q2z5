@@ -13,12 +13,12 @@
     <meta name="apple-mobile-web-app-title" content="Mapa Perfumes">
     
     <!-- PWA Manifest -->
-    <link rel="manifest" href="/mapa-diagnostico-k8x9m3w7q2z5/manifest.json">
+    <link rel="manifest" href="manifest.json">
     
     <!-- Ícones para iOS -->
-    <link rel="apple-touch-icon" sizes="180x180" href="/mapa-diagnostico-k8x9m3w7q2z5/icons/icon-192x192.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/mapa-diagnostico-k8x9m3w7q2z5/icons/icon-192x192.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/mapa-diagnostico-k8x9m3w7q2z5/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-192x192.png">
     
     <style>
         * {
@@ -109,6 +109,38 @@
 
         .nav-item-text {
             flex: 1;
+        }
+
+        /* Botão Instalar App PWA */
+        .install-app-btn {
+            margin: 20px;
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #d4af37, #ffd700);
+            color: #000;
+            border: none;
+            border-radius: 12px;
+            font-size: 1em;
+            font-weight: 700;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+        }
+
+        .install-app-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
+        }
+
+        .install-app-btn.show {
+            display: flex;
+        }
+
+        .install-app-btn-icon {
+            font-size: 1.3em;
         }
 
         /* Conteúdo Principal */
@@ -1350,6 +1382,12 @@
                     <span class="nav-item-text">O Perfumista</span>
                 </div>
             </nav>
+            
+            <!-- Botão Instalar App PWA -->
+            <button id="install-pwa-btn" class="install-app-btn">
+                <span class="install-app-btn-icon">📱</span>
+                <span>Instalar App</span>
+            </button>
         </aside>
 
         <!-- Conteúdo Principal -->
@@ -5973,13 +6011,73 @@ function mostrarNotificacaoErro(mensagem) {
 </style>
 
 <!-- ==========================================
+     INSTALAÇÃO PWA MANUAL
+     ========================================== -->
+<script>
+// Variável para armazenar o evento de instalação
+let deferredPrompt;
+const installBtn = document.getElementById('install-pwa-btn');
+
+// Detecta quando o PWA pode ser instalado
+window.addEventListener('beforeinstallprompt', (e) => {
+    console.log('✅ PWA pode ser instalado!');
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    // Mostra o botão
+    installBtn.classList.add('show');
+});
+
+// Quando clicar no botão
+installBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) {
+        console.log('⚠️ Prompt de instalação não disponível');
+        alert('Este navegador não suporta instalação de PWA ou o app já está instalado.');
+        return;
+    }
+    
+    // Mostra o prompt de instalação
+    deferredPrompt.prompt();
+    
+    // Aguarda a escolha do usuário
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`👤 Usuário ${outcome === 'accepted' ? 'aceitou' : 'recusou'} a instalação`);
+    
+    if (outcome === 'accepted') {
+        console.log('🎉 App instalado com sucesso!');
+        installBtn.textContent = '✅ App Instalado';
+        installBtn.disabled = true;
+        setTimeout(() => {
+            installBtn.classList.remove('show');
+        }, 3000);
+    }
+    
+    // Limpa o prompt
+    deferredPrompt = null;
+});
+
+// Detecta se o app já foi instalado
+window.addEventListener('appinstalled', () => {
+    console.log('✅ PWA instalado com sucesso!');
+    installBtn.classList.remove('show');
+    deferredPrompt = null;
+});
+
+// Verifica se já está rodando como PWA
+if (window.matchMedia('(display-mode: standalone)').matches) {
+    console.log('📱 Rodando como PWA instalado');
+    installBtn.classList.remove('show');
+}
+</script>
+
+<!-- ==========================================
      REGISTRO DE SERVICE WORKER PARA PWA
      ========================================== -->
 <script>
 // Registra Service Worker para funcionalidade PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    const swPath = '/mapa-diagnostico-k8x9m3w7q2z5/service-worker.js';
+    const swPath = 'service-worker.js';
     
     navigator.serviceWorker.register(swPath)
       .then((registration) => {
