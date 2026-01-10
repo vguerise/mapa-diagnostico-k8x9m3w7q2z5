@@ -1858,6 +1858,12 @@ async function trackProfile(perfil) {
 }
 
 async function trackCollection(colecao, analise) {
+    // ⚠️ DESABILITADA - Conflita com novo sistema de sincronização
+    // Agora usamos supabase-sync.js para salvar coleções
+    console.log('ℹ️ trackCollection desabilitada - usando supabase-sync.js');
+    return;
+    
+    /* CÓDIGO ANTIGO COMENTADO
     if (!trackingEnabled) return;
     
     try {
@@ -1879,6 +1885,7 @@ async function trackCollection(colecao, analise) {
     } catch (err) {
         console.error('❌ Erro ao salvar coleção:', err);
     }
+    */
 }
 
 async function trackAnalysis(analiseData, nivel, recomendacoes) {
