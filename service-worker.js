@@ -71,7 +71,7 @@ self.addEventListener('fetch', (event) => {
             }
             
             if (event.request.mode === 'navigate') {
-              return caches.match(`${BASE_PATH}/`);
+              return caches.match`${BASE_PATH}/`);
             }
             
             return new Response('Offline - Conteúdo não disponível', {
