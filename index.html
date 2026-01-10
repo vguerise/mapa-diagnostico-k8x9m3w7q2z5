@@ -1731,6 +1731,9 @@
     
     <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Sistema de Sincronização com Supabase -->
+    <script src="supabase-sync.js"></script>
 
     <script>
 // ===================================
@@ -1988,6 +1991,12 @@ function salvarPerfil() {
     
     localStorage.setItem('perfilUsuario', JSON.stringify(perfil));
     
+    // ☁️ SINCRONIZA PERFIL COM NUVEM
+    if (email && window.supabaseSync) {
+        const colecao = JSON.parse(localStorage.getItem('minhaColecao') || '[]');
+        window.supabaseSync.salvarNaNuvem(email, colecao, perfil);
+    }
+    
     // 📊 TRACKING: Salva perfil no Supabase (sem nome)
     trackProfile(perfil);
     
@@ -2048,6 +2057,13 @@ function adicionarPerfume() {
     });
     
     localStorage.setItem('minhaColecao', JSON.stringify(minhaColecao));
+    
+    // ☁️ SINCRONIZA COM NUVEM
+    const email = localStorage.getItem('userEmail');
+    if (email && window.supabaseSync) {
+        const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
+        window.supabaseSync.salvarNaNuvem(email, minhaColecao, perfil);
+    }
     
     // 🔓 INVALIDA cache ANTES de atualizar nível
     if (window.cacheInteligente) {
@@ -2114,6 +2130,13 @@ function removerPerfume(index) {
     const perfumeRemovido = minhaColecao[index];
     minhaColecao.splice(index, 1);
     localStorage.setItem('minhaColecao', JSON.stringify(minhaColecao));
+    
+    // ☁️ SINCRONIZA COM NUVEM
+    const email = localStorage.getItem('userEmail');
+    if (email && window.supabaseSync) {
+        const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
+        window.supabaseSync.salvarNaNuvem(email, minhaColecao, perfil);
+    }
     
     // 🔓 INVALIDA cache ANTES de atualizar nível (importante!)
     if (window.cacheInteligente) {
@@ -5574,6 +5597,11 @@ async function fazerLogin() {
     if (isAssinante) {
         console.log('✅ Login bem-sucedido!');
         liberarInterface();
+        
+        // ☁️ SINCRONIZA COLEÇÃO COM NUVEM
+        if (window.supabaseSync) {
+            await window.supabaseSync.sincronizar(email);
+        }
         
         // Mensagem de sucesso
         const sucessoDiv = document.createElement('div');
