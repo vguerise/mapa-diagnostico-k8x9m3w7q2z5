@@ -3641,17 +3641,17 @@ function calcularNivelAtual() {
     
     if (!analise || !analise.perfumes_por_familia) {
         // Se não tem análise da API, retorna nível básico baseado só na quantidade
-        const pontosBasico = Math.min(minhaColecao.length * 4, 40);
+        const pontosBasico = Math.min(minhaColecao.length * 2, 50);
         return {
-            nome: pontosBasico < 25 ? "Iniciante" : "Explorador",
-            emoji: pontosBasico < 25 ? "🌱" : "🔍",
+            nome: pontosBasico < 30 ? "Iniciante" : "Explorador",
+            emoji: pontosBasico < 30 ? "🌱" : "🔍",
             pontos: pontosBasico,
-            proximo: pontosBasico < 25 ? "Explorador" : "Colecionador",
-            pontosProximo: pontosBasico < 25 ? 25 : 50,
-            faixaInicio: pontosBasico < 25 ? 0 : 25,
-            cor: pontosBasico < 25 ? "#4caf50" : "#2196f3",
+            proximo: pontosBasico < 30 ? "Explorador" : "Colecionador",
+            pontosProximo: pontosBasico < 30 ? 30 : 51,
+            faixaInicio: pontosBasico < 30 ? 0 : 30,
+            cor: pontosBasico < 30 ? "#4caf50" : "#2196f3",
             percentual: 0,
-            faltam: (pontosBasico < 25 ? 25 : 50) - pontosBasico,
+            faltam: (pontosBasico < 30 ? 30 : 51) - pontosBasico,
             total_perfumes: minhaColecao.length,
             familias: 0
         };
@@ -3662,13 +3662,20 @@ function calcularNivelAtual() {
     
     let pontos = 0;
     
-    // 1. Quantidade (40 pontos máx)
-    pontos += Math.min(total * 4, 40);
+    // ============================================
+    // SISTEMA DIFÍCIL - MODO REALISTA
+    // ============================================
     
-    // 2. Diversidade (30 pontos máx)
-    pontos += Math.round((familias / 9) * 30);
+    // 1. QUANTIDADE (50 pontos máx aos 25 perfumes)
+    // 2 pontos por perfume - precisa ter MUITOS perfumes
+    pontos += Math.min(total * 2, 50);
     
-    // 3. Equilíbrio (30 pontos máx)
+    // 2. DIVERSIDADE (45 pontos máx - 5 por família)
+    // Precisa explorar TODAS as 9 famílias
+    pontos += familias * 5;
+    
+    // 3. EQUILÍBRIO (5 pontos máx)
+    // Bônus se a coleção for bem equilibrada
     let dominante = 0;
     
     // Trata familia_dominante como string ou objeto
@@ -3683,66 +3690,85 @@ function calcularNivelAtual() {
         }
     }
     
-    if (dominante < 30) pontos += 30;
-    else if (dominante < 40) pontos += 25;
-    else if (dominante < 50) pontos += 15;
-    else if (dominante < 60) pontos += 5;
+    // Quanto mais equilibrado, mais pontos
+    if (dominante < 20) pontos += 5;      // Perfeitamente equilibrado
+    else if (dominante < 30) pontos += 3; // Bem equilibrado
+    else if (dominante < 40) pontos += 1; // Razoável
+    // Se dominar mais de 40%, não ganha bônus
     
     // Total arredondado
     pontos = Math.round(pontos);
     pontos = Math.min(100, Math.max(0, pontos));
     
-    // Define nível
+    // ============================================
+    // NÍVEIS - MODO DIFÍCIL
+    // ============================================
+    
     let nivel = {};
-    if (pontos < 25) {
+    if (pontos < 30) {
+        // 🌱 INICIANTE: 0-30 pontos
+        // Precisa de ~5 perfumes e 2-3 famílias
         nivel = {
             nome: "Iniciante",
             emoji: "🌱",
             pontos: pontos,
             proximo: "Explorador",
-            pontosProximo: 25,
+            pontosProximo: 30,
             faixaInicio: 0,
-            cor: "#4caf50"
+            cor: "#4caf50",
+            descricao: "Começando a explorar o mundo dos perfumes"
         };
-    } else if (pontos < 50) {
+    } else if (pontos < 51) {
+        // 🔍 EXPLORADOR: 30-50 pontos
+        // Precisa de ~10 perfumes e 4-5 famílias
         nivel = {
             nome: "Explorador",
             emoji: "🔍",
             pontos: pontos,
             proximo: "Colecionador",
-            pontosProximo: 50,
-            faixaInicio: 25,
-            cor: "#2196f3"
+            pontosProximo: 51,
+            faixaInicio: 30,
+            cor: "#2196f3",
+            descricao: "Explorando diferentes famílias olfativas"
         };
-    } else if (pontos < 75) {
+    } else if (pontos < 71) {
+        // ⭐ COLECIONADOR: 51-70 pontos
+        // Precisa de ~18-20 perfumes e 6-7 famílias
         nivel = {
             nome: "Colecionador",
             emoji: "⭐",
             pontos: pontos,
             proximo: "Expert",
-            pontosProximo: 75,
-            faixaInicio: 50,
-            cor: "#9c27b0"
+            pontosProximo: 71,
+            faixaInicio: 51,
+            cor: "#9c27b0",
+            descricao: "Construindo uma coleção diversificada"
         };
-    } else if (pontos < 90) {
+    } else if (pontos < 86) {
+        // 💎 EXPERT: 71-85 pontos
+        // Precisa de ~25-30 perfumes e 7-8 famílias
         nivel = {
             nome: "Expert",
             emoji: "💎",
             pontos: pontos,
             proximo: "Mestre",
-            pontosProximo: 90,
-            faixaInicio: 75,
-            cor: "#ff9800"
+            pontosProximo: 86,
+            faixaInicio: 71,
+            cor: "#ff9800",
+            descricao: "Domínio avançado da perfumaria"
         };
     } else {
+        // 👑 MESTRE: 86-100 pontos
+        // Precisa de 35+ perfumes e TODAS as 9 famílias
         nivel = {
             nome: "Mestre",
             emoji: "👑",
             pontos: pontos,
             proximo: "Máximo",
             pontosProximo: 100,
-            faixaInicio: 90,
-            cor: "#d4af37"
+            faixaInicio: 86,
+            cor: "#d4af37",
+            descricao: "Maestria completa em perfumaria masculina"
         };
     }
     
