@@ -1079,8 +1079,32 @@
             }
         }
         
+        @keyframes missionGlow {
+            0% {
+                box-shadow: 0 10px 40px rgba(212, 175, 55, 0.3);
+            }
+            25% {
+                box-shadow: 0 0 30px rgba(212, 175, 55, 0.8),
+                            0 0 60px rgba(212, 175, 55, 0.6),
+                            0 10px 40px rgba(212, 175, 55, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(212, 175, 55, 1),
+                            0 0 80px rgba(212, 175, 55, 0.8),
+                            0 10px 40px rgba(212, 175, 55, 0.5);
+            }
+            75% {
+                box-shadow: 0 0 30px rgba(212, 175, 55, 0.8),
+                            0 0 60px rgba(212, 175, 55, 0.6),
+                            0 10px 40px rgba(212, 175, 55, 0.4);
+            }
+            100% {
+                box-shadow: 0 10px 40px rgba(212, 175, 55, 0.3);
+            }
+        }
+        
         .mission-changing {
-            animation: missionChange 0.6s ease-in-out;
+            animation: missionChange 0.6s ease-in-out, missionGlow 1.5s ease-in-out;
         }
 
         .mission-card {
@@ -4315,6 +4339,19 @@ function renderizarMissaoGameficada(data, tituloCustomizado = null) {
     const resultContainer = document.getElementById('result-container');
     resultContainer.innerHTML = missaoHTML;
     
+    // Adiciona animação de glow na primeira missão
+    setTimeout(() => {
+        const missionContainer = document.getElementById('missionContainer');
+        if (missionContainer) {
+            missionContainer.classList.add('mission-changing');
+            
+            // Remove após animação terminar
+            setTimeout(() => {
+                missionContainer.classList.remove('mission-changing');
+            }, 1500);
+        }
+    }, 100);
+    
     // Adiciona listener ao botão WhatsApp DEPOIS de renderizar
     const btnWhatsapp = document.getElementById('btn-whatsapp');
     if (btnWhatsapp) {
@@ -4986,16 +5023,13 @@ IMPORTANTE: Missão focada em ${familiaAlvo} com BOA VARIEDADE DE MARCAS + CONCE
         
         resultContainer.innerHTML = missaoHTML;
         
-        // Scroll suave até o topo da missão
+        // Remove a classe de animação após ela terminar (1.5s)
         setTimeout(() => {
-            const newMissionContainer = document.getElementById('missionContainer');
-            if (newMissionContainer) {
-                newMissionContainer.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
+            const missionContainer = document.getElementById('missionContainer');
+            if (missionContainer) {
+                missionContainer.classList.remove('mission-changing');
             }
-        }, 100);
+        }, 1500);
         
     } catch (error) {
         console.error('Erro ao gerar nova missão:', error);
@@ -5055,6 +5089,14 @@ IMPORTANTE: Missão focada em ${familiaAlvo} com BOA VARIEDADE DE MARCAS + CONCE
         `;
         
         resultContainer.innerHTML = missaoHTML;
+        
+        // Remove a classe de animação após ela terminar (1.5s)
+        setTimeout(() => {
+            const missionContainer = document.getElementById('missionContainer');
+            if (missionContainer) {
+                missionContainer.classList.remove('mission-changing');
+            }
+        }, 1500);
     }
 }
 
