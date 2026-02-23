@@ -5430,20 +5430,19 @@ async function verificarAssinatura() {
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZyaXZhaHVpZmZ4cnh6Y2pybG9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzgxMTAsImV4cCI6MjA4MzA1NDExMH0.9cIQs8qhctqZsiNlh4hOVHCjOBMR7UBFpBXiVST6iL4';
         
         const response = await fetch(
-            `${SUPABASE_URL}/rest/v1/entitlements?email=eq.${email.toLowerCase()}&status=eq.active&select=*`,
+            `${SUPABASE_URL}/rest/v1/usuarios_curso?email=eq.${encodeURIComponent(email.toLowerCase())}&status=eq.ativo&select=email,nome,status`,
             {
                 method: 'GET',
                 headers: {
                     'apikey': SUPABASE_ANON_KEY,
                     'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                    'Content-Type': 'application/json',
-                    'Prefer': 'return=representation'
+                    'Content-Type': 'application/json'
                 }
             }
         );
         
         if (!response.ok) {
-            console.error('❌ Erro HTTP:', response.status);
+            console.error('❌ Erro HTTP:', response.status, await response.text());
             return false;
         }
         
@@ -5452,10 +5451,10 @@ async function verificarAssinatura() {
         const isPro = data && data.length > 0;
         
         if (isPro) {
-            console.log('✅ Assinatura ativa encontrada!');
-            console.log('📦 Product ID:', data[0].product_id);
+            console.log('✅ Acesso ativo encontrado!');
+            console.log('👤 Usuário:', data[0].nome || data[0].email);
         } else {
-            console.log('❌ Nenhuma assinatura ativa');
+            console.log('❌ Email não encontrado ou sem acesso ativo');
         }
         
         // Atualiza cache
