@@ -6226,5 +6226,88 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 
+<!-- ══ POPUP MANUTENÇÃO ══ -->
+<div id="manut-overlay" style="
+    display:none;
+    position:fixed;inset:0;
+    background:rgba(0,0,0,.72);
+    z-index:99999;
+    align-items:center;
+    justify-content:center;
+    padding:1.5rem;
+    backdrop-filter:blur(4px);
+">
+  <div style="
+    background:#1e1e1e;
+    border:2px solid #d4af37;
+    border-radius:18px;
+    padding:2rem 1.8rem;
+    max-width:420px;
+    width:100%;
+    text-align:center;
+    box-shadow:0 8px 40px rgba(0,0,0,.6);
+    animation:manut-in .3s ease;
+  ">
+    <div style="font-size:2.4rem;margin-bottom:.75rem">🔧</div>
+    <h2 style="
+      font-family:'Segoe UI',sans-serif;
+      color:#d4af37;
+      font-size:1.25rem;
+      font-weight:700;
+      margin-bottom:.6rem;
+      line-height:1.3;
+    ">Aviso de Manutenção</h2>
+    <p style="
+      color:#ccc;
+      font-size:.93rem;
+      line-height:1.65;
+      margin-bottom:1.5rem;
+    ">
+      Amanhã o Perfumap ficará em manutenção das
+      <strong style="color:#d4af37">23:00 às 06:00</strong>.<br>
+      Durante esse período o app poderá ficar indisponível.
+    </p>
+    <button
+      onclick="fecharManutencao()"
+      style="
+        background:linear-gradient(135deg,#d4af37,#f4c542);
+        color:#1e1e1e;
+        border:none;
+        border-radius:10px;
+        padding:.85rem 2.5rem;
+        font-size:1rem;
+        font-weight:700;
+        cursor:pointer;
+        transition:opacity .2s;
+        width:100%;
+      "
+      onmouseover="this.style.opacity='.88'"
+      onmouseout="this.style.opacity='1'"
+    >Entendido ✓</button>
+  </div>
+</div>
+
+<style>
+@keyframes manut-in {
+  from { opacity:0; transform:scale(.92) translateY(12px); }
+  to   { opacity:1; transform:scale(1)   translateY(0);    }
+}
+</style>
+
+<script>
+(function(){
+  var KEY = 'manut_ok_2025';
+  if (!localStorage.getItem(KEY)) {
+    var el = document.getElementById('manut-overlay');
+    el.style.display = 'flex';
+  }
+})();
+
+function fecharManutencao(){
+  document.getElementById('manut-overlay').style.display = 'none';
+  localStorage.setItem('manut_ok_2025', '1');
+}
+</script>
+
 </body>
 </html>
