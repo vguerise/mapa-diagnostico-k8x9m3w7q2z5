@@ -77,14 +77,17 @@
             margin: 0 auto;
             flex: 1;
             padding: 16px 16px calc(var(--bn) + var(--sb) + 16px);
-            min-height: 100dvh;
             max-width: 860px;
             width: 100%;
         }
 
         .content-section {
             display: none;
-            animation: fadeIn 0.3s ease-out;
+        }
+
+        .content-section.active {
+            display: block;
+            animation: fadeIn 0.25s ease-out;
         }
 
         /* ── BOTTOM NAV ── */
@@ -97,7 +100,7 @@
             z-index: 200;
             padding-bottom: var(--sb);
             display: grid;
-            grid-template-columns: repeat(6, 1fr);
+            grid-template-columns: repeat(5, 1fr);
         }
         .bn-item {
             display: flex;
@@ -116,6 +119,24 @@
         .bn-item-lb { font-family: 'DM Sans', sans-serif; font-size: .58rem; font-weight: 600; color: var(--tx3); transition: color .2s; }
         .bn-item.active .bn-item-ic { transform: scale(1.15); }
         .bn-item.active .bn-item-lb { color: var(--or); }
+
+        /* ── FAB PERFUMISTA ── */
+        #chat-fab {
+            display: none; /* controlado por JS */
+        }
+        #chat-fab:hover {
+            background: var(--ord) !important;
+            transform: scale(1.04);
+            animation: none !important;
+        }
+        .chat-fab-txt { white-space: nowrap; }
+        @keyframes fab-pulse {
+            0%,100% { box-shadow: 0 4px 20px rgba(232,93,4,.45); }
+            50%      { box-shadow: 0 4px 28px rgba(232,93,4,.75), 0 0 0 6px rgba(232,93,4,.12); }
+        }
+        @media (max-width: 400px) {
+            .chat-fab-txt { display: none; }
+        }
 
         /* ── CHIPS DE ATALHO NO CHAT ── */
         .chat-chips-mapa {
@@ -262,10 +283,6 @@
         .w-empty-state { text-align: center; padding: 40px 20px; color: var(--tx3); }
         .w-empty-state .ei { font-size: 2rem; opacity: .3; margin-bottom: 10px; }
         .w-empty-state p { font-size: .85rem; line-height: 1.7; }
-
-        .content-section.active {
-            display: block;
-        }
 
         @keyframes fadeIn {
             from {
@@ -1559,9 +1576,6 @@
         <!-- Conteúdo Principal -->
         <main class="main-content">
             
-            <!-- Barra de Nível + Nome FIXA (aparece em todas as abas) -->
-            <div id="nivel-fixo-container" style="margin-bottom: 20px;"></div>
-            
             <!-- Seção: Perfil -->
             <section id="perfil" class="content-section active">
                 <div class="container">
@@ -1804,36 +1818,9 @@
                         <p class="subtitle">Complete sua jornada e alcance a coleção perfeita</p>
                     </header>
 
-                    <!-- ── Nível do Colecionador ── -->
-                    <div class="pm-nivel-hero" id="pm-nivel-hero" style="display:none;margin-bottom:1rem">
-                        <div class="pm-nivel-row">
-                            <div class="pm-nivel-badge" id="pm-nv-badge">🌱</div>
-                            <div class="pm-nivel-info">
-                                <div class="pm-nivel-name" id="pm-nv-nome">—</div>
-                                <div class="pm-nivel-titulo" id="pm-nv-titulo">Iniciante</div>
-                                <div class="pm-nivel-sub" id="pm-nv-sub">0 perfumes</div>
-                            </div>
-                        </div>
-                        <div class="pm-nv-bar-labels">
-                            <span id="pm-nv-cur">0</span>
-                            <span id="pm-nv-next">próximo: 11</span>
-                        </div>
-                        <div class="pm-nv-bar-bg"><div class="pm-nv-bar-fill" id="pm-nv-bar" style="width:0%"></div></div>
-                    </div>
-                        <div class="pm-rank-info">
-                            <div class="pm-rank-label">🏅 Seu ranking</div>
-                            <div class="pm-rank-txt" id="pm-rank-txt">Calculando...</div>
-                        </div>
-                        <div class="pm-rank-score-wrap">
-                            <div class="pm-rank-score" id="pm-rank-score">—</div>
-                            <div class="pm-rank-score-label">pontos</div>
-                        </div>
-                        <div class="pm-rank-breakdown" id="pm-rank-breakdown"></div>
-                    </div>
-                        <div id="pm-ranking-global-list" style="margin-top:.75rem">
-                            <p style="color:var(--tx3);font-size:.8rem;text-align:center">Carregando ranking...</p>
-                        </div>
-                    </div>
+                    <!-- Nível do Colecionador (injetado pelo atualizarNivelDOM) -->
+                    <div id="nivel-fixo-container" style="margin-bottom:1rem"></div>
+
                     <!-- Resultado da Análise -->
                     <div id="result-container">
                         <div style="text-align: center; padding: 60px 20px; color: var(--tx3);">
@@ -1848,10 +1835,6 @@
             <!-- Seção: Sugestões -->
             <section id="sugestoes" class="content-section">
                 <div class="container">
-                    <header>
-                        <h1>💡 Pergunte ao Perfumista</h1>
-                        <p class="subtitle">Tire suas dúvidas e receba recomendações personalizadas</p>
-                    </header>
 
                     <div class="chat-container">
 
@@ -2013,11 +1996,42 @@
             <span class="bn-item-ic">💬</span>
             <span class="bn-item-lb">Perfumista</span>
         </button>
-        <button class="bn-item" onclick="instalarPWA()" id="pwa-install-btn" style="display:none">
-            <span class="bn-item-ic">📲</span>
-            <span class="bn-item-lb">Instalar</span>
-        </button>
     </nav>
+
+    <!-- FAB — Perguntar ao Perfumista -->
+    <button id="chat-fab" onclick="window.goSection('sugestoes')" style="
+        display:none;
+        position:fixed;
+        bottom:calc(var(--bn) + var(--sb) + 14px);
+        left:14px;
+        z-index:190;
+        background:var(--or);
+        border:none;
+        border-radius:50px;
+        padding:.65rem 1.2rem;
+        display:flex;
+        align-items:center;
+        gap:.5rem;
+        font-family:'DM Sans',sans-serif;
+        font-size:.82rem;
+        font-weight:700;
+        cursor:pointer;
+        color:#fff;
+        box-shadow:0 4px 20px rgba(232,93,4,.45);
+        animation:fab-pulse 2.8s ease-in-out infinite;
+        transition:all .2s;
+    " aria-label="Perguntar ao Perfumista">
+        <span style="font-size:1.1rem">💬</span>
+        <span class="chat-fab-txt">Perguntar ao Perfumista</span>
+    </button>
+
+    <!-- PWA install — fora do grid, posição fixa -->
+    <button onclick="instalarPWA()" id="pwa-install-btn" style="
+        display:none;position:fixed;bottom:calc(var(--bn) + var(--sb) + 12px);right:14px;
+        z-index:201;background:var(--or);color:#fff;border:none;border-radius:14px;
+        padding:.65rem 1.1rem;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:700;
+        cursor:pointer;align-items:center;gap:.45rem;box-shadow:0 4px 20px rgba(232,93,4,.5);
+    ">📲 Instalar app</button>
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -2196,6 +2210,10 @@ function goSection(section) {
 
     // Scroll topo
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // FAB: visível em todas as abas exceto Perfumista
+    const fab = document.getElementById('chat-fab');
+    if (fab) fab.style.display = section === 'sugestoes' ? 'none' : 'flex';
 
     // Hooks por seção
     if (section === 'missao') carregarAnaliseCache();
@@ -5922,6 +5940,9 @@ window.addEventListener('DOMContentLoaded', () => {
     atualizarBuscaVisibilidade();
     atualizarCtaAnalise();
     atualizarChipWishlist();
+    // FAB visível por padrão (aba inicial = Perfil, não é Perfumista)
+    const fab = document.getElementById('chat-fab');
+    if (fab) fab.style.display = 'flex';
 });
 
 // ══════════════════════════════════════════════════════
@@ -5988,14 +6009,14 @@ const _origGoSection = goSection;
 window.goSection = function goSection(section) {
     _origGoSection(section);
     if (section === 'missao') {
-        pmRenderNivel();
+        // pmRenderNivel(); // handled by atualizarNivelDOM
             }
 };
 
 // ── Atualiza nível ao adicionar/remover perfumes (via evento customizado) ──
 document.addEventListener('pm:colecao:mudou', () => {
     if (document.getElementById('missao')?.classList.contains('active')) {
-        pmRenderNivel();
+        // pmRenderNivel(); // handled by atualizarNivelDOM
     }
 });
 
