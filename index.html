@@ -2734,6 +2734,60 @@ function atualizarRadar() {
     // console.log('⚠️ atualizarRadar() desabilitada - use atualizarRadarComAPI()');
 }
 
+// ══════════════════════════════════════════════════════
+// NORMALIZAÇÃO DE FAMÍLIAS OLFATIVAS
+// ══════════════════════════════════════════════════════
+
+// Nomes canônicos — única fonte de verdade
+const FAMILIAS_CANONICAS = {
+    'Fresco/Cítrico':       ['fresco','cítrico','citrico','citrus','citrique','fresh','bergamot'],
+    'Aromático/Verde':      ['aromát','aromatic','verde','green','lavanda','lavender','fougère','fougere','herbal','ervas'],
+    'Doce/Gourmand':        ['doce','gourmand','baunilha','vanilla','caramel','caramelo','mel','honey','açúcar','sugar'],
+    'Amadeirado':           ['amadeirado','woody','wood','cedro','cedar','sândalo','sandalwood','vetiver','patchouli'],
+    'Especiado/Oriental':   ['especiado','oriental','spicy','spice','canela','cinnamon','cardamom','âmbar','amber','resina','resin'],
+    'Aquático/Mineral':     ['aquático','aquatico','aquatic','mineral','marinho','marine','oceânico','oceanic','ozônico','ozone'],
+    'Talco/Fougère':        ['talco','talcum','talcado','fougère','fougere','sabonete','soap','íris','iris','powdery'],
+    'Floral/Floral Branco': ['floral','flower','rosa','rose','jasmim','jasmine','muguet','lírio','lily','neroli','tuberosa'],
+    'Frutado':              ['frutado','fruity','fruit','fruta','abacaxi','pineapple','maçã','apple','pêra','pear','tropical','mango','manga'],
+    'Couro':                ['couro','leather','cuir','suede'],
+    'Defumado':             ['defumado','smoky','smoke','fumaça','incenso','incense','oud'],
+    'Chypre':               ['chypre','chipre','musgo','moss','oakmoss'],
+    'Resinoso':             ['resinoso','resin','bálsamo','balsamic','benjoim','benzoin','olíbano','frankincense'],
+};
+
+function normalizarFamilia(nome) {
+    if (!nome) return nome;
+    const lower = nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+    for (const [canonico, keywords] of Object.entries(FAMILIAS_CANONICAS)) {
+        for (const kw of keywords) {
+            const kwNorm = kw.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            if (lower.includes(kwNorm)) return canonico;
+        }
+    }
+
+    // Não reconheceu — retorna o nome original capitalizado
+    return nome.trim();
+}
+
+// Normaliza um objeto perfumes_por_familia, agrupando variações
+function normalizarPfFam(pfFam) {
+    const resultado = {};
+    for (const [fam, qtd] of Object.entries(pfFam)) {
+        const canon = normalizarFamilia(fam);
+        resultado[canon] = (resultado[canon] || 0) + qtd;
+    }
+    return resultado;
+}
+
+// Normaliza array de classificacao
+function normalizarClassificacao(classificacao) {
+    return (classificacao || []).map(item => ({
+        ...item,
+        familia: normalizarFamilia(item.familia)
+    }));
+}
+
 function atualizarRadarComAPI(analiseAPI) {
     // Se não recebeu parâmetro, tenta carregar do localStorage
     if (!analiseAPI) {
@@ -2745,7 +2799,7 @@ function atualizarRadarComAPI(analiseAPI) {
 
     if (!analiseAPI || !analiseAPI.perfumes_por_familia) return;
 
-    const pfFam = analiseAPI.perfumes_por_familia;
+    const pfFam = normalizarPfFam(analiseAPI.perfumes_por_familia);
 
     // ── EMOJIS para famílias conhecidas + fallback ──
     const EMOJI_MAP = {
@@ -3085,8 +3139,8 @@ function renderizarAnaliseGameficada(analise) {
 
         <!-- ── Accordion: Famílias da coleção ── -->
         ${(() => {
-            const pfFam = analise.perfumes_por_familia || {};
-            const classificacao = analise.classificacao || [];
+            const pfFam = normalizarPfFam(analise.perfumes_por_familia || {});
+            const classificacao = normalizarClassificacao(analise.classificacao || []);
 
             // Emojis por família
             const EMOJI = {
