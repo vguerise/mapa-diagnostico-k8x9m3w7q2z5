@@ -2347,40 +2347,45 @@ async function priorizarWish() {
     btn.textContent = '⏳ Analisando...';
     result.innerHTML = '';
 
-    const perfil      = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
+    const perfil       = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
     const nomesColecao = minhaColecao.map(p => typeof p === 'string' ? p : p.nome).join(', ');
     const nomesWish    = wishes.map((w, i) => `${i+1}. ${w.nome}`).join('\n');
     const orcamento    = perfil.orcamento || 'não informado';
 
-    const pergunta =
-        `Você é O Perfumista, consultor de fragrâncias masculinas. ` +
-        `Coleção atual (${minhaColecao.length} perfumes): ${nomesColecao || 'vazia'}. ` +
-        `Orçamento por perfume: ${orcamento}. ` +
+    const userMsg =
+        `Coleção atual (${minhaColecao.length} perfumes): ${nomesColecao || 'vazia'}.\n` +
+        `Orçamento: ${orcamento}.\n\n` +
         `Lista de desejos:\n${nomesWish}\n\n` +
-        `Para cada perfume da lista, avalie:\n` +
-        `- "top": complementa a coleção com família ou estilo novo\n` +
-        `- "medio": interessante mas não urgente\n` +
-        `- "baixo": repete estilos que o usuário já tem\n\n` +
-        `Responda SOMENTE JSON válido sem markdown:\n` +
-        `{"prioridades":[{"indice":1,"prioridade":"top","motivo":"1 frase de motivo"}],"resumo":"resumo em 1-2 frases"}`;
+        `Para cada perfume da lista avalie:\n` +
+        `"top" = complementa com família/estilo novo\n` +
+        `"medio" = interessante mas não urgente\n` +
+        `"baixo" = repete estilos já existentes\n\n` +
+        `Responda SOMENTE este JSON sem markdown:\n` +
+        `{"prioridades":[{"indice":1,"prioridade":"top","motivo":"motivo em 1 frase"}],"resumo":"resumo em 1-2 frases"}`;
 
     try {
-        const res  = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
+        const res = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ pergunta })
+            body:    JSON.stringify({
+                _proxy:   true,
+                system:   'Você é O Perfumista, consultor especialista em fragrâncias masculinas. Responda SOMENTE em JSON válido, sem markdown, sem texto fora do JSON.',
+                messages: [{ role: 'user', content: userMsg }],
+                max_tokens: 600
+            })
         });
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
 
-        const rawText = data.resposta || data.texto || data.content ||
+        // _proxy retorna {text, content:[{type:'text',text:'...'}]}
+        const rawText = data.text ||
             (Array.isArray(data.content) ? data.content.map(b => b.text || '').join('') : '') || '{}';
         const clean   = rawText.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
         const match   = clean.match(/\{[\s\S]*\}/);
-        if (!match) throw new Error('sem JSON');
+        if (!match) throw new Error('sem JSON na resposta');
         const parsed  = JSON.parse(match[0]);
 
-        if (parsed.prioridades) {
+        if (parsed.prioridades && parsed.prioridades.length) {
             parsed.prioridades.forEach(p => {
                 const idx = p.indice - 1;
                 if (wishes[idx]) {
