@@ -2047,7 +2047,6 @@
 
     <script>
 
-
 // ===================================
 // CONFIGURAÇÃO SUPABASE (TRACKING)
 // ===================================
@@ -2058,15 +2057,12 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // Inicializa Supabase
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const trackingEnabled = true;
-console.log('✅ Tracking Supabase ativado');
-
 // Gera ou recupera ID anônimo do usuário
 function getAnonymousUserId() {
     let userId = localStorage.getItem('anonymousUserId');
     if (!userId) {
         userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         localStorage.setItem('anonymousUserId', userId);
-        console.log('🆔 Novo ID anônimo gerado:', userId);
     }
     return userId;
 }
@@ -2090,12 +2086,9 @@ async function trackEvent(eventType, eventData = {}) {
             }]);
         
         if (error) {
-            console.error('❌ Erro ao trackear evento:', error);
         } else {
-            console.log('📊 Evento trackeado:', eventType);
         }
     } catch (err) {
-        console.error('❌ Erro no tracking:', err);
     }
 }
 
@@ -2118,20 +2111,17 @@ async function trackProfile(perfil) {
             });
         
         if (error) {
-            console.error('❌ Erro ao salvar perfil:', error);
         } else {
-            console.log('✅ Perfil salvo no Supabase (sem nome)');
+
             trackEvent('perfil_atualizado', { campos: Object.keys(perfilSemNome) });
         }
     } catch (err) {
-        console.error('❌ Erro ao salvar perfil:', err);
     }
 }
 
 async function trackCollection(colecao, analise) {
     // ⚠️ DESABILITADA - Conflita com novo sistema de sincronização
     // Agora usamos supabase-sync.js para salvar coleções
-    console.log('ℹ️ trackCollection desabilitada - usando supabase-sync.js');
     return;
     
     /* CÓDIGO ANTIGO COMENTADO
@@ -2149,12 +2139,9 @@ async function trackCollection(colecao, analise) {
             }]);
         
         if (error) {
-            console.error('❌ Erro ao salvar coleção:', error);
         } else {
-            console.log('✅ Coleção salva no Supabase');
         }
     } catch (err) {
-        console.error('❌ Erro ao salvar coleção:', err);
     }
     */
 }
@@ -2175,9 +2162,7 @@ async function trackAnalysis(analiseData, nivel, recomendacoes) {
             }]);
         
         if (error) {
-            console.error('❌ Erro ao salvar análise:', error);
         } else {
-            console.log('✅ Análise salva no Supabase');
             trackEvent('analise_completa', {
                 total_perfumes: minhaColecao.length,
                 nivel: nivel ? nivel.nome : null,
@@ -2185,7 +2170,6 @@ async function trackAnalysis(analiseData, nivel, recomendacoes) {
             });
         }
     } catch (err) {
-        console.error('❌ Erro ao salvar análise:', err);
     }
 }
 
@@ -2231,7 +2215,6 @@ function carregarAnaliseCache() {
     const colecaoAtualString = JSON.stringify(minhaColecao.sort());
 
     if (ultimaAnalise.colecao === colecaoAtualString && ultimaAnalise.dados) {
-        console.log('📦 Carregando análise em cache');
         window.dadosAnaliseAtual = ultimaAnalise.dados;
         window.missaoAtualIndex = 0;
         renderizarMissaoGameficada(ultimaAnalise.dados);
@@ -2406,14 +2389,12 @@ async function priorizarWish() {
     } catch(e) {
         result.innerHTML = '<div class="w-ia-card" style="border-color:var(--er);color:var(--er)">Erro ao conectar. Tente novamente.</div>';
         btn.textContent  = '✨ Priorizar com I.A. — qual comprar primeiro?';
-        console.warn('[Wish]', e);
     }
     btn.disabled = false;
 }
 
 // Carrega wishes ao iniciar
 loadWishes();
-
 
 // ===================================
 // PERFIL
@@ -2448,7 +2429,6 @@ function salvarPerfil() {
     const email = document.getElementById('email').value.trim();
     if (email) {
         localStorage.setItem('userEmail', email.toLowerCase());
-        console.log('📧 Email salvo:', email);
     }
     
     localStorage.setItem('perfilUsuario', JSON.stringify(perfil));
@@ -2553,7 +2533,6 @@ function adicionarPerfume() {
     const btnAnalisar = document.getElementById('btn-analisar');
     if (btnAnalisar && !btnAnalisar.style.animation) {
         btnAnalisar.style.animation = 'missionPulse 1.5s ease-in-out infinite';
-        console.log('✨ Botão Analisar piscando - coleção mudou!');
     }
 }
 
@@ -2593,8 +2572,6 @@ function removerPerfume(index) {
     }
     localStorage.removeItem('ultimaColecaoAnalisada');
     localStorage.removeItem('ultimaAnalise');
-    console.log('🗑️ Cache invalidado - pontos serão recalculados');
-    
     // 🗑️ Limpa cards gamificados
     const container = document.getElementById('analise-gamificada');
     if (container) {
@@ -2618,7 +2595,6 @@ function removerPerfume(index) {
     const btnAnalisar = document.getElementById('btn-analisar');
     if (btnAnalisar && !btnAnalisar.style.animation) {
         btnAnalisar.style.animation = 'missionPulse 1.5s ease-in-out infinite';
-        console.log('✨ Botão Analisar piscando - coleção mudou!');
     }
 }
 
@@ -2630,8 +2606,6 @@ function limparColecao() {
         // 🔓 INVALIDA análise antiga
         localStorage.removeItem('ultimaColecaoAnalisada');
         localStorage.removeItem('ultimaAnalise');
-        console.log('🔓 Análise invalidada - coleção limpa');
-        
         // Limpa radar (sem regenerar, pois não há perfumes)
         if (radarChart) {
             radarChart.destroy();
@@ -2650,8 +2624,6 @@ function limparColecao() {
         atualizarNivelDOM();
         atualizarCtaAnalise();
         atualizarBuscaVisibilidade();
-        
-        console.log('✅ Coleção limpa! Lista atualizada.');
     }
 }
 
@@ -2731,7 +2703,7 @@ function toggleListaPerfumes() {
 
 function atualizarRadar() {
     // Função desabilitada - radar só atualiza via API agora
-    // console.log('⚠️ atualizarRadar() desabilitada - use atualizarRadarComAPI()');
+    //
 }
 
 // ══════════════════════════════════════════════════════
@@ -2855,7 +2827,7 @@ function renderizarRadarAlternativo(analiseAPI) {
     const radarContainer = document.querySelector('.radar-container');
     if (!radarContainer) return;
     
-    console.log('🎨 Renderizando visualização alternativa (barras CSS)');
+
     
     const familias = analiseAPI.perfumes_por_familia;
     const total = Object.values(familias).reduce((a, b) => a + b, 0);
@@ -2958,7 +2930,6 @@ function renderizarRadarAlternativo(analiseAPI) {
     `;
     
     radarContainer.innerHTML = html;
-    console.log('✅ Visualização alternativa renderizada!');
 }
 
 function renderizarAnaliseGameficada(analise) {
@@ -3217,7 +3188,6 @@ function renderizarAnaliseGameficada(analise) {
 function renderizarRadarChart(familias, valores, analise, tentativa = 0) {
     // Evita múltiplas chamadas simultâneas
     if (radarRenderizando) {
-        console.log('⚠️ Radar já está sendo renderizado. Ignorando chamada duplicada.');
         return;
     }
     
@@ -3226,16 +3196,10 @@ function renderizarRadarChart(familias, valores, analise, tentativa = 0) {
     if (!ctx) {
         // Máximo 3 tentativas para evitar loop infinito
         if (tentativa >= 3) {
-            console.error('❌ Canvas radarChart não encontrado após 3 tentativas. Abortando.');
             return;
         }
-        
-        console.log(`🔍 Tentativa ${tentativa + 1}/3: Canvas não encontrado. Mudando para aba Coleção...`);
-        
         // Força mudança para aba Coleção
         goSection('colecao');
-        console.log('👆 Mudou para aba Coleção');
-        
         // Tenta novamente após 1500ms (tempo generoso para renderizar)
         setTimeout(() => renderizarRadarChart(familias, valores, analise, tentativa + 1), 1500);
         return;
@@ -3244,12 +3208,9 @@ function renderizarRadarChart(familias, valores, analise, tentativa = 0) {
     // Verifica se canvas está visível
     const isVisible = ctx.offsetParent !== null;
     if (!isVisible && tentativa < 3) {
-        console.log(`⚠️ Canvas existe mas não está visível. Tentativa ${tentativa + 1}/3`);
         setTimeout(() => renderizarRadarChart(familias, valores, analise, tentativa + 1), 1500);
         return;
     }
-    
-    console.log('✅ Canvas encontrado e visível! Renderizando radar...');
     radarRenderizando = true;
     
     // Destrói chart anterior se existir
@@ -3307,7 +3268,6 @@ function renderizarRadarChart(familias, valores, analise, tentativa = 0) {
         }
     });
         } catch (error) {
-            console.error('❌ Erro ao criar radar chart:', error);
         } finally {
             // Libera flag
             radarRenderizando = false;
@@ -3331,13 +3291,11 @@ function renderizarRadarChart(familias, valores, analise, tentativa = 0) {
  * - Ao mudar de aba
  */
 function renderizarTudoDoLocalStorage() {
-    console.log('🎯 renderizarTudoDoLocalStorage() chamada');
+
     
     const ultimaAnalise = JSON.parse(localStorage.getItem('ultimaAnalise') || '{}');
     
     if (!ultimaAnalise.dados) {
-        console.log('❌ Sem dados no localStorage');
-        
         // Limpa tudo
         const container = document.getElementById('analise-gamificada');
         if (container) {
@@ -3348,30 +3306,23 @@ function renderizarTudoDoLocalStorage() {
     }
     
     const dados = ultimaAnalise.dados;
-    console.log('✅ Dados encontrados, renderizando tudo...');
-    
     // 1. RADAR - Usa visualização ALTERNATIVA (barras CSS)
     if (dados.analise_colecao) {
-        console.log('📊 Renderizando radar (barras CSS)...');
+
         renderizarRadarAlternativo(dados.analise_colecao);
     }
     
     // 2. CARDS GAMIFICADOS
     if (dados.analise_colecao) {
-        console.log('🎮 Renderizando cards...');
         renderizarAnaliseGameficada(dados.analise_colecao);
     }
     
     // 3. MISSÃO + SUGESTÕES
-    console.log('🎯 Renderizando missão...');
     window.dadosAnaliseAtual = dados;
     renderizarMissaoGameficada(dados);
     
     // 4. RANKING/PONTOS
-    console.log('🏆 Atualizando ranking...');
     atualizarNivelDOM();
-    
-    console.log('✅ Tudo renderizado do localStorage!');
 }
 
 // ===================================
@@ -3379,7 +3330,7 @@ function renderizarTudoDoLocalStorage() {
 // ===================================
 
 async function analisarColecao() {
-    console.log('🚀 analisarColecao() CHAMADA!');
+
     
     // ✨ PARA animação do botão
     const btnAnalisar = document.getElementById('btn-analisar');
@@ -3387,7 +3338,6 @@ async function analisarColecao() {
         btnAnalisar.style.animation = '';
         btnAnalisar.style.background = '';
         btnAnalisar.style.boxShadow = '';
-        console.log('🛑 Animação do botão parada');
     }
     
     if (minhaColecao.length === 0) {
@@ -3405,9 +3355,6 @@ async function analisarColecao() {
     // 🔒 RATE LIMITING: Verifica limites
     
     // 🗑️ LIMPA CACHE ao clicar em Analisar (força nova análise)
-    
-    console.log('✅ Coleção tem', minhaColecao.length, 'perfumes');
-    
     const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
     
     // Verifica cache
@@ -3419,7 +3366,7 @@ async function analisarColecao() {
     if (ultimaAnalise.colecao === colecaoAtualString && 
         ultimaAnalise.perfil === perfilAtualString && 
         ultimaAnalise.dados) {
-        console.log('✅ Usando análise em cache (coleção e perfil iguais)');
+
         
         // Atualiza radar
         atualizarRadarComAPI(ultimaAnalise.dados.analise_colecao);
@@ -3437,11 +3384,7 @@ async function analisarColecao() {
     }
     
     if (ultimaAnalise.perfil !== perfilAtualString) {
-        console.log('🔄 Perfil mudou! Forçando nova análise...');
     }
-    
-    console.log('🔄 Iniciando nova análise via API...');
-    
     // Mostra loading NO RADAR (não modal que bloqueia tudo)
     const radarContainer = document.querySelector('.radar-container');
     const radarBackup = radarContainer.innerHTML;
@@ -3667,38 +3610,20 @@ Se você esquecer o campo "concentracao", o sistema VAI QUEBRAR!
 
 Analise e retorne análise detalhada + recomendações COM CONCENTRAÇÃO.
 `;
-        
-        console.log('📡 Chamando API Perfumista...');
-        
         const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ diagnostico })
         });
-        
-        console.log('📥 Resposta recebida:', response.status);
-        
         const data = await response.json();
-        
-        console.log('📦 Dados parseados:');
-        console.log('  - analise_colecao:', data.analise_colecao ? 'existe' : 'NÃO EXISTE');
         if (data.analise_colecao) {
-            console.log('  - perfumes_por_familia:', data.analise_colecao.perfumes_por_familia);
-            console.log('  - familia_dominante:', data.analise_colecao.familia_dominante);
-            console.log('  - top3_faltando:', data.analise_colecao.top3_faltando);
         }
-        console.log('  - recomendacoes:', data.recomendacoes?.length || 0, 'perfumes');
-        
         // Se API não retornou classificação
         if (!data.analise_colecao || !data.analise_colecao.perfumes_por_familia) {
-            console.log('⚠️ API não retornou análise de famílias');
             radarContainer.innerHTML = radarBackup;
             alert('❌ Erro: A API não conseguiu classificar os perfumes. Tente novamente.');
             return;
         }
-        
-        console.log('✅ Usando classificação validada pela API');
-        
         // Salva classificações (compatibilidade)
         localStorage.setItem('classificacoesValidadas', JSON.stringify(data.analise_colecao.perfumes_por_familia));
         
@@ -3709,9 +3634,6 @@ Analise e retorne análise detalhada + recomendações COM CONCENTRAÇÃO.
             dados: data,
             timestamp: Date.now()
         }));
-        
-        console.log('💾 Dados salvos no localStorage');
-        
         // 🎯 RENDERIZA TUDO DO LOCALSTORAGE (fonte única)
         renderizarTudoDoLocalStorage();
         
@@ -3725,8 +3647,6 @@ Analise e retorne análise detalhada + recomendações COM CONCENTRAÇÃO.
         // 🔒 MARCA coleção como analisada
         const colecaoAtual = minhaColecao.sort().join('|');
         localStorage.setItem('ultimaColecaoAnalisada', colecaoAtual);
-        console.log('✅ Coleção marcada como analisada');
-        
         // Tracking
         const nivelAtual = calcularNivelAtual();
         trackCollection(minhaColecao, data.analise_colecao);
@@ -3742,7 +3662,6 @@ Analise e retorne análise detalhada + recomendações COM CONCENTRAÇÃO.
                     window.perfumesJaSugeridos.push(rec.nome);
                 }
             });
-            console.log('📝 Histórico atualizado:', window.perfumesJaSugeridos);
         }
         
         // Adiciona glow na aba Missão
@@ -3752,7 +3671,6 @@ Analise e retorne análise detalhada + recomendações COM CONCENTRAÇÃO.
         mostrarToast('✅ Análise completa!', 'Vá na aba Missão para ver suas sugestões', 'success');
         
     } catch (error) {
-        console.error('Erro:', error);
         radarContainer.innerHTML = radarBackup;
         alert('❌ Erro ao analisar coleção. Tente novamente.');
     }
@@ -3801,7 +3719,6 @@ function adicionarGlowMissao() {
 
 function limparCache() {
     localStorage.removeItem('ultimaAnalise');
-    console.log('🗑️ Cache limpo! Próxima análise será nova.');
     alert('✅ Cache limpo! Clique em "Analisar" para gerar nova análise.');
 }
 
@@ -3957,11 +3874,7 @@ Retorne APENAS 1 perfume com: nome, família, faixa_preco, por_que, quando_usar
                 </button>
             </div>
         `;
-        
-        console.log(`✅ Sugestão ${indice + 1} trocada:`, novaSugestao.nome);
-        
     } catch (error) {
-        console.error('Erro:', error);
         card.innerHTML = conteudoOriginal;
         alert('❌ Erro ao trocar sugestão. Tente novamente.');
     }
@@ -3973,8 +3886,6 @@ function naoGostoDesta(nomePerfume, indice) {
     if (!blacklist.includes(nomePerfume)) {
         blacklist.push(nomePerfume);
         localStorage.setItem('perfumesBlacklist', JSON.stringify(blacklist));
-        console.log('🚫 Adicionado à blacklist:', nomePerfume);
-        console.log('📋 Blacklist atual:', blacklist);
     }
     
     // Remove da lista de sugeridos para não contar como "já mostrado"
@@ -4078,8 +3989,6 @@ async function enviarPergunta() {
                     window.perfumesJaSugeridos.push(sug.nome);
                 }
             });
-            console.log('📝 Histórico de sugestões:', window.perfumesJaSugeridos);
-            
             // Adiciona botão WhatsApp
             resposta += `
                 <button 
@@ -4111,8 +4020,6 @@ async function enviarPergunta() {
         // 📊 REGISTRA uso do Rate Limit
         
     } catch (error) {
-        console.error('Erro:', error);
-        
         // Remove mensagem de loading
         const messages = document.getElementById('chat-messages');
         messages.removeChild(messages.lastChild);
@@ -4344,8 +4251,6 @@ async function identificarFamiliaFragrantica(nomePerfume) {
         const fraganticaSearchURL = `https://www.fragrantica.com/search/`;
         
         // Tenta buscar via web search tool (se disponível)
-        console.log(`🔍 Buscando ${nomePerfume} no Fragantica...`);
-        
         // Como não temos acesso direto ao Fragantica aqui, vamos usar a API
         // para fazer uma busca inteligente que retorne a família
         const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
@@ -4384,17 +4289,14 @@ async function identificarFamiliaFragrantica(nomePerfume) {
         const respostaLower = resposta.toLowerCase();
         for (const [key, familia] of Object.entries(familiaMap)) {
             if (respostaLower.includes(key)) {
-                console.log(`✅ ${nomePerfume} → ${familia} (via API)`);
                 return familia;
             }
         }
         
         // Fallback para sistema local se API falhar
-        console.log(`⚠️ API não retornou família clara, usando sistema local`);
         return identificarFamiliaLocal(nomePerfume);
         
     } catch (error) {
-        console.error('❌ Erro ao buscar no Fragantica:', error);
         // Fallback para sistema local
         return identificarFamiliaLocal(nomePerfume);
     }
@@ -4561,8 +4463,6 @@ function identificarFamiliaLocal(nome) {
             return '🌶️ Especiado/Oriental';
         }
     }
-    
-    console.log(`🔍 ${nome} → ${familiaVencedora} (score: ${maxScore}) [LOCAL]`);
     return familiaVencedora;
 }
 */
@@ -4699,7 +4599,6 @@ function atualizarMissoesSeExistir() {
     const ultimaAnalise = localStorage.getItem('ultimaAnalise');
     
     if (!ultimaAnalise) {
-        console.log('📭 Nenhuma análise salva - missões não atualizadas');
         return;
     }
     
@@ -4709,13 +4608,10 @@ function atualizarMissoesSeExistir() {
         
         // Só atualiza se o container de missão existir (usuário está na aba certa)
         if (containerMissao) {
-            console.log('🔄 Atualizando missões com nova coleção...');
             renderizarMissaoGameficada(data);
         } else {
-            console.log('📋 Container de missão não visível - atualização adiada');
         }
     } catch (error) {
-        console.error('❌ Erro ao atualizar missões:', error);
     }
 }
 
@@ -4962,7 +4858,6 @@ function getFamiliaComMenosPerfumes(perfumesPorFamilia) {
     return minFamilia || '🪵 Amadeirado';
 }
 
-
 function enviarSugestoesWhatsApp(sugestoes) {
     let mensagem = '🎯 *Minha Missão - Mapa de Perfumes*\n\n';
     mensagem += '*Perfumes Recomendados:*\n\n';
@@ -5001,9 +4896,6 @@ async function gerarNovasSugestoes() {
     
     const conjuntoAtual = window.conjuntoSugestaoAtual;
     document.getElementById('conjuntoAtual').textContent = conjuntoAtual;
-    
-    console.log(`🔄 Gerando conjunto ${conjuntoAtual} de sugestões`);
-    
     // Mostra loading
     const container = document.getElementById('sugestoesContainer');
     container.innerHTML = '<div class="loading">🔍 Buscando novas sugestões<span class="loading-dots"></span></div>';
@@ -5116,10 +5008,9 @@ RESPONDA COM 3 PERFUMES DE MARCAS DIFERENTES COM BOA VARIEDADE!
         const marcasUnicas = new Set(marcas);
         
         if (marcasUnicas.size < novasSugestoes.length) {
-            console.warn('⚠️ API retornou marcas repetidas:', marcas);
             // Mostra aviso mas continua
         } else {
-            console.log('✅ Marcas diferentes validadas:', Array.from(marcasUnicas));
+
         }
         
         // 🔍 VALIDAÇÃO 2: Verifica orçamento
@@ -5140,9 +5031,7 @@ RESPONDA COM 3 PERFUMES DE MARCAS DIFERENTES COM BOA VARIEDADE!
                 if (match && match.length >= 1) {
                     const precoMin = parseInt(match[0]);
                     if (precoMin < limites.min || precoMin > limites.max) {
-                        console.warn(`⚠️ ${sug.nome}: R$ ${precoMin} está FORA do orçamento ${faixaUsuario}`);
                     } else {
-                        console.log(`✅ ${sug.nome}: R$ ${precoMin} dentro do orçamento`);
                     }
                 }
             });
@@ -5166,7 +5055,6 @@ RESPONDA COM 3 PERFUMES DE MARCAS DIFERENTES COM BOA VARIEDADE!
         });
         
     } catch (error) {
-        console.error('Erro ao gerar novas sugestões:', error);
         container.innerHTML = '<p style="color: #ff6666; text-align: center; padding: 20px;">❌ Erro ao gerar sugestões. Tente novamente.</p>';
     }
 }
@@ -5192,9 +5080,6 @@ async function gerarHiddenGems() {
     } else {
         familiaAlvo = getFamiliaComMenosPerfumes(analise.perfumes_por_familia);
     }
-    
-    console.log(`💎 Gerando Hidden Gems para família: ${familiaAlvo}`);
-    
     const blacklist = JSON.parse(localStorage.getItem('perfumesBlacklist') || '[]');
     const naoSugerir = minhaColecao.concat(blacklist).concat(window.perfumesJaSugeridos || []);
     
@@ -5292,10 +5177,9 @@ Retorne 3 hidden gems incríveis!
             }
         }, '💎 Hidden Gems Especiais');
         
-        console.log('✅ Hidden Gems geradas:', data.recomendacoes.map(r => r.nome));
+
         
     } catch (error) {
-        console.error('❌ Erro ao gerar hidden gems:', error);
         document.getElementById('missionContent').innerHTML = `
             <div style="text-align: center; padding: 60px 20px; color: #ff4444;">
                 ❌ Erro ao buscar hidden gems. Tente novamente.
@@ -5322,9 +5206,6 @@ async function gerarNovaMissao() {
     const missaoAtual = window.missaoAtualIndex || 0;
     const proximaMissao = (missaoAtual + 1) % 3;
     window.missaoAtualIndex = proximaMissao;
-    
-    console.log(`🔄 Rotação: Missão ${missaoAtual} → Missão ${proximaMissao}`);
-    
     // Mostra loading enquanto busca novas sugestões
     const resultContainer = document.getElementById('result-container');
     resultContainer.innerHTML = `
@@ -5352,9 +5233,6 @@ async function gerarNovaMissao() {
         } else {
             familiaAlvo = getFamiliaComMenosPerfumes(analise.perfumes_por_familia);
         }
-        
-        console.log(`🎯 Família alvo da Missão ${proximaMissao}: ${familiaAlvo}`);
-        
         // Monta prompt específico para a família alvo
         const promptNovaMissao = `
 PERFIL DO USUÁRIO:
@@ -5520,8 +5398,6 @@ IMPORTANTE: Missão focada em ${familiaAlvo} com BOA VARIEDADE DE MARCAS + CONCE
         }, 1500);
         
     } catch (error) {
-        console.error('Erro ao gerar nova missão:', error);
-        
         // Em caso de erro, gera missão sem buscar novas sugestões (fallback)
         const analise = dadosAnalise.analise_colecao || dadosAnalise.analise;
         const recomendacoes = dadosAnalise.recomendacoes;
@@ -5725,7 +5601,6 @@ IMPORTANTE: 3 marcas DIFERENTES + dentro do orçamento + adequados ao clima!
         // 📊 REGISTRA uso do Rate Limit (VITALÍCIO)
         
     } catch (error) {
-        console.error('Erro:', error);
         chatMessages.innerHTML = `
             <div class="chat-message assistant">
                 <div class="chat-message-header">🧪 Perfumista</div>
@@ -5744,8 +5619,6 @@ IMPORTANTE: 3 marcas DIFERENTES + dentro do orçamento + adequados ao clima!
 // ===================================
 // CONTADORES E POPUPS DE LIMITE
 // ===================================
-
-
 
 function mostrarPopupLimite(tipo, limite, proximoReset) {
     const titulos = {
@@ -5777,13 +5650,11 @@ function salvarRadarNoStorage(dados) {
         timestamp: Date.now(),
         colecao: minhaColecao.slice() // Cópia da coleção atual
     }));
-    console.log('💾 Radar salvo no localStorage');
 }
 
 function carregarRadarDoStorage() {
     const radarSalvo = localStorage.getItem('radarSalvo');
     if (!radarSalvo) {
-        console.log('❌ Nenhum radar salvo');
         return null;
     }
     
@@ -5791,7 +5662,6 @@ function carregarRadarDoStorage() {
         const { dados, timestamp, colecao } = JSON.parse(radarSalvo);
         
         if (!dados || !colecao) {
-            console.log('❌ Radar salvo inválido');
             return null;
         }
         
@@ -5810,16 +5680,10 @@ function carregarRadarDoStorage() {
         const colecaoSalvaStr = JSON.stringify(colecaoSalvaNorm);
         
         if (colecaoAtual !== colecaoSalvaStr) {
-            console.log('❌ Coleção mudou, radar inválido');
-            console.log('  Atual:', colecaoAtualNorm);
-            console.log('  Salva:', colecaoSalvaNorm);
             return null;
         }
-        
-        console.log('✅ Radar carregado do localStorage');
         return dados;
     } catch (error) {
-        console.error('❌ Erro ao carregar radar:', error);
         return null;
     }
 }
@@ -6107,11 +5971,7 @@ function pmRenderNivel() {
     }
 }
 
-
-
 // ── Missão Semanal ──
-
-
 
 // ── Hook na aba Missão: estende goSection ──
 // goSection já existe como function — adicionamos side-effects via evento
@@ -6135,9 +5995,6 @@ carregarPerfil();
 renderizarLista();
 
 // Tenta carregar análise salva (radar + missão)
-console.log('🎯 Inicializando app...');
-console.log('  Coleção atual:', minhaColecao.length, 'perfumes');
-
 // 🎯 RENDERIZA TUDO DO LOCALSTORAGE (fonte única)
 renderizarTudoDoLocalStorage();
 
@@ -6148,7 +6005,6 @@ setInterval(() => {
     const colecaoAtual = localStorage.getItem('minhaColecao') || '[]';
     
     if (colecaoAtual !== ultimaColecao) {
-        console.log('🔄 Coleção mudou, atualizando nível...');
         ultimaColecao = colecaoAtual;
         atualizarNivelDOM();
     }
@@ -6159,9 +6015,7 @@ setInterval(() => {
 <!-- ABA FAQ -->
 <!-- ============================================ -->
 
-
 <!-- Scripts de Otimização -->
-
 
 <script>
 // ===============================================
@@ -6189,14 +6043,12 @@ async function verificarAssinatura() {
     // 3. Verifica cache
     const now = Date.now();
     if (cacheAssinatura !== null && (now - cacheTimestamp) < CACHE_TIMEOUT) {
-        console.log('✅ Cache: Assinatura ' + (cacheAssinatura ? 'ativa' : 'inativa'));
+
         return cacheAssinatura;
     }
     
     // 4. Consulta DIRETO no Supabase (SEM API!)
     try {
-        console.log('🔍 Verificando assinatura no Supabase DIRETO...');
-        
         const SUPABASE_URL = 'https://frivahuiffxrxzcjrlom.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZyaXZhaHVpZmZ4cnh6Y2pybG9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NzgxMTAsImV4cCI6MjA4MzA1NDExMH0.9cIQs8qhctqZsiNlh4hOVHCjOBMR7UBFpBXiVST6iL4';
         
@@ -6213,7 +6065,7 @@ async function verificarAssinatura() {
         );
         
         if (!response.ok) {
-            console.error('❌ Erro HTTP:', response.status, await response.text());
+
             return false;
         }
         
@@ -6222,10 +6074,7 @@ async function verificarAssinatura() {
         const isPro = data && data.length > 0;
         
         if (isPro) {
-            console.log('✅ Acesso ativo encontrado!');
-            console.log('👤 Usuário:', data[0].nome || data[0].email);
         } else {
-            console.log('❌ Email não encontrado ou sem acesso ativo');
         }
         
         // Atualiza cache
@@ -6235,8 +6084,6 @@ async function verificarAssinatura() {
         return isPro;
         
     } catch (error) {
-        console.error('❌ Erro ao verificar assinatura:', error);
-        
         // Em caso de erro, bloqueia por segurança
         return false;
     }
@@ -6339,7 +6186,6 @@ function mostrarModalLogin() {
     
     // Se tem email da URL, já faz login automaticamente
     if (emailFromUrl) {
-        console.log('📧 Email detectado na URL, fazendo login automático...');
         setTimeout(() => {
             fazerLogin();
         }, 1000); // 1 segundo para o usuário ver
@@ -6365,9 +6211,6 @@ async function fazerLogin() {
         alert('⚠️ Digite um email válido');
         return;
     }
-    
-    console.log(`📧 Tentando login com: ${email}`);
-    
     // Salva email
     localStorage.setItem('userEmail', email);
     
@@ -6419,7 +6262,6 @@ async function fazerLogin() {
     loadingDiv.remove();
     
     if (isAssinante) {
-        console.log('✅ Login bem-sucedido!');
         liberarInterface();
         
         // ☁️ SINCRONIZA COLEÇÃO COM NUVEM
@@ -6446,7 +6288,6 @@ async function fazerLogin() {
         
         setTimeout(() => sucessoDiv.remove(), 3000);
     } else {
-        console.log('❌ Email não encontrado como assinante');
         localStorage.removeItem('userEmail');
         mostrarModalAssinatura(false);
     }
@@ -6576,7 +6417,6 @@ function irParaCheckout() {
 function limparCacheAssinatura() {
     cacheAssinatura = null;
     cacheTimestamp = 0;
-    console.log('🔄 Cache de assinatura limpo');
 }
 
 // Disponibiliza no window
@@ -6588,13 +6428,10 @@ window.limparCacheAssinatura = limparCacheAssinatura;
 // ===============================================
 
 async function verificarAcessoGlobal() {
-    console.log('🔒 Verificando acesso global...');
-    
     const email = localStorage.getItem('userEmail');
     
     // Se não tem email, mostra MODAL DE LOGIN
     if (!email) {
-        console.log('📧 Sem email - mostrando tela de login');
         mostrarModalLogin();
         bloquearInterface();
         return;
@@ -6604,11 +6441,9 @@ async function verificarAcessoGlobal() {
     const isAssinante = await verificarAssinatura();
     
     if (!isAssinante) {
-        console.log('❌ Não é assinante - bloqueando acesso');
         mostrarModalAssinatura(false); // false = não pode fechar
         bloquearInterface();
     } else {
-        console.log('✅ Assinante verificado - acesso liberado');
         liberarInterface();
     }
 }
@@ -6683,12 +6518,8 @@ async function verificarMagicLink() {
     const token = urlParams.get('token');
     
     if (!token) {
-        console.log('🔍 Sem magic link na URL');
         return;
     }
-    
-    console.log(`🔑 Magic link detectado: ${token}`);
-    
     // Mostra loading
     const loadingDiv = document.createElement('div');
     loadingDiv.id = 'loading-magic-link';
@@ -6743,8 +6574,6 @@ async function verificarMagicLink() {
         loadingDiv.remove();
         
         if (data.valid && data.email) {
-            console.log(`✅ Magic link válido! Email: ${data.email}`);
-            
             // Salva email no localStorage
             localStorage.setItem('userEmail', data.email);
             
@@ -6763,8 +6592,6 @@ async function verificarMagicLink() {
             mostrarNotificacaoSucesso('🎉 Acesso liberado com sucesso! Bem-vindo!');
             
         } else {
-            console.log('❌ Magic link inválido ou expirado');
-            
             // Mostra mensagem de erro
             mostrarNotificacaoErro(
                 data.message || 'Link inválido ou expirado. Por favor, faça login com seu email.'
@@ -6775,7 +6602,6 @@ async function verificarMagicLink() {
         }
         
     } catch (error) {
-        console.error('❌ Erro ao validar magic link:', error);
         loadingDiv.remove();
         
         mostrarNotificacaoErro(
@@ -6910,46 +6736,32 @@ if ('serviceWorker' in navigator) {
     
     navigator.serviceWorker.register(swPath)
       .then((registration) => {
-        console.log('✅ ServiceWorker registrado com sucesso!');
-        console.log('📍 Scope:', registration.scope);
-        
         // Verifica atualizações
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing;
-          console.log('🔄 Nova versão do ServiceWorker encontrada!');
-          
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              console.log('✨ Nova versão disponível! Recarregue a página.');
               // Opcional: Mostrar notificação para usuário recarregar
             }
           });
         });
       })
       .catch((error) => {
-        console.error('❌ Erro ao registrar ServiceWorker:', error);
-        console.error('Path tentado:', swPath);
-        console.error('Verifique se o arquivo service-worker.js existe em:', swPath);
       });
   });
   
   // Escuta mudanças no Service Worker
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    console.log('🔄 ServiceWorker controller mudou - recarregando página...');
     window.location.reload();
   });
   
   // Verifica se já está controlado por SW
   navigator.serviceWorker.ready.then(() => {
     if (navigator.serviceWorker.controller) {
-      console.log('✅ Página controlada por ServiceWorker');
     } else {
-      console.log('⚠️ ServiceWorker registrado mas ainda não controlando a página');
-      console.log('💡 Recarregue a página para ativar o ServiceWorker');
     }
   });
 } else {
-  console.warn('⚠️ ServiceWorker não suportado neste browser');
 }
 </script>
 
