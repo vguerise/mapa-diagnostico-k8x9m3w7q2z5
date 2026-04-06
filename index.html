@@ -2737,84 +2737,63 @@ function atualizarRadar() {
 function atualizarRadarComAPI(analiseAPI) {
     // Se não recebeu parâmetro, tenta carregar do localStorage
     if (!analiseAPI) {
-        console.log('📦 Nenhum parâmetro recebido, carregando do localStorage...');
         const ultimaAnalise = JSON.parse(localStorage.getItem('ultimaAnalise') || '{}');
         if (ultimaAnalise.dados && ultimaAnalise.dados.analise_colecao) {
             analiseAPI = ultimaAnalise.dados.analise_colecao;
-            console.log('✅ Análise carregada do localStorage');
-        } else {
-            console.log('❌ Sem análise salva no localStorage');
-            return;
-        }
+        } else return;
     }
-    
-    console.log('📊 Atualizando radar com classificação da API');
-    console.log('📦 Dados recebidos:', analiseAPI);
-    
-    if (!analiseAPI || !analiseAPI.perfumes_por_familia) {
-        console.error('❌ analiseAPI inválida:', analiseAPI);
-        return;
-    }
-    
-    console.log('👉 perfumes_por_familia:', analiseAPI.perfumes_por_familia);
-    
-    // Dados para o radar
-    const familias = [
-        '🍋 Fresco',
-        '🌳 Aromático',
-        '🍯 Doce',
-        '🪵 Amadeirado',
-        '🌶️ Especiado',
-        '💧 Aquático/Mineral',
-        '🧼 Talco',
-        '🌸 Floral/Floral Branco',
-        '🍇 Frutado'
-    ];
-    
-    // MAPEAMENTO CORRETO: API retorna SEM emoji
-    const mapeamento = {
-        'Fresco/Cítrico': '🍋 Fresco',
-        'Aromático/Verde': '🌳 Aromático',
-        'Doce/Gourmand': '🍯 Doce',
-        'Amadeirado': '🪵 Amadeirado',
-        'Especiado/Oriental': '🌶️ Especiado',
-        'Aquático/Mineral': '💧 Aquático/Mineral',
-        'Aquático': '💧 Aquático/Mineral', // Retrocompatibilidade
-        'Talco/Fougère': '🧼 Talco',
-        'Floral/Floral Branco': '🌸 Floral/Floral Branco',
-        'Floral': '🌸 Floral/Floral Branco', // Retrocompatibilidade
-        'Frutado': '🍇 Frutado'
+
+    if (!analiseAPI || !analiseAPI.perfumes_por_familia) return;
+
+    const pfFam = analiseAPI.perfumes_por_familia;
+
+    // ── EMOJIS para famílias conhecidas + fallback ──
+    const EMOJI_MAP = {
+        'Fresco/Cítrico':      '🍋',
+        'Aromático/Verde':     '🌳',
+        'Doce/Gourmand':       '🍯',
+        'Amadeirado':          '🪵',
+        'Especiado/Oriental':  '🌶️',
+        'Aquático/Mineral':    '💧',
+        'Aquático':            '💧',
+        'Talco/Fougère':       '🧼',
+        'Floral/Floral Branco':'🌸',
+        'Floral':              '🌸',
+        'Frutado':             '🍇',
+        'Tropical':            '🌴',
+        'Couro':               '🤎',
+        'Resinoso':            '🌿',
+        'Defumado':            '🔥',
+        'Chypre':              '🌺',
+        'Gourmand':            '🍰',
+        'Verde':               '🌱',
+        'Cítrico':             '🍊',
     };
-    
-    // Inverte mapeamento: emoji → nome_api
-    const mapeamentoInverso = {};
-    Object.keys(mapeamento).forEach(nomeAPI => {
-        mapeamentoInverso[mapeamento[nomeAPI]] = nomeAPI;
+
+    // ── Usa APENAS famílias com perfumes (dinâmico) ──
+    const familiasAtivas = Object.entries(pfFam)
+        .filter(([, v]) => v > 0)
+        .sort((a, b) => b[1] - a[1]);  // ordena por quantidade desc
+
+    const labels = familiasAtivas.map(([k]) => {
+        const emoji = EMOJI_MAP[k] || '🔹';
+        // Encurta nome para caber no radar
+        const nome = k.replace('/Floral Branco','').replace('/Verde','').replace('/Cítrico','')
+                      .replace('/Mineral','').replace('/Oriental','').replace('/Fougère','');
+        return `${emoji} ${nome}`;
     });
-    
-    // Extrai valores usando mapeamento
-    const valores = familias.map(familiaEmoji => {
-        const nomeAPI = mapeamentoInverso[familiaEmoji];
-        const valor = analiseAPI.perfumes_por_familia[nomeAPI] || 0;
-        console.log(`  ${familiaEmoji} (${nomeAPI}): ${valor}`);
-        return valor;
-    });
-    
-    console.log('📊 Valores para radar:', valores);
-    
-    // Tenta renderizar canvas (3 tentativas)
-    renderizarRadarChart(familias, valores, analiseAPI);
-    
-    // FALLBACK: Se canvas falhar, renderiza barras CSS
+    const valores = familiasAtivas.map(([, v]) => v);
+
+    // Tenta renderizar radar
+    renderizarRadarChart(labels, valores, analiseAPI);
+
+    // Fallback barras CSS após 5s
     setTimeout(() => {
         const canvas = document.getElementById('radarChart');
-        if (!canvas || !radarChart) {
-            console.log('⚠️ Canvas falhou, usando visualização alternativa');
-            renderizarRadarAlternativo(analiseAPI);
-        }
-    }, 5000); // Aguarda 5s para ver se canvas renderizou
-    
-    // Renderiza análise gamificada
+        if (!canvas || !radarChart) renderizarRadarAlternativo(analiseAPI);
+    }, 5000);
+
+    // Renderiza cards de análise
     renderizarAnaliseGameficada(analiseAPI);
 }
 
@@ -3103,6 +3082,78 @@ function renderizarAnaliseGameficada(analise) {
                 </div>
             </div>
         </div>
+
+        <!-- ── Accordion: Famílias da coleção ── -->
+        ${(() => {
+            const pfFam = analise.perfumes_por_familia || {};
+            const classificacao = analise.classificacao || [];
+
+            // Emojis por família
+            const EMOJI = {
+                'Fresco/Cítrico':'🍋','Aromático/Verde':'🌳','Doce/Gourmand':'🍯',
+                'Amadeirado':'🪵','Especiado/Oriental':'🌶️','Aquático/Mineral':'💧',
+                'Aquático':'💧','Talco/Fougère':'🧼','Floral/Floral Branco':'🌸',
+                'Floral':'🌸','Frutado':'🍇','Tropical':'🌴','Couro':'🤎',
+                'Resinoso':'🌿','Defumado':'🔥','Chypre':'🌺',
+            };
+
+            // Monta mapa familia → perfumes usando classificacao da API
+            const famPerfumes = {};
+            classificacao.forEach(item => {
+                if (!famPerfumes[item.familia]) famPerfumes[item.familia] = [];
+                famPerfumes[item.familia].push(item.nome);
+            });
+
+            // Famílias com perfumes, ordenadas por quantidade
+            const familias = Object.entries(pfFam)
+                .filter(([, v]) => v > 0)
+                .sort((a, b) => b[1] - a[1]);
+
+            if (!familias.length) return '';
+
+            const items = familias.map(([fam, qtd]) => {
+                const emoji = EMOJI[fam] || '🔹';
+                const perfumes = famPerfumes[fam] || [];
+                const listaHtml = perfumes.length
+                    ? perfumes.map(p => `<li style="padding:.3rem 0;border-bottom:1px solid var(--bd);color:var(--tx2);font-size:.85rem;">${p}</li>`).join('')
+                    : `<li style="color:var(--tx3);font-size:.82rem;padding:.3rem 0">Perfumes não identificados individualmente</li>`;
+
+                return `
+                <details style="border-radius:10px;overflow:hidden;background:var(--s2);border:1px solid var(--bd);">
+                    <summary style="
+                        display:flex;align-items:center;gap:.75rem;
+                        padding:.85rem 1rem;cursor:pointer;list-style:none;
+                        font-weight:700;font-size:.9rem;color:var(--tx);
+                        user-select:none;
+                    ">
+                        <span style="font-size:1.2rem">${emoji}</span>
+                        <span style="flex:1">${fam}</span>
+                        <span style="
+                            background:var(--or);color:#fff;
+                            border-radius:20px;padding:.15rem .6rem;
+                            font-size:.75rem;font-weight:700;
+                        ">${qtd}</span>
+                        <span style="color:var(--tx3);font-size:.7rem;margin-left:.25rem">▼</span>
+                    </summary>
+                    <ul style="
+                        margin:0;padding:.25rem 1rem .75rem 2.8rem;
+                        list-style:disc;
+                    ">
+                        ${listaHtml}
+                    </ul>
+                </details>`;
+            }).join('');
+
+            return `
+            <div style="margin-top:1.5rem">
+                <div style="font-weight:700;color:var(--or);font-size:.85rem;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.75rem;">
+                    🗂️ Sua Coleção por Família
+                </div>
+                <div style="display:flex;flex-direction:column;gap:.5rem;">
+                    ${items}
+                </div>
+            </div>`;
+        })()}
         
     `;
     
