@@ -5717,14 +5717,66 @@ function carregarRadarDoStorage() {
     }
 
     function parsearPerfumes(txt){
-        const re = /^(.+?)\s*[–\-—]\s*(.+)$/;
-        return txt.split(/[\n\r]+/)
-            .map(l => l.trim())
-            .filter(l => l.length > 2 && l.length < 100 && !/^\d+$/.test(l))
+        const linhas = txt.split(/[\n\r]+/).map(l => l.trim()).filter(l => l.length > 0);
+
+        // Detecta formato tabular com células por linha (PDF com colunas)
+        // Padrão: número sozinho numa linha, seguido de Marca, Nome, Perfumista...
+        const reNum = /^\d+$/;
+        const reHeader = /^(#|Marca|Nome|Perfumista|Família|Gênero|Notas|Coleção|Total:)/i;
+        const reNotas = /^(Limão|Bergamota|Oud|Âmbar|Baunilha|Rosa|Jasmim|Cedro|Patchouli|Lavanda|Almíscar|Incenso|Especiarias|Couro|Sândalo|Tabaco|Canela|Madeira|Vetiver|Gengibre|Notas|limão|bergamota)/i;
+        const reFamilia = /^(Oriental|Amadeirado|Aromático|Cítrico|Floral|Frutado|Aquático|Talco|Especiado|Gourmand|Chipre|Fougère|Almíscarado|Ambarado|Resinoso|Aldeídico|Unissex|Masculino|Feminino|Não informado)/i;
+
+        // Conta quantas linhas são números puros — se houver muitos, é tabela
+        const numLinhas = linhas.filter(l => reNum.test(l)).length;
+
+        if (numLinhas > 5) {
+            // Formato tabela (célula por linha)
+            // Padrão de cada perfume: [num] [marca] [nome] [perfumista?] [família] [gênero] [notas]
+            const resultado = [];
+            let i = 0;
+            while (i < linhas.length) {
+                // Pula headers e linhas de título
+                if (reHeader.test(linhas[i])) { i++; continue; }
+
+                // Encontrou número de índice
+                if (reNum.test(linhas[i])) {
+                    i++; // pula o número
+                    if (i >= linhas.length) break;
+
+                    // Próxima linha: Marca
+                    const marca = linhas[i]; i++;
+                    if (i >= linhas.length) { resultado.push(marca); break; }
+
+                    // Próxima linha: Nome do perfume
+                    let nome = linhas[i];
+
+                    // Verifica se é nome ou já é família/gênero/notas
+                    if (!reFamilia.test(nome) && !reNotas.test(nome) && nome.length > 1) {
+                        i++; // consome o nome
+                        resultado.push(`${marca} ${nome}`.trim());
+                    } else {
+                        // Nome ausente — usa só a marca
+                        resultado.push(marca);
+                    }
+                    continue;
+                }
+                i++;
+            }
+
+            if (resultado.length > 3) {
+                return resultado.filter(n => n.length > 2 && n.length < 150);
+            }
+        }
+
+        // Formato lista simples (uma linha por perfume)
+        const reDash = /^(.+?)\s*[–\-—]\s*(.+)$/;
+        return linhas
+            .filter(l => !/^\d+$/.test(l) && !reHeader.test(l) && l.length < 150 && l.length > 2)
             .map(l => {
-                const m = l.match(re);
+                const m = l.match(reDash);
                 return m ? capitalize(m[2].trim()) + ' — ' + capitalize(m[1].trim()) : capitalize(l);
-            });
+            })
+            .filter(n => n.length > 2);
     }
 
     function lerTexto(f){ return new Promise((r,j) => { const rd = new FileReader(); rd.onload = e => r(e.target.result); rd.onerror = j; rd.readAsText(f,'utf-8'); }); }
