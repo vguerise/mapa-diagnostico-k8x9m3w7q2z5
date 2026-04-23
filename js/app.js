@@ -1580,8 +1580,9 @@ Analise e retorne análise detalhada + recomendações COM CONCENTRAÇÃO.
         // Adiciona glow na aba Missão
         adicionarGlowMissao();
         
-        // Toast
-        mostrarToast('✅ Análise completa!', 'Vá na aba Missão para ver suas sugestões', 'success');
+        // Toast + navega para Resumo
+        mostrarToast('✅ Análise completa!', 'Seu resumo personalizado está pronto', 'success');
+        setTimeout(() => goSection('resumo'), 600);
         
     } catch (error) {
         radarContainer.innerHTML = radarBackup;
@@ -3938,6 +3939,211 @@ function pmRenderNivel() {
 
 // ── Missão Semanal ──
 
+// ══════════════════════════════════════
+// RESUMO — TELA PRINCIPAL PÓS-ANÁLISE
+// ══════════════════════════════════════
+
+const FAMILIA_CONFIG = {
+    'Amadeirado':  { icon: '🪵', bg: 'linear-gradient(135deg,#3d1f00,#7a3e00)' },
+    'Aquático':    { icon: '💧', bg: 'linear-gradient(135deg,#001a3d,#0052a3)' },
+    'Fresco':      { icon: '🌬️', bg: 'linear-gradient(135deg,#003d1a,#007a35)' },
+    'Cítrico':     { icon: '🍋', bg: 'linear-gradient(135deg,#3d3a00,#9e9500)' },
+    'Oriental':    { icon: '✨', bg: 'linear-gradient(135deg,#3d2800,#9e6800)' },
+    'Fougère':     { icon: '🌲', bg: 'linear-gradient(135deg,#1a3d00,#3d8c00)' },
+    'Gourmand':    { icon: '🍫', bg: 'linear-gradient(135deg,#3d1a00,#8c4500)' },
+    'Floral':      { icon: '🌸', bg: 'linear-gradient(135deg,#3d001a,#8c0045)' },
+    'Chypre':      { icon: '💎', bg: 'linear-gradient(135deg,#2a1a3d,#5a3d8c)' },
+    'Aromático':   { icon: '🌿', bg: 'linear-gradient(135deg,#1a3d1a,#3d7a3d)' },
+    'Especiado':   { icon: '🌶️', bg: 'linear-gradient(135deg,#3d1500,#9e3800)' },
+    'Talco':       { icon: '🫧', bg: 'linear-gradient(135deg,#1a1a3d,#3d3d8c)' },
+};
+
+function _famConfig(familia) {
+    if (!familia) return { icon: '🧴', bg: 'linear-gradient(135deg,#222,#444)' };
+    for (const key of Object.keys(FAMILIA_CONFIG)) {
+        if (familia.toLowerCase().includes(key.toLowerCase())) return FAMILIA_CONFIG[key];
+    }
+    return { icon: '🧴', bg: 'linear-gradient(135deg,#222,#444)' };
+}
+
+function gerarLeituraColecao(analise) {
+    const dom = analise.familia_dominante || {};
+    const faltando = analise.top3_faltando || [];
+    const total = analise.total_perfumes || 0;
+    const familias = analise.familias_representadas || 0;
+    const nomeDom = (dom.nome || '').toLowerCase();
+
+    let intro = '';
+    if (nomeDom.includes('amadeirado') || nomeDom.includes('oriental') || nomeDom.includes('especiado')) {
+        intro = `Sua coleção tem identidade forte — concentrada em perfumes ${dom.nome ? dom.nome.toLowerCase() + 's' : 'com personalidade definida'}, com presença marcante e sofisticação.`;
+    } else if (nomeDom.includes('fresco') || nomeDom.includes('aquático') || nomeDom.includes('cítrico')) {
+        intro = `Sua coleção é leve e funcional — dominada por perfumes ${dom.nome ? dom.nome.toLowerCase() + 's' : 'frescos'}, versáteis e fáceis de usar no dia a dia.`;
+    } else if (dom.nome) {
+        intro = `Sua coleção tem gosto definido — com domínio em perfumes ${dom.nome.toLowerCase()}s e identidade olfativa própria.`;
+    } else {
+        intro = `Com ${total} perfume${total !== 1 ? 's' : ''} e ${familias} famíli${familias !== 1 ? 'as' : 'a'} representad${familias !== 1 ? 'as' : 'a'}, sua coleção já tem boa diversidade.`;
+    }
+
+    let destaque = '';
+    if (faltando.length > 0) {
+        destaque = `O que falta é contraste: sua coleção carece de ${faltando.slice(0, 2).join(' e ')}. ${analise.equilibrio?.mensagem || 'Adicionar essas famílias vai ampliar as ocasiões de uso.'}`;
+    } else {
+        destaque = analise.equilibrio?.mensagem || 'Sua coleção está bem equilibrada entre as famílias olfativas.';
+    }
+    return { intro, destaque };
+}
+
+function gerarResumoEstrategico(recs) {
+    const contextos = [
+        { keys: ['dia', 'diári', 'daytime', 'casual'], icon: '☀️', label: 'Uso diário' },
+        { keys: ['calor', 'verão', 'quente', 'verao'], icon: '🔥', label: 'Calor' },
+        { keys: ['noite', 'evento', 'balada', 'jantar'], icon: '🌙', label: 'Noite' },
+        { keys: ['trabalho', 'escritório', 'formal', 'work'], icon: '💼', label: 'Trabalho' },
+        { keys: ['versátil', 'versatil', 'todas'], icon: '⚡', label: 'Versátil' },
+        { keys: ['assinatura', 'identidade', 'marcante'], icon: '💍', label: 'Assinatura' },
+    ];
+    const result = [];
+    const used = new Set();
+    for (const ctx of contextos) {
+        if (result.length >= 4) break;
+        for (const rec of recs) {
+            if (used.has(rec.nome)) continue;
+            const txt = ((rec.quando_usar || '') + ' ' + (rec.por_que || '')).toLowerCase();
+            if (ctx.keys.some(k => txt.includes(k))) {
+                result.push({ icon: ctx.icon, label: ctx.label, perfume: rec.nome });
+                used.add(rec.nome);
+                break;
+            }
+        }
+    }
+    // Fallback: fill with remaining recs
+    const fallbacks = [
+        { icon: '☀️', label: 'Primeira escolha' },
+        { icon: '🌙', label: 'Segunda escolha' },
+        { icon: '⚡', label: 'Versatilidade' },
+        { icon: '💍', label: 'Assinatura' },
+    ];
+    recs.slice(0, 4).forEach((rec, i) => {
+        if (!used.has(rec.nome) && result.length < 4) {
+            result.push({ icon: fallbacks[i]?.icon || '✨', label: fallbacks[i]?.label || 'Sugestão', perfume: rec.nome });
+            used.add(rec.nome);
+        }
+    });
+    return result;
+}
+
+function renderizarResumo() {
+    const container = document.getElementById('resumo');
+    if (!container) return;
+    const ultimaAnalise = JSON.parse(localStorage.getItem('ultimaAnalise') || '{}');
+
+    if (!ultimaAnalise.dados) {
+        container.innerHTML = `
+            <div class="resumo-topbar">
+                <div class="resumo-topbar-title">perfu<span>map</span></div>
+                <button class="resumo-settings-btn" onclick="goSection('perfil')">⚙️ Perfil</button>
+            </div>
+            <div class="container">
+                <div class="resumo-empty">
+                    <div class="resumo-empty-ico">🔮</div>
+                    <h2>Seu resumo ainda não existe</h2>
+                    <p>Vá em <strong>Coleção</strong>, adicione seus perfumes e clique em <strong>Analisar</strong>. Seu resumo personalizado aparecerá aqui.</p>
+                    <button class="resumo-empty-btn" onclick="goSection('colecao')">Ir para Coleção →</button>
+                </div>
+            </div>`;
+        return;
+    }
+
+    const dados = ultimaAnalise.dados;
+    const analise = dados.analise_colecao || {};
+    const recs = dados.recomendacoes || [];
+    const nivel = analise.nivel || {};
+    const faltando = analise.top3_faltando || [];
+    const dominante = analise.familia_dominante || {};
+
+    const leitura = gerarLeituraColecao(analise);
+    const estrategico = gerarResumoEstrategico(recs);
+
+    const faltandoChips = faltando.map(f => `<span class="resumo-chip-deficit">⚠ ${f}</span>`).join('');
+    const dominanteChip = dominante.nome ? `<span class="resumo-chip-ok">✓ ${dominante.nome}</span>` : '';
+
+    const cardsHtml = recs.map((rec, i) => {
+        const fc = _famConfig(rec.familia);
+        return `
+        <div class="resumo-rec-card">
+            <div class="resumo-rec-top">
+                <div class="resumo-rec-img" style="background:${fc.bg}">${fc.icon}</div>
+                <div class="resumo-rec-info">
+                    <div class="resumo-rec-num">${String(i + 1).padStart(2, '0')}</div>
+                    <div class="resumo-rec-nome">${rec.nome}</div>
+                    <div class="resumo-rec-tags">
+                        <span class="resumo-tag-fam">${rec.familia || ''}</span>
+                        <span class="resumo-tag-preco">${rec.faixa_preco || ''}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="resumo-rec-body">
+                <div class="resumo-rec-linha">
+                    <span class="resumo-rec-ico">💡</span>
+                    <div>
+                        <div class="resumo-rec-label">Por que</div>
+                        <div class="resumo-rec-val">${rec.por_que || ''}</div>
+                    </div>
+                </div>
+                <div class="resumo-rec-linha">
+                    <span class="resumo-rec-ico">🕐</span>
+                    <div>
+                        <div class="resumo-rec-label">Quando usar</div>
+                        <div class="resumo-rec-val">${rec.quando_usar || ''}</div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+
+    const estrategicoHtml = estrategico.map(item => `
+        <div class="resumo-estrategico-item">
+            <div class="resumo-est-icon">${item.icon}</div>
+            <div class="resumo-est-label">${item.label}</div>
+            <div class="resumo-est-val">${item.perfume}</div>
+        </div>`).join('');
+
+    container.innerHTML = `
+        <div class="resumo-topbar">
+            <div class="resumo-topbar-title">perfu<span>map</span></div>
+            <button class="resumo-settings-btn" onclick="goSection('perfil')">⚙️ Perfil</button>
+        </div>
+        <div class="resumo-content">
+            <div class="resumo-nivel-badge">
+                <span class="resumo-nivel-ico">${nivel.emoji || '🎯'}</span>
+                <span class="resumo-nivel-txt">${nivel.titulo || 'Colecionador'} · ${analise.total_perfumes || 0} perfumes</span>
+            </div>
+            <div class="resumo-leitura-card">
+                <div class="resumo-section-label">◆ Leitura da Coleção</div>
+                <p class="resumo-leitura-text">${leitura.intro}</p>
+                <div class="resumo-leitura-destaque">${leitura.destaque}</div>
+            </div>
+            ${(faltandoChips || dominanteChip) ? `
+            <div class="resumo-familias-card">
+                <div class="resumo-section-label">📊 Famílias mais deficitárias</div>
+                <div class="resumo-chips-row">${faltandoChips}${dominanteChip}</div>
+            </div>` : ''}
+            <div>
+                <div class="resumo-sugestoes-header">
+                    <div class="resumo-section-label" style="margin:0">🎯 ${recs.length} sugestão${recs.length !== 1 ? 'ões' : ''} para sua coleção</div>
+                    <span class="resumo-count-badge">Personalizadas</span>
+                </div>
+                <div class="resumo-cards-list">${cardsHtml}</div>
+            </div>
+            ${estrategicoHtml ? `
+            <div class="resumo-estrategico-card">
+                <div class="resumo-estrategico-title">✦ Resumo Estratégico</div>
+                <div class="resumo-estrategico-grid">${estrategicoHtml}</div>
+            </div>` : ''}
+            <button class="resumo-reanalisar-btn" onclick="goSection('colecao')">🔄 Atualizar coleção</button>
+        </div>`;
+}
+
 // ── Hook na aba Missão: estende goSection ──
 // goSection já existe como function — adicionamos side-effects via evento
 const _origGoSection = goSection;
@@ -3945,7 +4151,8 @@ window.goSection = function goSection(section) {
     _origGoSection(section);
     if (section === 'missao') {
         // pmRenderNivel(); // handled by atualizarNivelDOM
-            }
+    }
+    if (section === 'resumo') renderizarResumo();
 };
 
 // ── Atualiza nível ao adicionar/remover perfumes (via evento customizado) ──
@@ -3962,6 +4169,16 @@ renderizarLista();
 // Tenta carregar análise salva (radar + missão)
 // 🎯 RENDERIZA TUDO DO LOCALSTORAGE (fonte única)
 renderizarTudoDoLocalStorage();
+
+// Roteamento inicial: se tem análise salva → abre no Resumo; senão → Perfil
+(function rotearInicio() {
+    const ultimaAnalise = JSON.parse(localStorage.getItem('ultimaAnalise') || '{}');
+    if (ultimaAnalise.dados) {
+        goSection('resumo');
+    } else {
+        goSection('perfil');
+    }
+})();
 
 // Observer para mudanças no localStorage
 let ultimaColecao = localStorage.getItem('minhaColecao') || '[]';
