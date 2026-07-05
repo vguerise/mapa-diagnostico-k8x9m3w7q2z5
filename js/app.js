@@ -299,12 +299,13 @@ async function priorizarWish() {
         `{"prioridades":[{"indice":1,"prioridade":"top","motivo":"motivo em 1 frase"}],"resumo":"resumo em 1-2 frases"}`;
 
     try {
+        const categoriaAdj = perfil.categoria === 'feminino' ? 'femininas' : perfil.categoria === 'compartilhavel' ? 'compartilháveis (unissex)' : 'masculinas';
         const res = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
             body:    JSON.stringify({
                 _proxy:   true,
-                system:   'Você é O Perfumista, consultor especialista em fragrâncias masculinas. Responda SOMENTE em JSON válido, sem markdown, sem texto fora do JSON.',
+                system:   `Você é O Perfumista, consultor especialista em fragrâncias ${categoriaAdj}. Responda SOMENTE em JSON válido, sem markdown, sem texto fora do JSON.`,
                 messages: [{ role: 'user', content: userMsg }],
                 max_tokens: 600
             })
@@ -356,6 +357,7 @@ function carregarPerfil() {
     const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
     
     if (perfil.nome) document.getElementById('nome').value = perfil.nome;
+    document.getElementById('categoria').value = perfil.categoria || 'masculino';
     if (perfil.clima) document.getElementById('clima').value = perfil.clima;
     if (perfil.ambiente) document.getElementById('ambiente').value = perfil.ambiente;
     if (perfil.idade) document.getElementById('idade').value = perfil.idade;
@@ -371,6 +373,7 @@ function carregarPerfil() {
 function salvarPerfil() {
     const perfil = {
         nome: document.getElementById('nome').value,
+        categoria: document.getElementById('categoria').value,
         clima: document.getElementById('clima').value,
         ambiente: document.getElementById('ambiente').value,
         idade: document.getElementById('idade').value,
@@ -1239,6 +1242,178 @@ function renderizarTudoDoLocalStorage() {
 }
 
 // ===================================
+// GUIA DE FAMÍLIAS OLFATIVAS POR CATEGORIA
+// ===================================
+
+function construirGuiaFamilias(categoria) {
+    if (categoria === 'feminino') {
+        return `Use seu conhecimento sobre perfumes femininos e os acordes principais de cada fragrância.
+
+**FAMÍLIAS OLFATIVAS (escolha APENAS UMA por perfume):**
+
+1. **Fresco/Cítrico**: Perfumes leves, cítricos, aquosos
+   - Exemplos: Chanel Chance Eau Fraîche, Dolce & Gabbana Light Blue, Bvlgari Omnia Crystalline
+   - Acordes: citrus, bergamot, lemon, aquatic, marine
+
+2. **Aromático/Verde**: Perfumes frescos com ervas, chá verde, folhas
+   - Exemplos: Chanel No. 19, Chanel Cristalle, Balmain Ivoire
+   - Acordes: aromatic, green, herbal, galbanum
+
+3. **Doce/Gourmand**: Perfumes doces, com baunilha, caramelo, praliné
+   - Exemplos: Lancôme La Vie Est Belle, YSL Black Opium, Viktor & Rolf Flowerbomb
+   - Acordes: sweet, vanilla, caramel, gourmand, praline
+
+4. **Amadeirado**: Perfumes com madeiras e chypre (sândalo, patchouli, cedro)
+   - Exemplos: Chanel Coco Mademoiselle, Narciso Rodriguez For Her, Chanel Bois des Îles
+   - Acordes: woody, patchouli, sandalwood, chypre
+
+5. **Especiado/Oriental**: Perfumes com especiarias fortes, âmbar, resinas
+   - Exemplos: YSL Opium, Guerlain Shalimar, Thierry Mugler Alien
+   - Acordes: spicy, oriental, amber, incense, cinnamon
+
+6. **Aquático/Mineral**: Perfumes marinhos, ozônicos, minerais
+   - Exemplos: Issey Miyake L'Eau d'Issey, Davidoff Cool Water Woman, Bvlgari Aqua Divina
+   - Acordes: aquatic, marine, ozonic, mineral
+
+7. **Talco/Fougère**: Perfumes com íris, talco, pó de arroz
+   - Exemplos: Prada Infusion d'Iris, Guerlain L'Heure Bleue, Guerlain Après l'Ondée
+   - Acordes: powdery, iris, musky clean
+
+8. **Floral/Floral Branco**: Perfumes com flores (rosa, jasmim, tuberosa, lírio)
+   - FLORAL: Rosa, gerânio, violeta, aldeídos (Chanel No. 5, Dior J'adore)
+   - FLORAL BRANCO: Jasmim, tuberosa, lírio (Gucci Bloom, Chanel Gardénia)
+   - Acordes: floral, white floral, jasmine, tuberose
+
+9. **Frutado**: Perfumes com frutas (maçã, pêssego, frutas vermelhas)
+   - Exemplos: DKNY Be Delicious (maçã), Nina Ricci Nina (maçã), Marc Jacobs Daisy (morango)
+   - Acordes: fruity, apple, peach, berries
+
+**INSTRUÇÕES DE CLASSIFICAÇÃO:**
+- Use o acorde DOMINANTE do perfume
+- Se tiver dúvida entre 2, escolha a mais característica
+- NUNCA invente - use conhecimento real
+- Se não conhecer um perfume, classifique baseado em perfumes similares da mesma linha/marca
+
+**EXEMPLOS DE CLASSIFICAÇÃO CORRETA:**
+- Chanel Coco Mademoiselle → Amadeirado (patchouli/âmbar dominante, apesar da laranja na abertura)
+- YSL Black Opium → Doce/Gourmand (café/baunilha dominante)
+- Chanel No. 5 → Floral (aldeídico-floral clássico)
+- Gucci Bloom → Floral/Floral Branco (jasmim/tuberosa dominante)
+- Guerlain Shalimar → Especiado/Oriental (âmbar/baunilha oriental)`;
+    }
+
+    if (categoria === 'compartilhavel') {
+        return `Use seu conhecimento sobre perfumes compartilháveis/unissex e os acordes principais de cada fragrância.
+
+**FAMÍLIAS OLFATIVAS (escolha APENAS UMA por perfume):**
+
+1. **Fresco/Cítrico**: Perfumes leves, cítricos, aquosos
+   - Exemplos: CK One, Hermès Eau d'Orange Verte, Acqua di Parma Colonia
+   - Acordes: citrus, bergamot, lemon, aquatic, marine
+
+2. **Aromático/Verde**: Perfumes frescos com ervas, folhas, figueira
+   - Exemplos: Diptyque Philosykos, Comme des Garçons Eau de Parfum, Aesop Tacit
+   - Acordes: aromatic, green, herbal, fig
+
+3. **Doce/Gourmand**: Perfumes doces, com baunilha, castanha, fumaça doce
+   - Exemplos: Maison Margiela REPLICA By the Fireplace, Kayali Vanilla 28, Mancera Cedrat Boisé
+   - Acordes: sweet, vanilla, chestnut, gourmand
+
+4. **Amadeirado**: Perfumes com madeiras (sândalo, cedro, âmbar-madeira)
+   - Exemplos: Le Labo Santal 33, Tom Ford Oud Wood, Byredo Gypsy Water
+   - Acordes: woody, sandalwood, cedar, amber wood
+
+5. **Especiado/Oriental**: Perfumes com especiarias fortes, âmbar, resinas
+   - Exemplos: Maison Margiela REPLICA Jazz Club, Le Labo Another 13, Kilian Black Phantom
+   - Acordes: spicy, oriental, amber, incense
+
+6. **Aquático/Mineral**: Perfumes marinhos, ozônicos, minerais
+   - Exemplos: CK One, Bvlgari Aqva, Comme des Garçons Concrete
+   - Acordes: aquatic, marine, ozonic, mineral, metallic
+
+7. **Talco/Fougère**: Perfumes com almíscar limpo, talco, sabonete
+   - Exemplos: Maison Margiela REPLICA Lazy Sunday Morning, Byredo Blanche
+   - Acordes: powdery, musky, clean, soapy
+
+8. **Floral/Floral Branco**: Perfumes com flores (rosa, jasmim, tuberosa, lírio)
+   - Exemplos: Le Labo Rose 31, Byredo Flowerhead, Maison Margiela REPLICA Flower Market
+   - Acordes: floral, white floral, jasmine, rose
+
+9. **Frutado**: Perfumes com frutas (frutas vermelhas, pera)
+   - Exemplos: Jo Malone Blackberry & Bay, Byredo Bal d'Afrique
+   - Acordes: fruity, berries, pear
+
+**INSTRUÇÕES DE CLASSIFICAÇÃO:**
+- Use o acorde DOMINANTE do perfume
+- Se tiver dúvida entre 2, escolha a mais característica
+- NUNCA invente - use conhecimento real
+- Se não conhecer um perfume, classifique baseado em perfumes similares da mesma linha/marca
+
+**EXEMPLOS DE CLASSIFICAÇÃO CORRETA:**
+- Le Labo Santal 33 → Amadeirado (sândalo/couro dominante)
+- CK One → Fresco/Cítrico (cítrico dominante)
+- Maison Margiela REPLICA By the Fireplace → Doce/Gourmand (castanha/baunilha dominante)
+- Diptyque Philosykos → Aromático/Verde (figueira/folhas dominante)`;
+    }
+
+    // masculino (padrão)
+    return `Use seu conhecimento sobre perfumes masculinos e os acordes principais de cada fragrância.
+
+**FAMÍLIAS OLFATIVAS (escolha APENAS UMA por perfume):**
+
+1. **Fresco/Cítrico**: Perfumes leves, cítricos, aquosos
+   - Exemplos: Acqua di Gio, Dolce & Gabbana Light Blue, Versace Man Eau Fraiche
+   - Acordes: citrus, bergamot, lemon, aquatic, marine
+
+2. **Aromático/Verde**: Perfumes frescos com ervas, lavanda, especiarias leves
+   - Exemplos: Dior Sauvage, Bleu de Chanel, Paco Rabanne Invictus
+   - Acordes: aromatic, fresh spicy, lavender, herbal, green
+
+3. **Doce/Gourmand**: Perfumes doces, com baunilha, caramelo, açúcar
+   - Exemplos: Paco Rabanne 1 Million, JPG Le Male, Viktor & Rolf Spicebomb
+   - Acordes: sweet, vanilla, caramel, gourmand, tonka
+
+4. **Amadeirado**: Perfumes com madeiras (cedro, sândalo, patchouli)
+   - Exemplos: Dior Homme Intense, Tom Ford Oud Wood, Creed Aventus (base)
+   - Acordes: woody, cedar, sandalwood, patchouli, vetiver
+
+5. **Especiado/Oriental**: Perfumes com especiarias fortes, âmbar, resinas
+   - Exemplos: YSL La Nuit de L'Homme, Givenchy Gentleman, Dior Fahrenheit
+   - Acordes: spicy, oriental, amber, incense, cinnamon
+
+6. **Aquático/Mineral**: Perfumes marinhos, ozônicos, minerais
+   - AQUÁTICO: Notas marinhas, sal, brisa do mar (Davidoff Cool Water, Nautica Voyage)
+   - MINERAL: Pedra molhada, concreto, ozônio mineral (Lalique Encre Noire Sport, Comme des Garçons)
+   - Acordes: aquatic, marine, ozonic, mineral, metallic
+
+7. **Talco/Fougère**: Perfumes clássicos com lavanda, cumarina, talco, íris talcada
+   - Exemplos: Paco Rabanne Pour Homme, Prada L'Homme, Dior Homme
+   - Acordes: powdery, lavender, fougere, coumarin, iris
+
+8. **Floral/Floral Branco**: Perfumes com flores (raro em masculinos)
+   - FLORAL: Rosa, gerânio, violeta
+   - FLORAL BRANCO: Jasmim, muguet, lírio, neroli (Tom Ford Neroli Portofino)
+   - Acordes: floral, white floral, jasmine, lily, neroli
+
+9. **Frutado**: Perfumes com frutas (abacaxi, maçã, pêra)
+   - Exemplos: Creed Aventus, Versace Eros, Carolina Herrera Bad Boy
+   - Acordes: fruity, pineapple, apple, blackcurrant
+
+**INSTRUÇÕES DE CLASSIFICAÇÃO:**
+- Use o acorde DOMINANTE do perfume
+- Se tiver dúvida entre 2, escolha a mais característica
+- NUNCA invente - use conhecimento real
+- Se não conhecer um perfume, classifique baseado em perfumes similares da mesma linha/marca
+
+**EXEMPLOS DE CLASSIFICAÇÃO CORRETA:**
+- Dior Sauvage → Aromático/Verde (fresh spicy dominante)
+- Paco Rabanne 1 Million → Doce/Gourmand (sweet/cinnamon)
+- Acqua di Gio → Fresco/Cítrico (citrus/marine)
+- Creed Aventus → Frutado (pineapple dominante, apesar da base amadeirada)
+- Tom Ford Oud Wood → Amadeirado (oud/woody)`;
+}
+
+// ===================================
 // MISSÃO (ANÁLISE)
 // ===================================
 
@@ -1359,60 +1534,7 @@ INSTRUÇÕES CRÍTICAS:
 
 Para CADA perfume acima, você DEVE classificá-lo em UMA das 9 famílias abaixo.
 
-Use seu conhecimento sobre perfumes masculinos e os acordes principais de cada fragrância.
-
-**FAMÍLIAS OLFATIVAS (escolha APENAS UMA por perfume):**
-
-1. **Fresco/Cítrico**: Perfumes leves, cítricos, aquosos
-   - Exemplos: Acqua di Gio, Dolce & Gabbana Light Blue, Versace Man Eau Fraiche
-   - Acordes: citrus, bergamot, lemon, aquatic, marine
-
-2. **Aromático/Verde**: Perfumes frescos com ervas, lavanda, especiarias leves
-   - Exemplos: Dior Sauvage, Bleu de Chanel, Paco Rabanne Invictus
-   - Acordes: aromatic, fresh spicy, lavender, herbal, green
-
-3. **Doce/Gourmand**: Perfumes doces, com baunilha, caramelo, açúcar
-   - Exemplos: Paco Rabanne 1 Million, JPG Le Male, Viktor & Rolf Spicebomb
-   - Acordes: sweet, vanilla, caramel, gourmand, tonka
-
-4. **Amadeirado**: Perfumes com madeiras (cedro, sândalo, patchouli)
-   - Exemplos: Dior Homme Intense, Tom Ford Oud Wood, Creed Aventus (base)
-   - Acordes: woody, cedar, sandalwood, patchouli, vetiver
-
-5. **Especiado/Oriental**: Perfumes com especiarias fortes, âmbar, resinas
-   - Exemplos: YSL La Nuit de L'Homme, Givenchy Gentleman, Dior Fahrenheit
-   - Acordes: spicy, oriental, amber, incense, cinnamon
-
-6. **Aquático/Mineral**: Perfumes marinhos, ozônicos, minerais
-   - AQUÁTICO: Notas marinhas, sal, brisa do mar (Davidoff Cool Water, Nautica Voyage)
-   - MINERAL: Pedra molhada, concreto, ozônio mineral (Lalique Encre Noire Sport, Comme des Garçons)
-   - Acordes: aquatic, marine, ozonic, mineral, metallic
-
-7. **Talco/Fougère**: Perfumes clássicos com lavanda, cumarina, talco, íris talcada
-   - Exemplos: Paco Rabanne Pour Homme, Prada L'Homme, Dior Homme
-   - Acordes: powdery, lavender, fougere, coumarin, iris
-
-8. **Floral/Floral Branco**: Perfumes com flores (raro em masculinos)
-   - FLORAL: Rosa, gerânio, violeta
-   - FLORAL BRANCO: Jasmim, muguet, lírio, neroli (Tom Ford Neroli Portofino)
-   - Acordes: floral, white floral, jasmine, lily, neroli
-
-9. **Frutado**: Perfumes com frutas (abacaxi, maçã, pêra)
-   - Exemplos: Creed Aventus, Versace Eros, Carolina Herrera Bad Boy
-   - Acordes: fruity, pineapple, apple, blackcurrant
-
-**INSTRUÇÕES DE CLASSIFICAÇÃO:**
-- Use o acorde DOMINANTE do perfume
-- Se tiver dúvida entre 2, escolha a mais característica
-- NUNCA invente - use conhecimento real
-- Se não conhecer um perfume, classifique baseado em perfumes similares da mesma linha/marca
-
-**EXEMPLOS DE CLASSIFICAÇÃO CORRETA:**
-- Dior Sauvage → Aromático/Verde (fresh spicy dominante)
-- Paco Rabanne 1 Million → Doce/Gourmand (sweet/cinnamon)
-- Acqua di Gio → Fresco/Cítrico (citrus/marine)
-- Creed Aventus → Frutado (pineapple dominante, apesar da base amadeirada)
-- Tom Ford Oud Wood → Amadeirado (oud/woody)
+${construirGuiaFamilias(perfil.categoria)}
 
 Conte quantos perfumes há em cada família e identifique as 3 famílias com MENOS perfumes.
 
@@ -1526,7 +1648,7 @@ Analise e retorne análise detalhada + recomendações COM CONCENTRAÇÃO.
         const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ diagnostico })
+            body: JSON.stringify({ diagnostico, categoria: perfil.categoria || 'masculino' })
         });
         const data = await response.json();
         if (data.analise_colecao) {
@@ -1727,11 +1849,11 @@ VARIEDADE: Misture marcas conhecidas com nicho. NÃO foque só em hidden gems.
 
 Retorne APENAS 1 perfume com: nome, família, faixa_preco, por_que, quando_usar
 `;
-        
+
         const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ diagnostico: prompt })
+            body: JSON.stringify({ diagnostico: prompt, categoria: perfil.categoria || 'masculino' })
         });
         
         const data = await response.json();
@@ -1856,6 +1978,7 @@ async function enviarPergunta() {
                 pergunta: pergunta + `\n\n[Não repita: ${(window.perfumesJaSugeridos || []).join(', ') || 'nenhum'}]`,
                 colecao: minhaColecao.map(p => typeof p === 'string' ? p : `${p.nome}${p.concentracao ? ' ' + p.concentracao : ''}`),
                 wishlist: wishlistArr,
+                categoria: perfil.categoria || 'masculino',
                 clima: perfil.clima || 'Temperado',
                 ambiente: perfil.ambiente || 'Ambos',
                 idade: perfil.idade || '25-35',
@@ -1967,7 +2090,9 @@ function adicionarMensagemChat(tipo, conteudo) {
 
 function calcularNivelAtual() {
     if (minhaColecao.length === 0) return null;
-    
+    const categoriaAtual = JSON.parse(localStorage.getItem('perfilUsuario') || '{}').categoria;
+    const categoriaDescricao = categoriaAtual === 'feminino' ? 'feminina' : categoriaAtual === 'compartilhavel' ? 'compartilhável' : 'masculina';
+
     // Tenta pegar análise do cache (da API)
     const ultimaAnalise = JSON.parse(localStorage.getItem('ultimaAnalise') || '{}');
     const analise = ultimaAnalise.dados?.analise_colecao;
@@ -2101,7 +2226,7 @@ function calcularNivelAtual() {
             pontosProximo: 100,
             faixaInicio: 86,
             cor: "var(--or)",
-            descricao: "Maestria completa em perfumaria masculina"
+            descricao: `Maestria completa em perfumaria ${categoriaDescricao}`
         };
     }
     
@@ -2900,8 +3025,9 @@ RESPONDA COM 3 PERFUMES DE MARCAS DIFERENTES COM BOA VARIEDADE!
         const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                diagnostico: promptNovasSugestoes
+            body: JSON.stringify({
+                diagnostico: promptNovasSugestoes,
+                categoria: perfil.categoria || 'masculino'
             })
         });
         
@@ -3059,11 +3185,11 @@ REGRAS:
 
 Retorne 3 hidden gems incríveis!
 `;
-        
+
         const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ diagnostico: prompt })
+            body: JSON.stringify({ diagnostico: prompt, categoria: perfil.categoria || 'masculino' })
         });
         
         const data = await response.json();
@@ -3220,8 +3346,9 @@ IMPORTANTE: Missão focada em ${familiaAlvo} com BOA VARIEDADE DE MARCAS + CONCE
         const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                diagnostico: promptNovaMissao
+            body: JSON.stringify({
+                diagnostico: promptNovaMissao,
+                categoria: perfil.categoria || 'masculino'
             })
         });
         
@@ -3471,6 +3598,7 @@ IMPORTANTE: 3 marcas DIFERENTES + dentro do orçamento + adequados ao clima!
             body: JSON.stringify({
                 iniciar_colecao: true,
                 contexto: contextoInicio,
+                categoria: perfil.categoria || 'masculino',
                 clima: perfil.clima,
                 ambiente: perfil.ambiente,
                 idade: perfil.idade,
