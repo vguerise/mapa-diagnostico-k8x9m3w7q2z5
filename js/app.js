@@ -1252,11 +1252,11 @@ function construirGuiaFamilias(categoria) {
 **FAMÍLIAS OLFATIVAS (escolha APENAS UMA por perfume):**
 
 1. **Fresco/Cítrico**: Perfumes leves, cítricos, aquosos
-   - Exemplos: Chanel Chance Eau Fraîche, Dolce & Gabbana Light Blue, Bvlgari Omnia Crystalline
+   - Exemplos: Chanel Chance Eau Fraîche, Dolce & Gabbana Light Blue
    - Acordes: citrus, bergamot, lemon, aquatic, marine
 
 2. **Aromático/Verde**: Perfumes frescos com ervas, chá verde, folhas
-   - Exemplos: Chanel No. 19, Chanel Cristalle, Balmain Ivoire
+   - Exemplos: Chanel No. 19, Chanel Cristalle
    - Acordes: aromatic, green, herbal, galbanum
 
 3. **Doce/Gourmand**: Perfumes doces, com baunilha, caramelo, praliné
@@ -1312,11 +1312,11 @@ function construirGuiaFamilias(categoria) {
    - Acordes: citrus, bergamot, lemon, aquatic, marine
 
 2. **Aromático/Verde**: Perfumes frescos com ervas, folhas, figueira
-   - Exemplos: Diptyque Philosykos, Comme des Garçons Eau de Parfum, Aesop Tacit
+   - Exemplos: Diptyque Philosykos, Aesop Tacit
    - Acordes: aromatic, green, herbal, fig
 
 3. **Doce/Gourmand**: Perfumes doces, com baunilha, castanha, fumaça doce
-   - Exemplos: Maison Margiela REPLICA By the Fireplace, Kayali Vanilla 28, Mancera Cedrat Boisé
+   - Exemplos: Maison Margiela REPLICA By the Fireplace, Kayali Vanilla 28
    - Acordes: sweet, vanilla, chestnut, gourmand
 
 4. **Amadeirado**: Perfumes com madeiras (sândalo, cedro, âmbar-madeira)
@@ -1324,23 +1324,23 @@ function construirGuiaFamilias(categoria) {
    - Acordes: woody, sandalwood, cedar, amber wood
 
 5. **Especiado/Oriental**: Perfumes com especiarias fortes, âmbar, resinas
-   - Exemplos: Maison Margiela REPLICA Jazz Club, Le Labo Another 13, Kilian Black Phantom
+   - Exemplos: Le Labo Another 13, Kilian Black Phantom
    - Acordes: spicy, oriental, amber, incense
 
 6. **Aquático/Mineral**: Perfumes marinhos, ozônicos, minerais
-   - Exemplos: CK One, Bvlgari Aqva, Comme des Garçons Concrete
+   - Exemplos: CK One, Comme des Garçons Concrete
    - Acordes: aquatic, marine, ozonic, mineral, metallic
 
 7. **Talco/Fougère**: Perfumes com almíscar limpo, talco, sabonete
-   - Exemplos: Maison Margiela REPLICA Lazy Sunday Morning, Byredo Blanche
+   - Exemplos: Maison Margiela REPLICA Lazy Sunday Morning, Byredo Blanche Absolu
    - Acordes: powdery, musky, clean, soapy
 
 8. **Floral/Floral Branco**: Perfumes com flores (rosa, jasmim, tuberosa, lírio)
-   - Exemplos: Le Labo Rose 31, Byredo Flowerhead, Maison Margiela REPLICA Flower Market
+   - Exemplos: Le Labo Rose 31, Byredo Flowerhead
    - Acordes: floral, white floral, jasmine, rose
 
 9. **Frutado**: Perfumes com frutas (frutas vermelhas, pera)
-   - Exemplos: Jo Malone Blackberry & Bay, Byredo Bal d'Afrique
+   - Exemplos: Jo Malone Blackberry & Bay Cologne, Byredo Bal d'Afrique
    - Acordes: fruity, berries, pear
 
 **INSTRUÇÕES DE CLASSIFICAÇÃO:**
