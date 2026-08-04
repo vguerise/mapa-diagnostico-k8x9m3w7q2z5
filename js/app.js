@@ -303,6 +303,7 @@ async function priorizarWish() {
         const res = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
+            signal:  criarTimeoutSignal(),
             body:    JSON.stringify({
                 _proxy:   true,
                 system:   `Você é O Perfumista, consultor especialista em fragrâncias ${categoriaAdj}. Responda SOMENTE em JSON válido, sem markdown, sem texto fora do JSON.`,
@@ -616,7 +617,7 @@ function renderizarLista() {
         return `
             <div class="perfume-item">
                 <span class="perfume-name">
-                    ${nome} 
+                    ${esc(nome)}
                     <span style="
                         color: var(--or); 
                         font-size: 0.8em; 
@@ -686,6 +687,14 @@ function normalizarFamilia(nome) {
     if (!nome) return nome;
     const lower = nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
+    // Match EXATO primeiro: evita colisão de palavra-chave entre famílias
+    // (ex: "fougere" aparece tanto em Aromático/Verde quanto em Talco/Fougère,
+    // e sem checar igualdade exata antes, "Talco/Fougère" virava "Aromático/Verde")
+    for (const canonico of Object.keys(FAMILIAS_CANONICAS)) {
+        const canonicoNorm = canonico.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        if (lower === canonicoNorm) return canonico;
+    }
+
     for (const [canonico, keywords] of Object.entries(FAMILIAS_CANONICAS)) {
         for (const kw of keywords) {
             const kwNorm = kw.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -750,6 +759,41 @@ function perfumeJaConhecido(nome) {
 function filtrarRecomendacoesDuplicadas(recomendacoes) {
     if (!Array.isArray(recomendacoes)) return recomendacoes;
     return recomendacoes.filter(rec => !perfumeJaConhecido(rec && rec.nome));
+}
+
+// ══════════════════════════════════════════════════════
+// SANITIZAÇÃO XSS
+// Todo texto vindo da API de IA (ou de campos livres digitados
+// pelo usuário) passa por aqui antes de ir pro innerHTML.
+// ══════════════════════════════════════════════════════
+function esc(s) {
+    if (s === null || s === undefined) return '';
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;');
+}
+
+// Cria um AbortSignal que cancela a requisição sozinho depois de `ms`
+// milissegundos — sem isso, se a API travar o usuário fica com spinner
+// infinito e nenhuma mensagem de erro.
+function criarTimeoutSignal(ms = 30000) {
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), ms);
+    return controller.signal;
+}
+
+// Monta o conteúdo (nome/família/preço/por quê/quando usar) de um card de
+// sugestão de perfume vindo da IA — usado nos vários lugares que renderizam
+// recomendações, pra não duplicar a mesma escapagem em 5 lugares diferentes.
+function renderizarCandidatoHTML(rec, indice) {
+    const concTag = rec && rec.concentracao ? ` <span style="color: var(--or);">(${esc(rec.concentracao)})</span>` : '';
+    return `<div class="candidate-name">${indice + 1}. ${esc(rec && rec.nome)}${concTag}</div>
+            <div class="candidate-family">🌿 ${esc(rec && rec.familia)} • 💰 ${esc(rec && rec.faixa_preco)}</div>
+            <div class="candidate-why"><strong>Por quê:</strong> ${esc(rec && rec.por_que)}</div>
+            <div class="candidate-when"><strong>Quando usar:</strong> ${esc(rec && rec.quando_usar)}</div>`;
 }
 
 // ══════════════════════════════════════════════════════
@@ -1522,6 +1566,17 @@ function construirGuiaFamilias(categoria) {
 - Tom Ford Oud Wood → Amadeirado (oud/woody)`;
 }
 
+// Faixas de preço por orçamento — fonte única usada em todos os prompts que
+// pedem sugestão de compra. Antes disso, essas 4 linhas estavam coladas (e
+// levemente divergentes) em 6 funções diferentes; mudar um preço exigia
+// lembrar de editar todas.
+function construirFaixaOrcamento() {
+    return `- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 300-500 (toda a faixa média)
+- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900 (topo)
+- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700 (topo)
+- Se orçamento é "Acima de R$ 1500" → Sugira perfumes premium acima de R$ 1500`;
+}
+
 // ===================================
 // MISSÃO (ANÁLISE)
 // ===================================
@@ -1550,7 +1605,14 @@ async function analisarColecao() {
     }
     
     // 🔒 RATE LIMITING: Verifica limites
-    
+    if (window.rateLimiter) {
+        const checkLimite = window.rateLimiter.podeExecutar('analise');
+        if (!checkLimite.pode) {
+            mostrarPopupLimite('analise', checkLimite.total, checkLimite.proximoReset);
+            return;
+        }
+    }
+
     // 🗑️ LIMPA CACHE ao clicar em Analisar (força nova análise)
     const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
     
@@ -1682,10 +1744,7 @@ Sugira EXATAMENTE 3 perfumes onde:
 O usuário definiu orçamento de: ${perfil.orcamento || 'R$ 300-500'}
 
 REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
-- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 300-500 (toda a faixa média)
-- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900 (topo)
-- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700 (topo)
-- Se orçamento é "Acima de R$ 1500" → Sugira perfumes premium acima de R$ 1500
+${construirFaixaOrcamento()}
 
 ⚠️ R$ 300-500: ACEITE toda a faixa (inclui nacionais e importados acessíveis)
 ⚠️ R$ 500+: PRIORIZE o TOPO da faixa!
@@ -1768,6 +1827,7 @@ Analise e retorne análise detalhada + recomendações COM CONCENTRAÇÃO.
         const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            signal: criarTimeoutSignal(),
             body: JSON.stringify({ diagnostico, categoria: perfil.categoria || 'masculino' })
         });
         const data = await response.json();
@@ -1826,6 +1886,8 @@ Analise e retorne análise detalhada + recomendações COM CONCENTRAÇÃO.
         const nivelAtual = calcularNivelAtual();
         trackCollection(minhaColecao, data.analise_colecao);
         trackAnalysis(data.analise_colecao, nivelAtual, data.recomendacoes);
+        if (window.rateLimiter) window.rateLimiter.registrarUso('analise');
+        if (typeof atualizarContadores === 'function') atualizarContadores();
         
         // Salva perfumes recomendados no histórico
         if (data.recomendacoes && data.recomendacoes.length > 0) {
@@ -1975,10 +2037,7 @@ REGRAS CRÍTICAS:
 O usuário definiu orçamento de: ${perfil.orcamento || 'R$ 300-500'}
 
 REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
-- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 300-500 (toda a faixa média)
-- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900 (topo)
-- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700 (topo)
-- Se orçamento é "Acima de R$ 1500" → Sugira perfumes premium acima de R$ 1500
+${construirFaixaOrcamento()}
 
 ⚠️ R$ 300-500: ACEITE toda a faixa (nacionais e importados OK)
 ⚠️ R$ 500+: PRIORIZE o TOPO!
@@ -1993,6 +2052,7 @@ Retorne APENAS 1 perfume com: nome, família, faixa_preco, por_que, quando_usar
         const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            signal: criarTimeoutSignal(),
             body: JSON.stringify({ diagnostico: prompt, categoria: perfil.categoria || 'masculino' })
         });
         
@@ -2008,10 +2068,7 @@ Retorne APENAS 1 perfume com: nome, família, faixa_preco, por_que, quando_usar
         
         // Atualiza card
         card.innerHTML = `
-            <div class="candidate-name">${indice + 1}. ${novaSugestao.nome}</div>
-            <div class="candidate-family">🌿 ${novaSugestao.familia} • 💰 ${novaSugestao.faixa_preco}</div>
-            <div class="candidate-why"><strong>Por quê:</strong> ${novaSugestao.por_que}</div>
-            <div class="candidate-when"><strong>Quando usar:</strong> ${novaSugestao.quando_usar}</div>
+            ${renderizarCandidatoHTML(novaSugestao, indice)}
             <div style="display: flex; gap: 8px; margin-top: 12px;">
                 <button 
                     onclick="trocarSugestaoIndividual(${indice})"
@@ -2096,11 +2153,18 @@ async function enviarPergunta() {
     }
     
     // 🔒 RATE LIMITING: Verifica se pode enviar
-    
+    if (window.rateLimiter) {
+        const checkLimite = window.rateLimiter.podeExecutar('chat');
+        if (!checkLimite.pode) {
+            mostrarPopupLimite('chat', checkLimite.total, checkLimite.proximoReset);
+            return;
+        }
+    }
+
     const perfil = JSON.parse(localStorage.getItem('perfilUsuario') || '{}');
     
     // Adiciona mensagem do usuário
-    adicionarMensagemChat('user', pergunta);
+    adicionarMensagemChat('user', esc(pergunta));
     
     input.value = '';
     document.getElementById('chat-send-button').disabled = true;
@@ -2115,6 +2179,7 @@ async function enviarPergunta() {
         const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            signal: criarTimeoutSignal(),
             body: JSON.stringify({
                 pergunta: pergunta + `\n\n[Não repita: ${(window.perfumesJaSugeridos || []).join(', ') || 'nenhum'}]`,
                 colecao: minhaColecao.map(p => typeof p === 'string' ? p : `${p.nome}${p.concentracao ? ' ' + p.concentracao : ''}`),
@@ -2133,8 +2198,9 @@ async function enviarPergunta() {
         const messages = document.getElementById('chat-messages');
         messages.removeChild(messages.lastChild);
         
-        // Adiciona resposta
-        let resposta = data.resposta || '';
+        // Adiciona resposta (escapa o texto livre da IA — o HTML dos cards
+        // de sugestão abaixo já é montado com esc() campo a campo)
+        let resposta = esc(data.resposta || '');
         
         // Se não tem resposta mas tem sugestões, cria resposta padrão
         if (!resposta && data.sugestoes && data.sugestoes.length > 0) {
@@ -2147,11 +2213,11 @@ async function enviarPergunta() {
             data.sugestoes.forEach(sug => {
                 resposta += `
                     <div class="suggestion-card">
-                        <div class="suggestion-name">${sug.nome}${sug.concentracao ? ' <span style="color: var(--or);">(' + sug.concentracao + ')</span>' : ''}</div>
-                        <div class="suggestion-familia">${sug.familia}</div>
-                        <div class="suggestion-preco">${sug.faixa_preco}</div>
-                        <div class="suggestion-por-que">${sug.por_que}</div>
-                        <div class="suggestion-quando">${sug.quando_usar}</div>
+                        <div class="suggestion-name">${esc(sug.nome)}${sug.concentracao ? ' <span style="color: var(--or);">(' + esc(sug.concentracao) + ')</span>' : ''}</div>
+                        <div class="suggestion-familia">${esc(sug.familia)}</div>
+                        <div class="suggestion-preco">${esc(sug.faixa_preco)}</div>
+                        <div class="suggestion-por-que">${esc(sug.por_que)}</div>
+                        <div class="suggestion-quando">${esc(sug.quando_usar)}</div>
                     </div>
                 `;
             });
@@ -2194,9 +2260,11 @@ async function enviarPergunta() {
         }
         
         adicionarMensagemChat('assistant', resposta);
-        
+
         // 📊 REGISTRA uso do Rate Limit
-        
+        if (window.rateLimiter) window.rateLimiter.registrarUso('chat');
+        if (typeof atualizarContadores === 'function') atualizarContadores();
+
     } catch (error) {
         // Remove mensagem de loading
         const messages = document.getElementById('chat-messages');
@@ -2434,6 +2502,7 @@ async function identificarFamiliaFragrantica(nomePerfume) {
         const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            signal: criarTimeoutSignal(),
             body: JSON.stringify({
                 pergunta: `Qual a família olfativa principal do perfume "${nomePerfume}"? Responda APENAS com uma das opções: Fresco/Cítrico, Aromático/Verde, Doce/Gourmand, Amadeirado, Especiado/Oriental, Aquático/Mineral, Talco/Fougère, Floral/Floral Branco, ou Frutado. Responda apenas o nome da família, sem explicações.`
             })
@@ -2669,7 +2738,7 @@ function renderizarBarraNivel(nivel) {
                 margin-bottom: 15px;
                 text-align: center;
             ">
-                👋 Olá, ${nomeUsuario}!
+                👋 Olá, ${esc(nomeUsuario)}!
             </div>
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
@@ -2752,7 +2821,7 @@ function atualizarNivelDOM() {
                     font-size: 1.5em;
                     font-weight: 700;
                 ">
-                    👋 Olá, ${nomeUsuario}!
+                    👋 Olá, ${esc(nomeUsuario)}!
                 </div>
                 <div style="
                     color: var(--tx3);
@@ -2864,10 +2933,7 @@ function renderizarMissaoGameficada(data, tituloCustomizado = null) {
                 <div id="sugestoesContainer">
                     ${recomendacoes.map((rec, i) => `
                         <div class="candidate-item" id="candidato-${i}">
-                            <div class="candidate-name">${i + 1}. ${rec.nome}${rec.concentracao ? ' <span style="color: var(--or);">(' + rec.concentracao + ')</span>' : ''}</div>
-                            <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
-                            <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
-                            <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
+                            ${renderizarCandidatoHTML(rec, i)}
                         </div>
                     `).join('')}
                 </div>
@@ -3132,10 +3198,7 @@ Você DEVE sugerir EXATAMENTE 3 perfumes onde:
 O usuário definiu orçamento de: ${perfil.orcamento || 'R$ 300-500'}
 
 REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
-- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 300-500 (toda a faixa média)
-- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900 (topo)
-- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700 (topo)
-- Se orçamento é "Acima de R$ 1500" → Sugira perfumes premium acima de R$ 1500
+${construirFaixaOrcamento()}
 
 ⚠️ R$ 300-500: ACEITE toda a faixa (nacionais e importados OK)
 ⚠️ R$ 500+: PRIORIZE o TOPO!
@@ -3164,6 +3227,7 @@ RESPONDA COM 3 PERFUMES DE MARCAS DIFERENTES COM BOA VARIEDADE!
         const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            signal: criarTimeoutSignal(),
             body: JSON.stringify({
                 diagnostico: promptNovasSugestoes,
                 categoria: perfil.categoria || 'masculino'
@@ -3181,17 +3245,12 @@ RESPONDA COM 3 PERFUMES DE MARCAS DIFERENTES COM BOA VARIEDADE!
         // 🔍 VALIDAÇÃO 1: Verifica se há marcas repetidas
         const marcas = novasSugestoes.map(sug => {
             // Extrai primeira palavra do nome (geralmente é a marca)
-            return sug.nome.split(' ')[0].toLowerCase();
+            return (sug.nome || '').split(' ')[0].toLowerCase();
         });
-        
-        const marcasUnicas = new Set(marcas);
-        
-        if (marcasUnicas.size < novasSugestoes.length) {
-            // Mostra aviso mas continua
-        } else {
 
-        }
-        
+        const marcasUnicas = new Set(marcas);
+        const temMarcaRepetida = marcasUnicas.size < novasSugestoes.length;
+
         // 🔍 VALIDAÇÃO 2: Verifica orçamento
         const faixas = {
             'R$ 300-500': { min: 250, max: 600 },
@@ -3199,10 +3258,11 @@ RESPONDA COM 3 PERFUMES DE MARCAS DIFERENTES COM BOA VARIEDADE!
             'R$ 800-1500': { min: 700, max: 1700 },
             'Acima de R$ 1500': { min: 1500, max: 999999 }
         };
-        
+
         const faixaUsuario = perfil.orcamento || 'R$ 300-500';
         const limites = faixas[faixaUsuario];
-        
+
+        let temForaDoOrcamento = false;
         if (limites) {
             novasSugestoes.forEach(sug => {
                 // Extrai valores de faixa_preco (ex: "R$ 400-600")
@@ -3210,19 +3270,29 @@ RESPONDA COM 3 PERFUMES DE MARCAS DIFERENTES COM BOA VARIEDADE!
                 if (match && match.length >= 1) {
                     const precoMin = parseInt(match[0]);
                     if (precoMin < limites.min || precoMin > limites.max) {
-                    } else {
+                        temForaDoOrcamento = true;
                     }
                 }
             });
         }
-        
+
+        // As validações acima não bloqueiam a exibição (a IA já foi consultada e
+        // pedir de novo custaria outra chamada) — mas avisam o usuário quando o
+        // resultado foge do que foi pedido, em vez de mostrar como se estivesse tudo certo.
+        const avisoValidacaoHtml = (temMarcaRepetida || temForaDoOrcamento)
+            ? `<div style="background: rgba(255,152,0,.12); border: 1px solid #ff9800; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: .85em; color: #ff9800;">
+                ⚠️ ${temMarcaRepetida && temForaDoOrcamento
+                    ? 'Algumas sugestões repetem marca e fogem um pouco do orçamento configurado.'
+                    : temMarcaRepetida
+                        ? 'Algumas sugestões repetem a mesma marca.'
+                        : 'Algumas sugestões fogem um pouco do orçamento configurado.'}
+               </div>`
+            : '';
+
         // Renderiza sugestões
-        container.innerHTML = novasSugestoes.map((rec, i) => `
+        container.innerHTML = avisoValidacaoHtml + novasSugestoes.map((rec, i) => `
             <div class="candidate-item">
-                <div class="candidate-name">${i + 1}. ${rec.nome}</div>
-                <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
-                <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
-                <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
+                ${renderizarCandidatoHTML(rec, i)}
             </div>
         `).join('');
         
@@ -3305,10 +3375,7 @@ CRITÉRIOS PARA HIDDEN GEMS:
 O usuário definiu orçamento de: ${perfil.orcamento || 'R$ 300-500'}
 
 REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
-- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 300-500 (toda a faixa média)
-- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900 (topo)
-- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700 (topo)
-- Se orçamento é "Acima de R$ 1500" → Sugira perfumes premium acima de R$ 1500
+${construirFaixaOrcamento()}
 
 ⚠️ R$ 300-500: ACEITE toda a faixa (nacionais e importados OK)
 ⚠️ R$ 500+: PRIORIZE o TOPO!
@@ -3328,6 +3395,7 @@ Retorne 3 hidden gems incríveis!
         const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            signal: criarTimeoutSignal(),
             body: JSON.stringify({ diagnostico: prompt, categoria: perfil.categoria || 'masculino' })
         });
         
@@ -3434,10 +3502,7 @@ Sugira EXATAMENTE 3 perfumes APENAS da família: ${familiaAlvo}
 O usuário definiu orçamento de: ${perfil.orcamento || 'R$ 300-500'}
 
 REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
-- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 300-500 (toda a faixa média)
-- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900 (topo)
-- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700 (topo)
-- Se orçamento é "Acima de R$ 1500" → Sugira perfumes premium acima de R$ 1500
+${construirFaixaOrcamento()}
 
 ⚠️⚠️⚠️ CRÍTICO: Se orçamento R$ 500+, pelo menos 2 dos 3 perfumes DEVEM estar no TOPO da faixa!
 
@@ -3486,6 +3551,7 @@ IMPORTANTE: Missão focada em ${familiaAlvo} com BOA VARIEDADE DE MARCAS + CONCE
         const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            signal: criarTimeoutSignal(),
             body: JSON.stringify({
                 diagnostico: promptNovaMissao,
                 categoria: perfil.categoria || 'masculino'
@@ -3559,10 +3625,7 @@ IMPORTANTE: Missão focada em ${familiaAlvo} com BOA VARIEDADE DE MARCAS + CONCE
                     </h3>
                     ${novasRecomendacoes.map((rec, i) => `
                         <div class="candidate-item">
-                            <div class="candidate-name">${i + 1}. ${rec.nome}${rec.concentracao ? ' <span style="color: var(--or);">(' + rec.concentracao + ')</span>' : ''}</div>
-                            <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
-                            <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
-                            <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
+                            ${renderizarCandidatoHTML(rec, i)}
                         </div>
                     `).join('')}
                 </div>
@@ -3624,10 +3687,7 @@ IMPORTANTE: Missão focada em ${familiaAlvo} com BOA VARIEDADE DE MARCAS + CONCE
                     </h3>
                     ${recomendacoes.map((rec, i) => `
                         <div class="candidate-item">
-                            <div class="candidate-name">${i + 1}. ${rec.nome}${rec.concentracao ? ' <span style="color: var(--or);">(' + rec.concentracao + ')</span>' : ''}</div>
-                            <div class="candidate-family">🌿 ${rec.familia} • 💰 ${rec.faixa_preco}</div>
-                            <div class="candidate-why"><strong>Por quê:</strong> ${rec.por_que}</div>
-                            <div class="candidate-when"><strong>Quando usar:</strong> ${rec.quando_usar}</div>
+                            ${renderizarCandidatoHTML(rec, i)}
                         </div>
                     `).join('')}
                 </div>
@@ -3668,7 +3728,14 @@ async function iniciarColecaoDoZero() {
     }
     
     // 🔒 RATE LIMITING: Verifica se pode usar (3 vezes VITALÍCIO)
-    
+    if (window.rateLimiter) {
+        const checkLimite = window.rateLimiter.podeExecutar('dicas');
+        if (!checkLimite.pode) {
+            mostrarPopupLimite('dicas', checkLimite.total, checkLimite.proximoReset);
+            return;
+        }
+    }
+
     // Muda para aba sugestões
     goSection('sugestoes');
     
@@ -3710,10 +3777,7 @@ Sugira 3 perfumes que cobrem as funções básicas:
 O usuário definiu orçamento de: ${perfil.orcamento}
 
 REGRAS DE ORÇAMENTO (INEGOCIÁVEIS):
-- Se orçamento é "R$ 300-500" → Sugira perfumes de R$ 250-600, PRIORIZANDO R$ 300-500 (toda a faixa média)
-- Se orçamento é "R$ 500-800" → Sugira perfumes de R$ 400-900, PRIORIZANDO R$ 700-900 (topo)
-- Se orçamento é "R$ 800-1500" → Sugira perfumes de R$ 700-1700, PRIORIZANDO R$ 1200-1700 (topo)
-- Se orçamento é "Acima de R$ 1500" → Sugira perfumes premium acima de R$ 1500
+${construirFaixaOrcamento()}
 
 ⚠️ R$ 300-500: ACEITE toda a faixa (nacionais e importados OK)
 ⚠️ R$ 500+: PRIORIZE o TOPO!
@@ -3736,6 +3800,7 @@ IMPORTANTE: 3 marcas DIFERENTES + dentro do orçamento + adequados ao clima!
         const response = await fetch('https://operfumista-api.vercel.app/api/perfumista', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            signal: criarTimeoutSignal(),
             body: JSON.stringify({
                 iniciar_colecao: true,
                 contexto: contextoInicio,
@@ -3762,11 +3827,11 @@ IMPORTANTE: 3 marcas DIFERENTES + dentro do orçamento + adequados ao clima!
             data.recomendacoes.forEach(sug => {
                 html += `
                     <div class="suggestion-card">
-                        <div class="suggestion-name">${sug.nome}${sug.concentracao ? ' <span style="color: var(--or);">(' + sug.concentracao + ')</span>' : ''}</div>
-                        <div class="suggestion-familia">${sug.familia}</div>
-                        <div class="suggestion-preco">${sug.faixa_preco}</div>
-                        <div class="suggestion-por-que">${sug.por_que}</div>
-                        <div class="suggestion-quando">${sug.quando_usar}</div>
+                        <div class="suggestion-name">${esc(sug.nome)}${sug.concentracao ? ' <span style="color: var(--or);">(' + esc(sug.concentracao) + ')</span>' : ''}</div>
+                        <div class="suggestion-familia">${esc(sug.familia)}</div>
+                        <div class="suggestion-preco">${esc(sug.faixa_preco)}</div>
+                        <div class="suggestion-por-que">${esc(sug.por_que)}</div>
+                        <div class="suggestion-quando">${esc(sug.quando_usar)}</div>
                     </div>
                 `;
             });
@@ -3780,9 +3845,11 @@ IMPORTANTE: 3 marcas DIFERENTES + dentro do orçamento + adequados ao clima!
         
         chatMessages.innerHTML = html;
         chatMessages.scrollTop = chatMessages.scrollHeight;
-        
+
         // 📊 REGISTRA uso do Rate Limit (VITALÍCIO)
-        
+        if (window.rateLimiter) window.rateLimiter.registrarUso('dicas');
+        if (typeof atualizarContadores === 'function') atualizarContadores();
+
     } catch (error) {
         chatMessages.innerHTML = `
             <div class="chat-message assistant">
@@ -3801,27 +3868,11 @@ IMPORTANTE: 3 marcas DIFERENTES + dentro do orçamento + adequados ao clima!
 
 // ===================================
 // CONTADORES E POPUPS DE LIMITE
+// (mostrarPopupLimite/fecharPopupLimite vêm de rate-limiting-system.js —
+// a versão que existia aqui esperava proximoReset como Date, mas
+// window.rateLimiter.podeExecutar() sempre devolveu string já formatada,
+// então as duas nunca foram realmente compatíveis)
 // ===================================
-
-function mostrarPopupLimite(tipo, limite, proximoReset) {
-    const titulos = {
-        'analise': 'Análises',
-        'chat': 'Perguntas',
-        'dicas': 'Dicas de Iniciante'
-    };
-    
-    const mensagens = {
-        'analise': `Você atingiu o limite de ${limite} análises por mês.`,
-        'chat': `Você atingiu o limite de ${limite} perguntas por mês.`,
-        'dicas': `Você atingiu o limite de ${limite} dicas (vitalício).`
-    };
-    
-    const resetTexto = tipo === 'dicas' 
-        ? 'Este limite não reseta.' 
-        : `Próximo reset: ${proximoReset.toLocaleDateString('pt-BR')}`;
-    
-    alert(`🔒 Limite de ${titulos[tipo]} Atingido!\n\n${mensagens[tipo]}\n\n${resetTexto}\n\n💡 Dica: Use a aba FAQ para dúvidas gerais!`);
-}
 
 // ===================================
 // SALVAR/CARREGAR RADAR E ANÁLISE
@@ -4070,7 +4121,7 @@ function _renderizarListaFiltrada(){
         const displayConc = concAbrev[concentracao] || concentracao;
         const idxReal = minhaColecao.indexOf(perfume);
         return `<div class="perfume-item">
-            <span class="perfume-name">${nome}
+            <span class="perfume-name">${esc(nome)}
                 <span style="color:var(--or);font-size:.8em;font-weight:600;background:rgba(232,93,4,.15);padding:2px 8px;border-radius:12px;margin-left:8px">${displayConc}</span>
             </span>
             <button class="remove-button" onclick="removerPerfume(${idxReal})">🗑️ Remover</button>
@@ -4333,8 +4384,8 @@ function renderizarResumo() {
     const leitura = gerarLeituraColecao(analise);
     const estrategico = gerarResumoEstrategico(recs);
 
-    const faltandoChips = faltando.map(f => `<span class="resumo-chip-deficit">⚠ ${f}</span>`).join('');
-    const dominanteChip = dominante.nome ? `<span class="resumo-chip-ok">✓ ${dominante.nome}</span>` : '';
+    const faltandoChips = faltando.map(f => `<span class="resumo-chip-deficit">⚠ ${esc(f)}</span>`).join('');
+    const dominanteChip = dominante.nome ? `<span class="resumo-chip-ok">✓ ${esc(dominante.nome)}</span>` : '';
 
     const cardsHtml = recs.map((rec, i) => {
         const fc = _famConfig(rec.familia);
@@ -4344,10 +4395,10 @@ function renderizarResumo() {
                 <div class="resumo-rec-img" style="background:${fc.bg}">${fc.icon}</div>
                 <div class="resumo-rec-info">
                     <div class="resumo-rec-num">${String(i + 1).padStart(2, '0')}</div>
-                    <div class="resumo-rec-nome">${rec.nome}</div>
+                    <div class="resumo-rec-nome">${esc(rec.nome)}</div>
                     <div class="resumo-rec-tags">
-                        <span class="resumo-tag-fam">${rec.familia || ''}</span>
-                        <span class="resumo-tag-preco">${rec.faixa_preco || ''}</span>
+                        <span class="resumo-tag-fam">${esc(rec.familia || '')}</span>
+                        <span class="resumo-tag-preco">${esc(rec.faixa_preco || '')}</span>
                     </div>
                 </div>
             </div>
@@ -4356,14 +4407,14 @@ function renderizarResumo() {
                     <span class="resumo-rec-ico">💡</span>
                     <div>
                         <div class="resumo-rec-label">Por que</div>
-                        <div class="resumo-rec-val">${rec.por_que || ''}</div>
+                        <div class="resumo-rec-val">${esc(rec.por_que || '')}</div>
                     </div>
                 </div>
                 <div class="resumo-rec-linha">
                     <span class="resumo-rec-ico">🕐</span>
                     <div>
                         <div class="resumo-rec-label">Quando usar</div>
-                        <div class="resumo-rec-val">${rec.quando_usar || ''}</div>
+                        <div class="resumo-rec-val">${esc(rec.quando_usar || '')}</div>
                     </div>
                 </div>
             </div>
@@ -4374,7 +4425,7 @@ function renderizarResumo() {
         <div class="resumo-estrategico-item">
             <div class="resumo-est-icon">${item.icon}</div>
             <div class="resumo-est-label">${item.label}</div>
-            <div class="resumo-est-val">${item.perfume}</div>
+            <div class="resumo-est-val">${esc(item.perfume)}</div>
         </div>`).join('');
 
     container.innerHTML = `
