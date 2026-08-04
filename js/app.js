@@ -715,6 +715,115 @@ function normalizarClassificacao(classificacao) {
     }));
 }
 
+// ══════════════════════════════════════════════════════
+// ANTI-DUPLICATA: sugestões da IA não podem repetir a coleção
+// (o prompt já pede isso, mas a IA às vezes ignora — validamos no código)
+// ══════════════════════════════════════════════════════
+function normalizarNomePerfume(nome) {
+    return (nome || '')
+        .toString()
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function perfumeJaConhecido(nome) {
+    const alvo = normalizarNomePerfume(nome);
+    if (!alvo) return false;
+    const blacklist = JSON.parse(localStorage.getItem('perfumesBlacklist') || '[]');
+    const conhecidos = minhaColecao
+        .map(p => typeof p === 'string' ? p : p.nome)
+        .concat(blacklist.map(p => typeof p === 'string' ? p : p.nome));
+    return conhecidos.some(nomeConhecido => {
+        const n = normalizarNomePerfume(nomeConhecido);
+        if (!n) return false;
+        if (n === alvo) return true;
+        // match parcial só para nomes com tamanho razoável (evita falso positivo em tokens curtos)
+        if (n.length > 3 && alvo.length > 3 && (n.includes(alvo) || alvo.includes(n))) return true;
+        return false;
+    });
+}
+
+// Remove da lista de recomendações da IA qualquer perfume que já esteja
+// na coleção do usuário ou na blacklist
+function filtrarRecomendacoesDuplicadas(recomendacoes) {
+    if (!Array.isArray(recomendacoes)) return recomendacoes;
+    return recomendacoes.filter(rec => !perfumeJaConhecido(rec && rec.nome));
+}
+
+// ══════════════════════════════════════════════════════
+// PERSISTÊNCIA DE FAMÍLIA POR PERFUME
+// Bug fix: a família de um perfume não pode mudar sozinha a cada nova
+// análise — uma vez classificado, o resultado fica fixo localmente e só
+// perfumes novos (ainda sem família salva) são reclassificados pela IA.
+// ══════════════════════════════════════════════════════
+const FAMILIAS_NOVE = ['Fresco/Cítrico','Aromático/Verde','Doce/Gourmand','Amadeirado','Especiado/Oriental','Aquático/Mineral','Talco/Fougère','Floral/Floral Branco','Frutado'];
+
+function chavePerfume(nome) {
+    return normalizarNomePerfume(nome);
+}
+
+function getFamiliasPersistidas() {
+    try {
+        return JSON.parse(localStorage.getItem('familiaPorPerfume') || '{}');
+    } catch (_) {
+        return {};
+    }
+}
+
+function salvarFamiliasPersistidas(mapa) {
+    localStorage.setItem('familiaPorPerfume', JSON.stringify(mapa));
+}
+
+// Faz a família que a IA devolveu bater com um dos 9 nomes canônicos
+// (tolera diferença de maiúscula/acento), sem usar normalizarFamilia()
+// porque aquela função foi feita para outro conjunto (13 famílias) e
+// tem colisão de palavra-chave entre "Fougère" e "Aromático/Verde".
+function canonizarFamiliaClassificacao(nomeFamilia) {
+    if (!nomeFamilia) return null;
+    const alvo = nomeFamilia.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    const match = FAMILIAS_NOVE.find(f => f.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === alvo);
+    return match || nomeFamilia.trim();
+}
+
+// Recalcula perfumes_por_familia, familia_dominante e top3_faltando
+// LOCALMENTE a partir do mapa persistido — nunca confia cegamente na
+// contagem agregada que a IA devolve a cada chamada, porque essa
+// contagem pode variar entre uma análise e outra (não-determinismo do modelo).
+function recalcularAnaliseColecao(analiseColecao) {
+    const persistidas = getFamiliasPersistidas();
+    const contagem = {};
+    minhaColecao.forEach(p => {
+        const nome = typeof p === 'string' ? p : p.nome;
+        const familia = persistidas[chavePerfume(nome)];
+        if (familia) contagem[familia] = (contagem[familia] || 0) + 1;
+    });
+
+    let dominante = null, maxQtd = 0;
+    Object.entries(contagem).forEach(([fam, qtd]) => {
+        if (qtd > maxQtd) { maxQtd = qtd; dominante = fam; }
+    });
+
+    const naoClassificados = minhaColecao
+        .map(p => typeof p === 'string' ? p : p.nome)
+        .filter(nome => !persistidas[chavePerfume(nome)]);
+
+    const top3Faltando = FAMILIAS_NOVE
+        .map(fam => ({ fam, qtd: contagem[fam] || 0 }))
+        .sort((a, b) => a.qtd - b.qtd)
+        .slice(0, 3)
+        .map(x => x.fam);
+
+    return {
+        ...analiseColecao,
+        perfumes_por_familia: contagem,
+        familia_dominante: dominante || (analiseColecao && analiseColecao.familia_dominante) || null,
+        top3_faltando: top3Faltando,
+        nao_classificados: naoClassificados
+    };
+}
+
 function atualizarRadarComAPI(analiseAPI) {
     // Se não recebeu parâmetro, tenta carregar do localStorage
     if (!analiseAPI) {
@@ -1505,7 +1614,14 @@ async function analisarColecao() {
     try {
         const blacklist = JSON.parse(localStorage.getItem('perfumesBlacklist') || '[]');
         const naoSugerir = minhaColecao.concat(blacklist);
-        
+
+        // Só perfumes SEM família salva localmente precisam ser classificados de novo
+        // (evita que a IA reclassifique — e mude — a família de perfumes já conhecidos)
+        const familiasPersistidas = getFamiliasPersistidas();
+        const perfumesParaClassificar = minhaColecao
+            .map(p => typeof p === 'string' ? p : p.nome)
+            .filter(nome => !familiasPersistidas[chavePerfume(nome)]);
+
         const diagnostico = `
 PERFIL DO USUÁRIO:
 Clima: ${perfil.clima || 'Temperado'}
@@ -1517,7 +1633,9 @@ COLEÇÃO ATUAL (${minhaColecao.length} perfumes):
 ${minhaColecao.map((p, i) => {
     const nome = typeof p === 'string' ? p : p.nome;
     const concentracao = typeof p === 'string' ? 'EDP' : p.concentracao;
-    return `${i + 1}. ${nome} (${concentracao})`;
+    const familiaConhecida = familiasPersistidas[chavePerfume(nome)];
+    const tag = familiaConhecida ? `[JÁ CLASSIFICADO: ${familiaConhecida} — NÃO reclassifique]` : '[PRECISA CLASSIFICAR]';
+    return `${i + 1}. ${nome} (${concentracao}) ${tag}`;
 }).join('\n')}
 
 ⚠️ NUNCA SUGERIR (usuário já tem OU não gostou):
@@ -1532,11 +1650,10 @@ INSTRUÇÕES CRÍTICAS:
 📊 PARTE 1: CLASSIFICAÇÃO DE FAMÍLIAS OLFATIVAS (OBRIGATÓRIO)
 ===========================================================
 
-Para CADA perfume acima, você DEVE classificá-lo em UMA das 9 famílias abaixo.
-
-${construirGuiaFamilias(perfil.categoria)}
-
-Conte quantos perfumes há em cada família e identifique as 3 famílias com MENOS perfumes.
+${perfumesParaClassificar.length > 0
+    ? `Para CADA perfume marcado [PRECISA CLASSIFICAR] acima (${perfumesParaClassificar.join(', ')}), você DEVE classificá-lo em UMA das 9 famílias abaixo.\nOs marcados [JÁ CLASSIFICADO] já têm família definida — NÃO os reclassifique e NÃO os inclua em "classificacao_perfumes".\n\n${construirGuiaFamilias(perfil.categoria)}\n\nRetorne em "classificacao_perfumes" um item {"nome":"...","familia":"..."} para CADA perfume marcado [PRECISA CLASSIFICAR] — obrigatório, um item por perfume.`
+    : `Todos os perfumes já estão classificados localmente. Retorne "classificacao_perfumes": [] (array vazio).`
+}
 
 ===========================================================
 🚨 PARTE 2: SUGESTÕES - MARCAS DIFERENTES (OBRIGATÓRIO!) 🚨
@@ -1606,6 +1723,9 @@ Você DEVE retornar um JSON com este formato EXATO:
 
 {
   "analise_colecao": {
+    "classificacao_perfumes": [
+      {"nome": "Nome exato do perfume marcado [PRECISA CLASSIFICAR]", "familia": "Uma das 9 famílias"}
+    ],
     "perfumes_por_familia": {...},
     "familia_dominante": "...",
     "top3_faltando": [...]
@@ -1659,9 +1779,29 @@ Analise e retorne análise detalhada + recomendações COM CONCENTRAÇÃO.
             alert('❌ Erro: A API não conseguiu classificar os perfumes. Tente novamente.');
             return;
         }
+
+        // Persiste a família de cada perfume recém-classificado (nunca sobrescreve o que já tinha)
+        const familiasAtualizadas = getFamiliasPersistidas();
+        (data.analise_colecao.classificacao_perfumes || []).forEach(item => {
+            if (item && item.nome) {
+                const chave = chavePerfume(item.nome);
+                if (!familiasAtualizadas[chave]) {
+                    familiasAtualizadas[chave] = canonizarFamiliaClassificacao(item.familia);
+                }
+            }
+        });
+        salvarFamiliasPersistidas(familiasAtualizadas);
+
+        // Recalcula a análise localmente (fonte de verdade determinística) em vez de
+        // confiar na contagem agregada que a IA devolveu nesta chamada específica
+        data.analise_colecao = recalcularAnaliseColecao(data.analise_colecao);
+
+        // Remove sugestões que a IA devolveu mas que já estão na coleção/blacklist
+        data.recomendacoes = filtrarRecomendacoesDuplicadas(data.recomendacoes);
+
         // Salva classificações (compatibilidade)
         localStorage.setItem('classificacoesValidadas', JSON.stringify(data.analise_colecao.perfumes_por_familia));
-        
+
         // Salva cache COM PERFIL
         localStorage.setItem('ultimaAnalise', JSON.stringify({
             colecao: colecaoAtualString,
@@ -1857,8 +1997,9 @@ Retorne APENAS 1 perfume com: nome, família, faixa_preco, por_que, quando_usar
         });
         
         const data = await response.json();
-        const novaSugestao = data.recomendacoes?.[0];
-        
+        const candidata = data.recomendacoes?.[0];
+        const novaSugestao = (candidata && !perfumeJaConhecido(candidata.nome)) ? candidata : null;
+
         if (!novaSugestao) {
             card.innerHTML = conteudoOriginal;
             alert('❌ Não foi possível gerar nova sugestão. Tente novamente.');
@@ -2097,9 +2238,16 @@ function calcularNivelAtual() {
     const ultimaAnalise = JSON.parse(localStorage.getItem('ultimaAnalise') || '{}');
     const analise = ultimaAnalise.dados?.analise_colecao;
     
+    // O nível nunca pode regredir: guarda o maior score de pontos já
+    // alcançado, e nenhum pontos calculado abaixo dele é aceito.
+    // Bug fix: sem isso, "faltam X" podia AUMENTAR depois de adicionar
+    // um perfume (ver bônus de equilíbrio removido abaixo).
+    const recordePontos = parseInt(localStorage.getItem('recordePontosNivel') || '0', 10);
+
     if (!analise || !analise.perfumes_por_familia) {
         // Se não tem análise da API, retorna nível básico baseado só na quantidade
-        const pontosBasico = Math.min(minhaColecao.length * 2, 50);
+        const pontosBasico = Math.max(Math.min(minhaColecao.length * 2, 50), recordePontos);
+        localStorage.setItem('recordePontosNivel', String(pontosBasico));
         return {
             nome: pontosBasico < 30 ? "Iniciante" : "Explorador",
             emoji: pontosBasico < 30 ? "🌱" : "🔍",
@@ -2114,50 +2262,39 @@ function calcularNivelAtual() {
             familias: 0
         };
     }
-    
+
     const total = analise.total_perfumes || minhaColecao.length;
     const familias = analise.familias_representadas || Object.keys(analise.perfumes_por_familia).filter(f => analise.perfumes_por_familia[f] > 0).length;
-    
+
     let pontos = 0;
-    
+
     // ============================================
     // SISTEMA DIFÍCIL - MODO REALISTA
     // ============================================
-    
+
     // 1. QUANTIDADE (50 pontos máx aos 25 perfumes)
     // 2 pontos por perfume - precisa ter MUITOS perfumes
     pontos += Math.min(total * 2, 50);
-    
+
     // 2. DIVERSIDADE (45 pontos máx - 5 por família)
     // Precisa explorar TODAS as 9 famílias
     pontos += familias * 5;
-    
-    // 3. EQUILÍBRIO (5 pontos máx)
-    // Bônus se a coleção for bem equilibrada
-    let dominante = 0;
-    
-    // Trata familia_dominante como string ou objeto
-    if (analise.familia_dominante) {
-        if (typeof analise.familia_dominante === 'object' && analise.familia_dominante.porcentagem) {
-            dominante = analise.familia_dominante.porcentagem;
-        } else if (typeof analise.familia_dominante === 'string') {
-            // Calcula porcentagem manualmente
-            const nomeDominante = analise.familia_dominante;
-            const quantidadeDominante = analise.perfumes_por_familia[nomeDominante] || 0;
-            dominante = total > 0 ? Math.round((quantidadeDominante / total) * 100) : 0;
-        }
-    }
-    
-    // Quanto mais equilibrado, mais pontos
-    if (dominante < 20) pontos += 5;      // Perfeitamente equilibrado
-    else if (dominante < 30) pontos += 3; // Bem equilibrado
-    else if (dominante < 40) pontos += 1; // Razoável
-    // Se dominar mais de 40%, não ganha bônus
-    
-    // Total arredondado
+
+    // OBS: o bônus de equilíbrio (quanto menos concentrada a família
+    // dominante, mais pontos) foi REMOVIDO daqui de propósito. Ele é
+    // inversamente proporcional à concentração da família dominante, então
+    // comprar mais um perfume de uma família que já era forte podia FAZER
+    // A PONTUAÇÃO CAIR mesmo aumentando a coleção — e "faltam X" subir
+    // depois de adicionar um perfume, o que confundia o usuário. O
+    // equilíbrio da coleção continua sendo mostrado (card de família
+    // dominante / gráfico), só não entra mais na conta de nível.
+
+    // Total arredondado, e nunca abaixo do recorde já alcançado
     pontos = Math.round(pontos);
-    pontos = Math.min(100, Math.max(0, pontos));
-    
+    pontos = Math.min(95, Math.max(0, pontos));
+    pontos = Math.max(pontos, recordePontos);
+    localStorage.setItem('recordePontosNivel', String(pontos));
+
     // ============================================
     // NÍVEIS - MODO DIFÍCIL
     // ============================================
@@ -2216,14 +2353,16 @@ function calcularNivelAtual() {
             descricao: "Domínio avançado da perfumaria"
         };
     } else {
-        // 👑 MESTRE: 86-100 pontos
+        // 👑 MESTRE: 86-95 pontos (teto real desde que o bônus de equilíbrio
+        // saiu da conta — sem isso "faltam" nunca chegava a 0 pra quem já
+        // tinha coleção máxima)
         // Precisa de 35+ perfumes e TODAS as 9 famílias
         nivel = {
             nome: "Mestre",
             emoji: "👑",
             pontos: pontos,
             proximo: "Máximo",
-            pontosProximo: 100,
+            pontosProximo: 95,
             faixaInicio: 86,
             cor: "var(--or)",
             descricao: `Maestria completa em perfumaria ${categoriaDescricao}`
@@ -3032,8 +3171,8 @@ RESPONDA COM 3 PERFUMES DE MARCAS DIFERENTES COM BOA VARIEDADE!
         });
         
         const data = await response.json();
-        let novasSugestoes = data.recomendacoes || [];
-        
+        let novasSugestoes = filtrarRecomendacoesDuplicadas(data.recomendacoes || []);
+
         if (novasSugestoes.length === 0) {
             container.innerHTML = '<p style="color: var(--tx3); text-align: center; padding: 20px;">Não foi possível gerar novas sugestões. Tente novamente.</p>';
             return;
@@ -3193,7 +3332,8 @@ Retorne 3 hidden gems incríveis!
         });
         
         const data = await response.json();
-        
+        data.recomendacoes = filtrarRecomendacoesDuplicadas(data.recomendacoes);
+
         if (!data.recomendacoes || data.recomendacoes.length === 0) {
             throw new Error('Sem recomendações');
         }
@@ -3354,8 +3494,9 @@ IMPORTANTE: Missão focada em ${familiaAlvo} com BOA VARIEDADE DE MARCAS + CONCE
         
         const data = await response.json();
         
-        // Se API retornou recomendações, usa elas. Senão, mantém as originais
-        const novasRecomendacoes = data.recomendacoes || dadosAnalise.recomendacoes;
+        // Se API retornou recomendações válidas (sem duplicar a coleção), usa elas. Senão, mantém as originais
+        const recomendacoesFiltradas = filtrarRecomendacoesDuplicadas(data.recomendacoes);
+        const novasRecomendacoes = (recomendacoesFiltradas && recomendacoesFiltradas.length > 0) ? recomendacoesFiltradas : dadosAnalise.recomendacoes;
         
         // Atualiza dados globais com novas recomendações
         window.dadosAnaliseAtual.recomendacoes = novasRecomendacoes;
